@@ -1,0 +1,8 @@
+secrets.ini
+secret_key
+slow_queries.log
+flasklog
+*~
+*.pyc
+*.pyo
+.DS_Store
