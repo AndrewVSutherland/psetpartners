@@ -130,7 +130,7 @@ def alive():
 
 @app.route("/acknowledgments")
 def acknowledgment():
-    return render_template("acknowledgements.html")
+    return render_template("acknowledgments.html")
 
 @app.route("/contact")
 def contact():
