@@ -1,0 +1,60 @@
+{% extends 'homepage.html' %}
+{% block content %}
+
+{% if not user.is_authenticated %}
+
+  <h1>You are not logged in</h1>
+
+  <div style="margin-bottom: 20px">New user?
+     <a href="{{ url_for('.register') }}">Register here</a>.
+  </div>
+
+  <form name="login" action="{{ url_for('.login') }}" method="POST">
+    <input type="hidden" name="next" value="{{ next }}" />
+    <table>
+      <tr><td>Kerb ID:</td>
+        <td><input name="identifier" placeholder="roed" /></td></tr>
+{#
+      <tr><td>Password:</td>
+          <td><input name="password" type="password" /></td>
+          <td> (<a href="{{ url_for('.reset_password') }}">Forgot password?</a>) </td>
+      </tr>
+#}
+      <tr>
+        <td></td>
+        <td><button class="save" name="submit" type="submit">Login</button></td>
+      </tr>
+    </table>
+  </form>
+
+{% else %}
+  <form action="{{ url_for('.logout') }}" method="POST" name="logout">
+  <h2>Welcome, {{ user.preferred_name }} <div style="float: right; margin-right: 50px"><button class="side-cancel" name="submit" type="submit">Logout</button></div></h2>
+  </form>
+
+  <h2>Courses</h2>
+
+  <h2>Groups</h2>
+
+
+  <form action="{{ url_for('.set_info') }}" method="post" name="userinfo">
+  <h2>Details</h2>
+
+  <table>
+    <tr>
+      <td>Name</td>
+      <td><input name="preferred_name" value="{{user.preferred_name}}" size="30" tabindex="1" required /></td>
+    </tr>
+    <tr>
+      <td>Pronouns</td>
+      <td><input name="preferred_pronouns" value="{{user.preferred_pronouns}}" size="30" tabindex="2" /></td>
+    </tr>
+    <tr>
+      <td>Year</td>
+      <td><input name="year" value="{{user.year}}" size="30" placeholder="3" tabindex="3" /></td>
+    </tr>
+  </table>
+
+  <h2>Preferences</h2>
+
+  </form>
