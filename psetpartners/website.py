@@ -10,6 +10,7 @@ from .app import app, set_running  # So that we can set it running below
 
 from psetpartners import db
 assert db
+from . import users
 
 def main():
     from .config import Configuration
