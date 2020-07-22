@@ -55,6 +55,39 @@
     </tr>
   </table>
 
-  <h2>Preferences</h2>
+  <h2>Available Times</h2>
+  
+  <table class='times' style="min-width:750px;">
+    {% for i in range(maxlength["time_slots"]//3) %}
+      <tr>
+        {% if i == 0 %}
+          <td style="margin-right:0px; min-width:69px;">{{ KNOWL("Time slots") }}</td>
+          {% set hide="visibility:hidden;" %}
+          <td style="vertical-align:middle; padding-left:0px; padding-right:0px;"><a class="slotplus" id="slotplus" style="{{hide}}" href="#"><i style="color:green;" class="fas fa-plus-square"></i></a></td>
+          <td style="vertical-align:middle; padding-left:0px; padding-right:47px;"><a class="slotminus" id="slotminus" style="{{hide}}" href="#"><i style="color:darkred;" class="fas fa-minus-square"></i></a></td>
+        {% else %}
+          {% set hide="display:none;" %}
+          <td></td><td></td><td></td>
+        {% endif %}
+        {% for j in range(3) %}
+          <td style="padding-right:1px; margin-right:0px;">
+            <select id="weekday{{3*i+j}}" name="weekday{{3*i+j}}" style="{{hide}}">
+              <option value="" {% if not seminar.weekdays[3*i+j] %} selected{% endif %}></option>
+              {% for wkday in options["weekday"] %}
+                <option value="{{loop.index0}}"{% if seminar.weekdays[3*i+j] == loop.index0 %} selected{% endif %}>{{wkday}}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td style="padding-left:1px; margin-left:0px; padding-right:29px;">
+            <input id="time_slot{{3*i+j}}" name="time_slot{{3*i+j}}" value="{{ seminar.time_slots[3*i+j] }}" style="width:90px; {{hide}}" placeholder="15:00-16:00" />
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
 
   </form>
+
+{% endif %}
+
+{% endblock %}

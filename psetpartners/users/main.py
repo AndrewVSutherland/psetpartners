@@ -67,7 +67,43 @@ def info():
 @login_required
 def set_info():
     errmsgs = []
-    data = {}
+    prefs = {}
+    data = {"preferences": prefs}
+    raw_data = request.form
+    n = int(raw_data.get("num_slots"))
+    prefs["weekdays"], prefs["time_slots"] = [], []
+    for i in range(n):
+        weekday = daytimes = None
+        try:
+            col = "weekday" + str(i)
+            val = raw_data.get(col, "")
+            weekday = process_user_input(val, col, "weekday_number", tz)
+            col = "time_slot" + str(i)
+            val = raw_data.get(col, "")
+            daytimes = process_user_input(val, col, "daytimes", tz)
+        except Exception as err:  # should only be ValueError's but let's be cautious
+            errmsgs.append(format_input_error(err, val, col))
+        if weekday is not None and daytimes is not None:
+            prefs["weekdays"].append(weekday)
+            prefs["time_slots"].append(daytimes)
+            if daytimes_early(daytimes):
+                warn(
+                    "Time slot %s includes early AM hours, please correct if this is not intended (use 24-hour time format).",
+                    daytimes,
+                )
+            elif daytimes_long(daytimes):
+                warn(
+                    "Time slot %s is longer than 8 hours, please correct if this is not intended.",
+                    daytimes,
+                )
+    if not prefs["weekdays"]:
+        errmsgs.append('You must specify at least one time slot (or set periodicty to "no fixed schedule").')
+    if len(prefs["weekdays"]) > 1:
+        x = sorted(
+            list(zip(prefs["weekdays"], prefs["time_slots"])),
+            key=lambda t: t[0] * 24 * 60 + daytime_minutes(t[1].split("-")[0]),
+        )
+        prefs["weekdays"], prefs["time_slots"] = [t[0] for t in x], [t[1] for t in x]
     # Need to do data validation
     for col, val in request.form.items():
         try:
