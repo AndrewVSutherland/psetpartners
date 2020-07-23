@@ -2,11 +2,89 @@
 
 
 import pytz
+import re
 from datetime import datetime, timedelta
 from markupsafe import Markup, escape
 from flask import flash, render_template
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
+
+short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
+daytime_re = re.compile(daytime_re_string)
+dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
+
+def localize_time(t, newtz=None):
+    """
+    Takes a time or datetime object and adds in a timezone if not already present.
+    """
+    if t.tzinfo is None:
+        if newtz is None:
+            newtz = current_user.tz
+        return newtz.localize(t)
+    else:
+        return t
+
+def cleanse_dashes(s):
+    # replace unicode variants of dashes (which users might cut-and-paste in) with ascii dashes
+    return '-'.join(re.split(dash_re,s))
+
+def validate_daytime(s):
+    if not daytime_re.fullmatch(s):
+        return None
+    if len(s) <= 2:
+        h, m = int(s), 0
+    elif not ":" in s:
+        h, m = int(s[:-2]), int(s[-2:])
+    else:
+        t = s.split(":")
+        h, m = int(t[0]), int(t[1])
+    return "%02d:%02d" % (h, m) if (0 <= h < 24) and (0 <= m <= 59) else None
+
+def validate_daytimes(s):
+    t = s.split('-')
+    if len(t) != 2:
+        return None
+    start, end = validate_daytime(t[0].strip()), validate_daytime(t[1].strip())
+    if start is None or end is None:
+        return None
+    return start + "-" + end
+
+def daytime_minutes(s):
+    t = s.split(":")
+    return 60 * int(t[0]) + int(t[1])
+
+
+def daytimes_start_minutes(s):
+    return daytime_minutes(s.split('-')[0])
+
+def midnight(date, tz):
+    return localize_time(datetime.combine(date, maketime()), tz)
+
+def weekstart(date, tz):
+    t = midnight(date,tz)
+    return t - timedelta(days=1)*t.weekday()
+
+def date_and_daytime_to_time(date, s, tz):
+    d = localize_time(datetime.combine(date, maketime()), tz)
+    m = timedelta(minutes=1)
+    return d + m * daytime_minutes(s)
+
+def date_and_daytimes_to_times(date, s, tz):
+    d = localize_time(datetime.combine(date, maketime()), tz)
+    m = timedelta(minutes=1)
+    t = s.split("-")
+    start = d + m * daytime_minutes(t[0])
+    end = d + m * daytime_minutes(t[1])
+    if end < start:
+        end += timedelta(days=1)
+    return start, end
+
+MAX_SLOTS = 12 # Must be a multiple of 3
+
+maxlength = {
+    'time_slots' : MAX_SLOTS,
+}
 
 def naive_utcoffset(tz):
     if isinstance(tz, str):
@@ -118,6 +196,17 @@ def process_user_input(inp, col, typ, tz=None):
     elif typ == "timestamp with time zone":
         assert tz is not None
         return localize_time(parse_time(inp), tz)
+    elif typ == "daytimes":
+        inp = cleanse_dashes(inp)
+        res = validate_daytimes(inp)
+        if res is None:
+            raise ValueError("Invalid times of day, expected format is hh:mm-hh:mm")
+        return res
+    elif typ == "weekday_number":
+        res = int(inp)
+        if res < 0 or res >= 7:
+            raise ValueError("Invalid day of week, must be an integer in [0,6]")
+        return res
     elif typ == "date":
         return parse_time(inp).date()
     elif typ == "boolean":

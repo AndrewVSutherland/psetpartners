@@ -12,6 +12,7 @@ from flask import (
     current_app,
     abort,
 )
+from .knowls import static_knowl
 
 ############################
 #         Main app         #
@@ -79,6 +80,8 @@ def ctx_proc_userdata():
     data = {"info": {}, "body_class": ""}
     data["meta_description"] = r"Welcome to psetpartners, a tool for finding others to help work on problem sets!"
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
+
+    data["static_knowl"] = static_knowl
 
     # debug mode?
     data["DEBUG"] = is_debug_mode()

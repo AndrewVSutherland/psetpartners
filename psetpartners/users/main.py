@@ -17,13 +17,16 @@ from flask_login import (
 from datetime import datetime
 from markupsafe import Markup
 from psetpartners import db
-from .pwdmanager import Student
+from .pwdmanager import Student, AnonymousStudent
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
     show_input_errors,
     process_user_input,
+    maxlength,
+    short_weekdays,
 )
+from psetpartners.app import app
 login_page = Blueprint("user", __name__, template_folder="templates")
 login_manager = LoginManager()
 
@@ -33,21 +36,35 @@ def load_user(kerb):
 
 login_manager.login_view = "user.info"
 
+login_manager.anonymous_user = AnonymousStudent
+
+# globally define user properties and username
+@app.context_processor
+def ctx_proc_userdata():
+    userdata = {
+        "user": current_user,
+        "usertime": datetime.now(tz=current_user.tz),
+    }
+    return userdata
+
 @login_page.route("/login", methods=["POST"])
 def login():
     identifier = request.form["identifier"]
     user = Student(identifier=identifier)
-    if user._authenticated:
-        # For now, no password check; just check that they're in the database.
-        # The following sets current_user = user
-        login_user(user, remember=True)
-        if user.preferred_name:
-            flash(Markup("Hello %s, your login was successful!" % user.preferred_name))
-        else:
-            flash(Markup("Hello, your login was successful!"))
-        return redirect(request.form.get("next") or url_for(".info"))
+    # For now, no password check
+    # The following sets current_user = user
+    login_user(user, remember=True)
+    if user.preferred_names:
+        flash(Markup("Hello %s, your login was successful!" % user.preferred_name))
     else:
-        flash(Markup("Unknown user.  Please register!"))
+        flash(Markup("Hello, your login was successful!"))
+    return redirect(request.form.get("next") or url_for(".info"))
+
+def info_options():
+    return {
+        'timezones' : timezones,
+        'weekday' : short_weekdays,
+    }
 
 @login_page.route("/info")
 def info():
@@ -59,7 +76,8 @@ def info():
         "user-info.html",
         next=request.args.get("next", ""),
         title=title,
-        timezones=timezones,
+        options=info_options(),
+        maxlength={"time_slots":12},
     )
 
 @login_page.route("/set_info", methods=["POST"])
@@ -70,6 +88,7 @@ def set_info():
     data = {"preferences": prefs}
     raw_data = request.form
     n = int(raw_data.get("num_slots"))
+    tz = current_user.tz
     prefs["weekdays"], prefs["time_slots"] = [], []
     for i in range(n):
         weekday = daytimes = None
@@ -81,22 +100,11 @@ def set_info():
             val = raw_data.get(col, "")
             daytimes = process_user_input(val, col, "daytimes", tz)
         except Exception as err:  # should only be ValueError's but let's be cautious
-            errmsgs.append(format_input_error(err, val, col))
+            errmsgs.append(format_input_errmsg(err, val, col))
+            raise
         if weekday is not None and daytimes is not None:
             prefs["weekdays"].append(weekday)
             prefs["time_slots"].append(daytimes)
-            if daytimes_early(daytimes):
-                warn(
-                    "Time slot %s includes early AM hours, please correct if this is not intended (use 24-hour time format).",
-                    daytimes,
-                )
-            elif daytimes_long(daytimes):
-                warn(
-                    "Time slot %s is longer than 8 hours, please correct if this is not intended.",
-                    daytimes,
-                )
-    if not prefs["weekdays"]:
-        errmsgs.append('You must specify at least one time slot (or set periodicty to "no fixed schedule").')
     if len(prefs["weekdays"]) > 1:
         x = sorted(
             list(zip(prefs["weekdays"], prefs["time_slots"])),
@@ -105,11 +113,19 @@ def set_info():
         prefs["weekdays"], prefs["time_slots"] = [t[0] for t in x], [t[1] for t in x]
     # Need to do data validation
     for col, val in request.form.items():
-        try:
-            typ = db.students.col_type[col]
-            data[col] = process_user_input(val, col, typ)
-        except Exception as err:
-            errmsgs.append(format_input_errmsg(err, val, col))
+        if col in Student.properties:
+            try:
+                typ = db.students.col_type[col]
+                data[col] = process_user_input(val, col, typ)
+            except Exception as err:
+                errmsgs.append(format_input_errmsg(err, val, col))
+        elif val and col.startswith("pref_"):
+            col = col[5:]
+            try:
+                typ = Student.preference_types[col]
+                prefs[col] = process_user_input(val, col, typ)
+            except Exception as err:
+                errmsgs.append(format_input_errmsg(err, val, col))
     if errmsgs:
         return show_input_errors(errmsgs)
     for k, v in data.items():
@@ -117,22 +133,6 @@ def set_info():
     if current_user.save():
         flash(Markup("Your information/preferences have been recorded"))
     return redirect(url_for(".info"))
-
-@login_page.route("/register/", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        identifier = request.form["identifier"]
-        # Add passwords later
-        if db.students.exists({"identifier", identifier}):
-            flash_error("The identifier '%s' is already registered!", identifier)
-            return make_response(render_template("register.html", title="Register", identifier=identifier))
-        # Should maybe abstract this
-        db.students.insert_many([{"identifier": identifier}])
-        user = Student(identifier=identifier)
-        login_user(user, remember=True)
-        flash(Markup("You have been registered for PsetPartners!"))
-        return redirect(url_for(".info"))
-    return render_template("register.html", title="Register", identifier="")
 
 @login_page.route("/logout", methods=["POST"])
 @login_required
