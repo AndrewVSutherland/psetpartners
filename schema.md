@@ -20,7 +20,7 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
 name                  |	text        | e.g. Johnathan Smith
-identifier            |	text	    | kerb id
+kerb                  |	text	    | kerb id
 email	              | text	    | smith@gmail.com
 preferred_name        | text        | e.g. John Smith
 preferred_pronouns    | text	    | e.g. they/them

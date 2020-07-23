@@ -51,7 +51,7 @@ def ctx_proc_userdata():
 @login_page.route("/login", methods=["POST"])
 def login():
     identifier = request.form["identifier"]
-    user = Student(identifier=identifier)
+    user = Student(kerb=identifier)
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)

@@ -14,11 +14,11 @@ class Student(UserMixin):
         "start": "text",
         "together": "text",
     }
-    def __init__(self, identifier):
-        self.identifier = identifier
-        data = db.students.lookup(identifier, projection=Student.properties)
+    def __init__(self, kerb):
+        self.kerb = kerb
+        data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         if data is None:
-            db.students.insert_many([{"identifier": identifier}])
+            db.students.insert_many([{"kerb": kerb}])
             self.timezone = None
             self.preferences = None
         else:
@@ -35,6 +35,9 @@ class Student(UserMixin):
             if typ == "text" and getattr(self, col, None) is None:
                 setattr(self, col, "")
 
+    def get_id(self):
+        return self.kerb
+
     @property
     def tz(self):
         try:
@@ -43,10 +46,13 @@ class Student(UserMixin):
             return timezone("UTC")
 
     def save(self):
-        db.students.update({"identifier": self.identifier}, {col: getattr(self, col, None) for col in db.students.search_cols})
+        db.students.update({"kerb": self.kerb}, {col: getattr(self, col, None) for col in db.students.search_cols})
 
 class AnonymousStudent(AnonymousUserMixin):
     # This mainly exists so that login page works
     @property
     def tz(self):
         return timezone("UTC")
+
+    def get_id(self):
+        return ""
