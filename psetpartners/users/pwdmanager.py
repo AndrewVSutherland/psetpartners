@@ -20,6 +20,7 @@ class Student(UserMixin):
         if data is None:
             db.students.insert_many([{"identifier": identifier}])
             self.timezone = None
+            self.preferences = None
         else:
             self.__dict__.update(data)
             self._authenticated = True
