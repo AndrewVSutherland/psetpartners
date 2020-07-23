@@ -12,6 +12,7 @@ number                | text        | Course number, e.g. 18.701
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
 homepage              | text        | course homepage
+pset_dates            | datetime[]  | list of due dates for psets (optional, possibly only first 3 relevant)
 
 ## students
 			
