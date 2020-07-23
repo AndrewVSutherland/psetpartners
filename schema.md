@@ -12,6 +12,7 @@ number                | text        | Course number, e.g. 18.701
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
 homepage              | text        | course homepage
+pset_dates            | date[]  | list of due dates for psets (optional, possibly only first 3 relevant)
 
 ## students
 			
@@ -19,7 +20,7 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
 name                  |	text        | e.g. Johnathan Smith
-year	              | smallint    | 1, 2, 3, 4, etc
+year	              | smallint    | 1, 2, 3, 4, etc (not currently used)
 identifier            |	text	    | kerb id
 email	              | text	    | smith@gmail.com
 preferred_name        | text        | e.g. John Smith
