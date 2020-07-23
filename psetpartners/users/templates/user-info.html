@@ -53,6 +53,8 @@
       <td>Year</td>
       <td><input name="year" value="{{user.year}}" size="30" placeholder="3" tabindex="3" /></td>
     </tr>
+    {# May eventually add dorm + radius #}
+    {# Unclear what to do with gender #}
   </table>
 
   <h2>Available Times</h2>
@@ -84,6 +86,52 @@
         {% endfor %}
       </tr>
     {% endfor %}
+  </table>
+
+  <h2>Preferences</h2>
+
+  <table>
+    <tr>
+      <td>Collaborate via</td>
+      <td>
+        <select name="pref_collaborate">
+          <option value=""></option>
+          <option value="text">Text only</option>
+          <option value="video">Video and text</option>
+          <option value="live">In-person</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Group minimum size</td>
+      <td><input name="pref_group_min" value="{{ current_user.preferences.group_min }}" placeholder="2" /></td>
+    </tr>
+    <tr>
+      <td>Group maximum size</td>
+      <td><input name="pref_group_max" value="{{ current_user.preferences.group_max }}" placeholder="8" /></td>
+    </tr>
+    <tr>
+      <td>Start</td> {# how far in advance do you start psets #}
+      <td>
+        <select name="pref_start">
+          <option value=""></option>
+          <option value="late">A day or two before the deadline</option>
+          <option value="early">Immediately</option>
+          <option value="live">In between</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Collaboration amount</td>
+      <td>
+        <select name="pref_together">
+          <option value=""></option>
+          <option value="all">Work through it all together</option>
+          <option value="stuck">Meet to work on stalled problems</option>
+          <option value="apart">Brainstorm together, work independently</option>
+        </select>
+      </td>
+    </tr>
   </table>
 
   </form>

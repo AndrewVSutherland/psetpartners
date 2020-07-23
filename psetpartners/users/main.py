@@ -24,8 +24,7 @@ from psetpartners.utils import (
     show_input_errors,
     process_user_input,
 )
-
-login_page = Blueprint("user", __name__, template_folder="template")
+login_page = Blueprint("user", __name__, template_folder="templates")
 login_manager = LoginManager()
 
 @login_manager.user_loader
