@@ -5,10 +5,9 @@
   font-family: Verdona, Geneva, sans-serif;
 }
 
-
 #header {
   background: var(--mit-maroon);
-  box-shadow: 0px 5px 5px #8A8B8C;
+  box-shadow: 0px 5px 5px var(--shadow-color);
   min-width: 1000px;
 }
 header.inner {
@@ -45,7 +44,7 @@ header.inner {
 #footer {
   clear: both;
   margin-top: 40px;
-  background-color: var(--mit-maroon);
+  background-color: #A31F34;
   border-top: 2px solid var(--shadow-color);
   padding: 25px 10px;
   text-align: center;
@@ -95,7 +94,7 @@ header.inner {
 }
 
 input, textarea {
-  border: 2px solid var(--mit-maroon);
+  border: 2px solid #A31F34;
   font-size: 110%;
   padding: 3px;
   border-radius: 5px;
