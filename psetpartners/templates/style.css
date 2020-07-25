@@ -1,4 +1,4 @@
-.root {
+:root {
   --mit-maroon: #A31F34;
   --mit-white: #FFFFFF;
   --shadow-color: #8A8B8C;
@@ -44,7 +44,7 @@ header.inner {
 #footer {
   clear: both;
   margin-top: 40px;
-  background-color: #A31F34;
+  background-color: var(--mit-maroon);
   border-top: 2px solid var(--shadow-color);
   padding: 25px 10px;
   text-align: center;
@@ -94,7 +94,7 @@ header.inner {
 }
 
 input, textarea {
-  border: 2px solid #A31F34;
+  border: 2px solid var(--mit-maroon);
   font-size: 110%;
   padding: 3px;
   border-radius: 5px;
