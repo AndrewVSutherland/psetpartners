@@ -83,8 +83,8 @@ header.inner {
 }
 
 #content {
-  font-family: sans-serf;
-  font-size: 100%;
+  font-family: sans-serif;
+  /*font-size: 95%; */
   margin-top: 20px;
   padding-right: 10px;
   min-height: calc(100vh - 217px);
