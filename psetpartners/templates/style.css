@@ -22,18 +22,16 @@ header.inner {
     padding-left: 48px;
     vertical-align: top;
     width: calc(100% - 350px);
-    height: 90px;
+    height: 75px;
     position: relative;
 }
 #header #title {
     font-size: 180%;
     /* font-weight: bold; */
-    font-family: sans-serif;
+    font-family: Verdana, Geneva, sans-serif;
     padding-top: 20px;
-    /* display: inline-block; */
     color: #FFFFFF;
     min-height: 32px;
-    /* float: left; */
     min-width: 300px;
     text-align: center;
 }
@@ -46,12 +44,12 @@ header.inner {
     padding: 25px 10px;
     text-align: center;
     font-size: 75%;
-    color: #C2C0BF;
+    color: #F0F0F0;
     min-height: 15px;
 }
 
 #footer a {
-    color: #C2C0BF;
+    color: #E0E0E0;
 }
 
 #flashes p {

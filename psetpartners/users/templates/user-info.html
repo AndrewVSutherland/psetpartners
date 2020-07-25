@@ -1,0 +1,141 @@
+{% extends 'homepage.html' %}
+{% block content %}
+
+{% if not user.is_authenticated %}
+
+  <h1>You are not logged in</h1>
+
+  <form name="login" action="{{ url_for('.login') }}" method="POST">
+    <input type="hidden" name="next" value="{{ next }}" />
+    <table>
+      <tr><td>Kerb ID:</td>
+        <td><input name="identifier" placeholder="roed" /></td></tr>
+{#
+      <tr><td>Password:</td>
+          <td><input name="password" type="password" /></td>
+          <td> (<a href="{{ url_for('.reset_password') }}">Forgot password?</a>) </td>
+      </tr>
+#}
+      <tr>
+        <td></td>
+        <td><button class="save" name="submit" type="submit">Login</button></td>
+      </tr>
+    </table>
+  </form>
+
+{% else %}
+  <form action="{{ url_for('.logout') }}" method="POST" name="logout">
+  <h2>Welcome, {{ user.preferred_names }} <div style="float: right; margin-right: 50px"><button class="side-cancel" name="submit" type="submit">Logout</button></div></h2>
+  </form>
+
+  <h2>Courses</h2>
+
+  <h2>Groups</h2>
+
+
+  <form action="{{ url_for('.set_info') }}" method="post" name="userinfo">
+  <h2>Details</h2>
+
+  <table>
+    <tr>
+      <td>Name</td>
+      <td><input name="preferred_names" value="{{user.preferred_names}}" size="30" tabindex="1" required /></td>
+    </tr>
+    <tr>
+      <td>Pronouns</td>
+      <td><input name="preferred_pronouns" value="{{user.preferred_pronouns}}" size="30" tabindex="2" /></td>
+    </tr>
+    {# May eventually add dorm + radius #}
+    {# Unclear what to do with gender #}
+  </table>
+
+  <h3>Available Times</h3>
+  <input id="num_slots" name="num_slots" style="display:none;" value="{{ user.preferences.time_slots|length }}">
+  <table class='times' style="min-width:750px;">
+    {% for i in range(maxlength["time_slots"]//3) %}
+      <tr>
+        {% if i == 0 %}
+          <td style="margin-right:0px; min-width:69px;">{{ KNOWL("time_slots") }}</td>
+          {% set hide="visibility:hidden;" %}
+          <td style="vertical-align:middle; padding-left:0px; padding-right:0px;"><a class="slotplus" id="slotplus" style="{{hide}}" href="#"><i style="color:green;" class="fas fa-plus-square"></i></a></td>
+          <td style="vertical-align:middle; padding-left:0px; padding-right:47px;"><a class="slotminus" id="slotminus" style="{{hide}}" href="#"><i style="color:darkred;" class="fas fa-minus-square"></i></a></td>
+        {% else %}
+          {% set hide="display:none;" %}
+          <td></td><td></td><td></td>
+        {% endif %}
+        {% for j in range(3) %}
+          <td style="padding-right:1px; margin-right:0px;">
+            <select id="weekday{{3*i+j}}" name="weekday{{3*i+j}}" style="{{hide}}">
+              <option value="" {% if user.preferences.weekdays[3*i+j] is none %} selected{% endif %}></option>
+              {% for wkday in options["weekday"] %}
+                <option value="{{loop.index0}}"{% if user.preferences.weekdays[3*i+j] == loop.index0 %} selected{% endif %}>{{wkday}}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td style="padding-left:1px; margin-left:0px; padding-right:29px;">
+            <input id="time_slot{{3*i+j}}" name="time_slot{{3*i+j}}" value="{{ user.preferences.time_slots[3*i+j] }}" style="width:90px; {{hide}}" placeholder="15:00-16:00" />
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Preferences</h3>
+
+  <table>
+    <tr>
+      <td>Collaborate via</td>
+      <td>
+        <select name="pref_collaborate">
+          <option value=""{% if not user.preferences.collaborate %} selected {% endif %}></option>
+          <option value="text"{% if user.preferences.collaborate == "text" %} selected {% endif %}>Text only</option>
+          <option value="video"{% if user.preferences.collaborate == "video" %} selected {% endif %}>Video and text</option>
+          <option value="live"{% if user.preferences.collaborate == "live" %} selected {% endif %}>In-person</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Group minimum size</td>
+      <td><input name="pref_group_min" value="{{ current_user.preferences.group_min }}" placeholder="2" /></td>
+    </tr>
+    <tr>
+      <td>Group maximum size</td>
+      <td><input name="pref_group_max" value="{{ current_user.preferences.group_max }}" placeholder="8" /></td>
+    </tr>
+    <tr>
+      <td>Start</td> {# how far in advance do you start psets #}
+      <td>
+        <select name="pref_start">
+          <option value=""{% if not user.preferences.start %} selected {% endif %}></option>
+          <option value="late"{% if user.preferences.start == "late" %} selected {% endif %}>A day or two before the deadline</option>
+          <option value="early"{% if user.preferences.start == "early" %} selected {% endif %}>Immediately</option>
+          <option value="mid"{% if user.preferences.start == "mid" %} selected {% endif %}>In between</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Collaboration amount</td>
+      <td>
+        <select name="pref_together">
+          <option value=""{% if not user.preferences.together %} selected {% endif %}></option>
+          <option value="all"{% if user.preferences.together == "all" %} selected {% endif %}>Work through it all together</option>
+          <option value="stuck"{% if user.preferences.together == "stuck" %} selected {% endif %}>Meet to work on stalled problems</option>
+          <option value="apart"{% if user.preferences.together == "apart" %} selected {% endif %}>Brainstorm together, work independently</option>
+        </select>
+      </td>
+    </tr>
+  </table>
+
+  <button type="submit" name="submit" value="save">Save</button>
+  </form>
+
+<script type="text/javascript">
+  var max_slots = {{ maxlength["time_slots"] }};
+  document.addEventListener("DOMContentLoaded", function() {
+    setupslots();
+  });
+</script>
+
+{% endif %}
+
+{% endblock %}

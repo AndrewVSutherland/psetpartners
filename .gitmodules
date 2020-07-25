@@ -1,0 +1,3 @@
+[submodule "psycodict"]
+	path = psycodict
+	url = https://github.com/roed314/psycodict.git
