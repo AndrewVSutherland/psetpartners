@@ -88,6 +88,13 @@ header.inner {
   min-height: calc(100vh - 217px);
 }
 
+input, textarea {
+  border: 2px solid {{color.input_border}};
+  font-size: 110%;
+  padding: 3px;
+  border-radius: 5px;
+}
+
 div.auto {
     margin: auto;
 }
