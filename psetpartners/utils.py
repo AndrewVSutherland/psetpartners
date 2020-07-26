@@ -9,6 +9,30 @@ from flask import flash, render_template
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
 
+gender_options = [
+    (1, "female"),
+    (2, "male"),
+    (3, "non-binary"),
+    ]
+
+medium_options = [
+    (1, "text only"),
+    (2, "video and text"),
+    (3, "in-person"),
+    ]
+
+start_options = [
+    (1, "shortly after the pset is posted"),
+    (2, "3-4 days before the pset is due"),
+    (3, "1-2 days before the pset is due"),
+    ]
+
+intensity_options = [
+    (1, "solve all the problems together"),
+    (2, "brainstorm ideas, help eachother when stuck"),
+    (3, "work indepently, sanity check answers at the end"),
+    ]
+
 short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)

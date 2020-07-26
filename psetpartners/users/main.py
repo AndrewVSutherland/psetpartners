@@ -26,8 +26,13 @@ from psetpartners.utils import (
     maxlength,
     short_weekdays,
     daytime_minutes,
+    gender_options,
+    medium_options,
+    start_options,
+    intensity_options,
 )
 from psetpartners.app import app
+
 login_page = Blueprint("user", __name__, template_folder="templates")
 login_manager = LoginManager()
 
@@ -38,6 +43,15 @@ def load_user(kerb):
 login_manager.login_view = "user.info"
 
 login_manager.anonymous_user = AnonymousStudent
+
+def info_options():
+    return {'gender': gender_options,
+            'medium': medium_options,
+            'start': start_options,
+            'intensity': intensity_options,
+            'timezones' : timezones,
+            'weekday' : short_weekdays,
+            }
 
 # globally define user properties and username
 @app.context_processor
@@ -60,12 +74,6 @@ def login():
     else:
         flash(Markup("Hello, your login was successful!"))
     return redirect(request.form.get("next") or url_for(".info"))
-
-def info_options():
-    return {
-        'timezones' : timezones,
-        'weekday' : short_weekdays,
-    }
 
 @login_page.route("/info")
 def info():

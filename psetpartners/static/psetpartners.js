@@ -14,7 +14,7 @@ function addslot(e) {
     e.preventDefault();
     var n = parseInt(document.getElementById('num_slots').value)+1;
     document.getElementById('num_slots').value = '' + n;
-    if ( n <= 3 ) {
+    if ( n <= 2 ) {
         document.getElementById('weekday'+(n-1)).style.visibility = 'visible';
         document.getElementById('time_slot'+(n-1)).style.visibility = 'visible';
     } else {
@@ -31,7 +31,7 @@ function removeslot(e) {
     document.getElementById('num_slots').value = '' + n;
     document.getElementById('weekday'+n).value = '';
     document.getElementById('time_slot'+n).value ='';
-    if ( n < 3 ) {
+    if ( n < 2 ) {
         document.getElementById('weekday'+n).style.visibility = 'hidden';
         document.getElementById('time_slot'+n).style.visibility = 'hidden';
     } else {
@@ -46,7 +46,7 @@ function showslots() {
     var n = parseInt(document.getElementById('num_slots').value);
     if ( n <= 0 ) document.getElementById('num_slots').value = '' + (n=1);
     for ( var i = 0 ; i < n ; i++ ) {
-        if ( i < 3 ) {
+        if ( i < 2) {
             document.getElementById('weekday'+i).style.visibility = 'visible';
             document.getElementById('time_slot'+i).style.visibility = 'visible';
         } else {
