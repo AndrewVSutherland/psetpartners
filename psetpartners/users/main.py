@@ -17,7 +17,7 @@ from flask_login import (
 from datetime import datetime
 from markupsafe import Markup
 from psetpartners import db
-from .pwdmanager import Student, AnonymousStudent
+from .student import Student, AnonymousStudent, preference_types
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
@@ -27,9 +27,14 @@ from psetpartners.utils import (
     short_weekdays,
     daytime_minutes,
     gender_options,
-    medium_options,
+    year_options,
+    location_options,
+    gender_affinity_options,
+    year_affinity_options,
+    strength_options,
+    forum_options,
     start_options,
-    intensity_options,
+    together_options,
 )
 from psetpartners.app import app
 
@@ -45,10 +50,15 @@ login_manager.login_view = "user.info"
 login_manager.anonymous_user = AnonymousStudent
 
 def info_options():
-    return {'gender': gender_options,
-            'medium': medium_options,
+    return {'year': year_options,
+            'year_affinity': year_affinity_options,
+            'gender': gender_options,
+            'gender_affinity': gender_affinity_options,
+            'strength': strength_options,
+            'forum': forum_options,
             'start': start_options,
-            'intensity': intensity_options,
+            'together': together_options,
+            'location': location_options,
             'timezones' : timezones,
             'weekday' : short_weekdays,
             }
@@ -78,7 +88,7 @@ def login():
 @login_page.route("/info")
 def info():
     if current_user.is_authenticated:
-        title = "Profile"
+        title = "Pset Partners"
     else:
         title = "Login"
     return render_template(
@@ -94,11 +104,12 @@ def info():
 def set_info():
     errmsgs = []
     prefs = {}
-    data = {"preferences": prefs}
+    sprefs = {}
+    data = {"preferences": prefs, "strengths": sprefs}
     raw_data = request.form
     n = int(raw_data.get("num_slots"))
     tz = current_user.tz
-    prefs["weekdays"], prefs["time_slots"] = [], []
+    data["weekdays"], data["time_slots"] = [], []
     for i in range(n):
         weekday = daytimes = None
         try:
@@ -112,27 +123,36 @@ def set_info():
             errmsgs.append(format_input_errmsg(err, val, col))
             raise
         if weekday is not None and daytimes is not None:
-            prefs["weekdays"].append(weekday)
-            prefs["time_slots"].append(daytimes)
-    if len(prefs["weekdays"]) > 1:
+            data["weekdays"].append(weekday)
+            data["time_slots"].append(daytimes)
+    if len(data["weekdays"]) > 1:
         x = sorted(
-            list(zip(prefs["weekdays"], prefs["time_slots"])),
+            list(zip(data["weekdays"], data["time_slots"])),
             key=lambda t: t[0] * 24 * 60 + daytime_minutes(t[1].split("-")[0]),
         )
-        prefs["weekdays"], prefs["time_slots"] = [t[0] for t in x], [t[1] for t in x]
+        data["weekdays"], data["time_slots"] = [t[0] for t in x], [t[1] for t in x]
     # Need to do data validation
     for col, val in request.form.items():
-        if col in Student.properties:
+        if col in db.students.col_type:
             try:
                 typ = db.students.col_type[col]
                 data[col] = process_user_input(val, col, typ)
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-        elif val and col.startswith("pref_"):
+        elif col.startswith("pref_"):
             col = col[5:]
             try:
-                typ = Student.preference_types[col]
+                typ = preference_types[col]
                 prefs[col] = process_user_input(val, col, typ)
+            except Exception as err:
+                errmsgs.append(format_input_errmsg(err, val, col))
+    if "group_size" in prefs and prefs["group_size"][1] <= 1:
+        errmsgs.append("Invalid group size, maximum must be greater than one!")
+    for col, val in request.form.items():
+        if col.startswith("spref_") and col[6:] in prefs:
+            col = col[6:]
+            try:
+                sprefs[col] = process_user_input(val, col, "posint")
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
     if errmsgs:
@@ -140,7 +160,7 @@ def set_info():
     for k, v in data.items():
         setattr(current_user, k, v)
     if current_user.save():
-        flash(Markup("Your information/preferences have been recorded"))
+        flash(Markup("Your information/preferences have been updated"))
     return redirect(url_for(".info"))
 
 @login_page.route("/logout", methods=["POST"])

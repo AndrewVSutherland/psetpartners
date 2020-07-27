@@ -3,37 +3,91 @@
 
 import pytz
 import re
+from collections.abc import Iterable
+from datetime import time as maketime
 from datetime import datetime, timedelta
 from markupsafe import Markup, escape
 from flask import flash, render_template
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
 
+strength_options = ["", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
+
 gender_options = [
-    (1, "female"),
-    (2, "male"),
-    (3, "non-binary"),
+    ("female", "female"),
+    ("male", "male"),
+    ("non-binary", "non-binary"),
     ]
 
-medium_options = [
-    (1, "text only"),
-    (2, "video and text"),
-    (3, "in-person"),
+gender_affinity_options = [
+    ("1", "someone else with my gender identity"),
+    ("2", "only students with my gender identity"),
+    ]
+
+year_affinity_options = [
+    ("1", "someone else in my year"),
+    ("2", "only students in my year"),
+    ]
+
+year_options = [
+    (1, "first year"),
+    (2, "sophomore"),
+    (3, "junior"),
+    (4, "senior or super senior"),
+    (5, "graduate student"),
+    ]
+
+forum_options = [
+    ("text", "text (e.g. Slack or Zulip)"),
+    ("video", "video (e.g. Zoom)"),
+    ("in-person", "in person"),
     ]
 
 start_options = [
-    (1, "shortly after the pset is posted"),
-    (2, "3-4 days before the pset is due"),
-    (3, "1-2 days before the pset is due"),
+    (6, "shortly after the problem set is posted"),
+    (4, "3-4 days before the pset is due"),
+    (2, "1-2 days before the pset is due"),
     ]
 
-intensity_options = [
-    (1, "solve all the problems together"),
-    (2, "brainstorm ideas, help eachother when stuck"),
-    (3, "work indepently, sanity check answers at the end"),
+together_options = [
+    (1, "solve the problems together"),
+    (2, "discuss strategies, work together if stuck"),
+    (3, "work independently but check answers"),
+    ]
+
+location_options = [
+    ("near", "on campus or near MIT"),
+    ("far", "not hear MIT"),
+    #("baker", "Baker House"),
+    #("buron-conner", "Burton Conner House"),
+    #("east", "East Campus"),
+    #("macgregor", "MacGregor House"),
+    #("maseeh", "Maseeh Hall"),
+    #("mccormick", "McCormick Hall"),
+    #("new", "New House"),    
+    #("next", "Next House"),
+    #("random", "Random Hall"),
+    #("simmons", "Simmons Hall"),
+    #("epsilontheta", "Epsilon Theta"),
+    #("fenway", "Fenway House"),
+    #("pika", "pika"),
+    #("student", "Student House"),
+    #("wilg", "WILG"),
+    #("amherst", "70 Amherst Street"),
+    #("ashdown", "Ashdown House"),
+    #("edgerton", "Edgerton House"),
+    #("tower4", "Graduate Tower at Site 4"),
+    #("sidneypacific", "Sidney-Pacific"),
+    #("tang", "Tang Hall"),
+    #("warehouse", "The Warehous"),
+    #("westgate", "Westgate"),    
     ]
 
 short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+posint_re_string = r"[1-9][0-9]*"
+posint_re = re.compile(posint_re_string)
+posint_range_re_string = posint_re_string + "-" + posint_re_string
+posint_range_re = re.compile(posint_range_re_string)
 daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
@@ -179,17 +233,6 @@ def show_input_errors(errmsgs):
         flash(msg, "error")
     return render_template("inputerror.html", messages=errmsgs)
 
-def localize_time(t, newtz=None):
-    """
-    Takes a time or datetime object and adds in a timezone if not already present.
-    """
-    if t.tzinfo is None:
-        if newtz is None:
-            newtz = current_user.tz
-        return newtz.localize(t)
-    else:
-        return t
-
 maxlength = {} # TODO: add max length values for user input
 
 def process_user_input(inp, col, typ, tz=None):
@@ -244,6 +287,19 @@ def process_user_input(inp, col, typ, tz=None):
             return inp if pytz.timezone(inp) else ""
         # should sanitize somehow?
         return "\n".join(inp.splitlines())
+    elif typ == "posint":
+        if posint_re.fullmatch(inp):
+            return int(inp)
+        raise ValueError("Invalid positive integer")
+    elif typ == "posint_range":
+        if posint_re.fullmatch(inp):
+            return [int(inp),int(inp)]
+        if posint_range_re.fullmatch(inp):
+            res = [int(n) for n in inp.split("-")]
+            if res[0] > res[1]:
+                raise ValueError("Invalid range of positive integers")
+            return res
+        raise ValueError
     elif typ in ["int", "smallint", "bigint", "integer"]:
         return int(inp)
     elif typ == "text[]":

@@ -3,9 +3,12 @@
   --mit-light-gray: #dce0df;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
-  --button-shade: #a31f34;
-  --select-shade: #f9e9e5;
   --shadow-color: #babbbc;
+  --button-fill: #a31f34;
+  --select-fill: #f9e9e5;
+  --slider-fill: var(--mit-maroon);
+  --input-border-color: var(--mit-maroon);
+  --input-border: 1.5px;
   font-family: Verdona, Geneva, sans-serif;
 }
 
@@ -111,8 +114,17 @@ header.inner {
   margin-bottom: 10px;
 }
 
+#content h2 span.comment, h3 span.comment {
+  font-weight: normal;
+  font-size: 90%;
+}
+
 #content table {
   margin-left: 10px;
+}
+
+#content table.input {
+  min-width: 600px;
 }
 
 #content td.caption {
@@ -123,28 +135,42 @@ header.inner {
 }
 
 #content input.value, select.value {
-  width: 350px;
+  border: 1.5px solid var(--input-border-color);
+  padding: 3px 6px;
+  cursor: pointer;
+  font-size: 100%;
+  border-radius: 4px;
+  width: 370px;
   height: 20px;
   box-sizing:content-box;
   -ms-box-sizing:content-box;
   -moz-box-sizing:content-box;
   -webkit-box-sizing:content-box;
-  border: 1.5px solid var(--mit-maroon);
+}
+
+#content textarea.value {
+  border: 1.5px solid var(--input-border-color);
   padding: 3px 6px;
   cursor: pointer;
   font-size: 100%;
+  border-radius: 4px;
+  width: 370px;
+  box-sizing:content-box;
+  -ms-box-sizing:content-box;
+  -moz-box-sizing:content-box;
+  -webkit-box-sizing:content-box;
 }
 
-input, select, textarea {
-  border: 1.5px solid var(--mit-maroon);
-  padding: 3px;
-  font-size: 100%;
-  border-radius: 4px;
+#content output.value {
+  font-weight: lighter;
+  font-size: 75%;
+  vertical-align: text-top;
+  color: var(--mit-maroon);
 }
 
 button {
   background: var(--mit-light-gray);
-  border: 1.5px solid var(--mit-maroon);
+  border: var(--input-border) solid var(--input-border-color);
   color: var(--mit-maroon);
   font-weight: bold;
   font-size: 14px;
@@ -156,15 +182,86 @@ button {
   height: 26px;
 }
 
-select, select option{
-  background: var(--select-shade);
-  border: 1.5px solid var(--mit-maroon);
+select, select option {
+  background: var(--select-fill);
+  border: var(--input-border) solid var(--input-border-color);
   font-size: 100%;
 }
 
-div.auto {
-  margin: auto;
+
+/* BEGIN styling to get a reasonable looking cross-platform slider */
+
+input[type="range"] {
+    -webkit-appearance: none;
+    overflow: hidden;
+    height: 8px;
+    width: 100px;
+    cursor: pointer;
+    margin-left: 20px;
+    border-radius: 0px;
+    border: var(--input-border) solid var(--input-border-color);
 }
+
+::-webkit-slider-runnable-track {
+    background: #fff;
+}
+
+::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 12px;
+    width: 8px;
+    background: var(--select-fill);
+    box-shadow: -100vw 0 0 100vw var(--slider-fill);
+    border: var(--input-border) solid var(--input-border-color);
+}
+
+::-moz-range-track {
+    height: 10px;
+    background: #fff;
+}
+
+::-moz-range-thumb {
+    background: #fff;
+    height: 10px;
+    width: 10px;
+    border: var(--input-border) solid var(--input-border-color);
+    border-radius: 0 !important;
+    box-shadow: -100vw 0 0 100vw var(--slider-fill);
+    box-sizing: border-box;
+}
+
+::-ms-fill-lower { 
+    background: dodgerblue;
+}
+
+::-ms-thumb { 
+    background: #fff;
+    border: : var(--input-border) solid var(--input-border-color);
+    height: 10px;
+    width: 10px;
+    box-sizing: border-box;
+}
+
+::-ms-ticks-after { 
+    display: none; 
+}
+
+::-ms-ticks-before { 
+    display: none; 
+}
+
+::-ms-track { 
+    background: #fff;
+    color: transparent;
+    height: 10px;
+    border: none;
+}
+
+::-ms-tooltip { 
+    display: none;
+}
+
+/* END styling to get a reasonable looking cross-platform slider */
 
 .debug {
   background: #FF9;
