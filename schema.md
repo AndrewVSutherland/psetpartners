@@ -24,9 +24,13 @@ kerb                  |	text	    | kerb id
 email	              | text	    | smith@gmail.com
 preferred_name        | text        | e.g. John Smith
 preferred_pronouns    | text	    | e.g. they/them
+gender                | text        | optional, currently female, male, or non-binary
+location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 preferences           |	jsonb	    | dictionary of preferences (see Preferences tab)
-preferences_strength  | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
+strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | e.g. US/Eastern
+weekdays              | smallint[]  | together with time_slots, times available to pset this term
+time_slots            | text[]      | times available to pset this term
 description           |	text	    | Student's public description of themself
 blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
 rejected_group_ids    | bigint[]    | list of group ids theis student has rejectd
