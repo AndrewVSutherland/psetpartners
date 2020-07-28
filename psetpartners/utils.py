@@ -11,6 +11,10 @@ from flask import flash, render_template
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
 
+DEFAULT_TIMEZONE = 'America/New_York'
+DEFAULT_TIMEZONE_PREFIX = 'MIT'
+DEFAULT_TIMEZONE_PRETTY = 'MIT time'
+
 strength_options = ["", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 
 gender_options = [
@@ -20,13 +24,13 @@ gender_options = [
     ]
 
 gender_affinity_options = [
-    ("1", "someone else with my gender identity"),
-    ("2", "only students with my gender identity"),
+    (1, "someone else with my gender identity"),
+    (2, "only students with my gender identity"),
     ]
 
 year_affinity_options = [
-    ("1", "someone else in my year"),
-    ("2", "only students in my year"),
+    (1, "someone else in my year"),
+    (2, "only students in my year"),
     ]
 
 year_options = [
@@ -53,6 +57,13 @@ together_options = [
     (1, "solve the problems together"),
     (2, "discuss strategies, work together if stuck"),
     (3, "work independently but check answers"),
+    ]
+
+group_size_options = [
+    (2, "2 students"),
+    (3, "3-4 students"),
+    (5, "5-8 students"),
+    (8, "more than 8 students"),
     ]
 
 location_options = [
@@ -176,8 +187,9 @@ def naive_utcoffset(tz):
         ):
             pass
 
-def pretty_timezone(tz, dest="selecter"):
-    foo = int(naive_utcoffset(tz).total_seconds())
+def pretty_timezone(tz, dest="selecter", base_prefix='UTC', base_timezone='UTC'):
+    foo = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(base_timezone).total_seconds())
+    foo 
     hours, remainder = divmod(abs(foo), 3600)
     minutes, seconds = divmod(remainder, 60)
     if dest == "selecter":  # used in time zone selecters
@@ -185,7 +197,7 @@ def pretty_timezone(tz, dest="selecter"):
             diff = "-{:02d}:{:02d}".format(hours, minutes)
         else:
             diff = "+{:02d}:{:02d}".format(hours, minutes)
-        return "(UTC {}) {}".format(diff, tz)
+        return "({} {}) {}".format(base_prefix, diff, tz)
     else:
         tz = str(tz).replace("_", " ")
         if minutes == 0:
@@ -196,13 +208,10 @@ def pretty_timezone(tz, dest="selecter"):
             diff = "-" + diff
         else:
             diff = "+" + diff
-        if dest == "browse":  # used on browse page by filters
-            return "{} (now UTC {})".format(tz, diff)
-        else:
-            return "{} (UTC {})".format(tz, diff)
+        return "{} ({} {})".format(tz, base_prefix, diff)
 
-timezones = [
-    (v, pretty_timezone(v)) for v in sorted(pytz.common_timezones, key=naive_utcoffset)
+timezones = [('', DEFAULT_TIMEZONE_PRETTY)] + [
+    (v, pretty_timezone(v, base_prefix=DEFAULT_TIMEZONE_PREFIX, base_timezone=DEFAULT_TIMEZONE)) for v in sorted(pytz.common_timezones, key=naive_utcoffset)
 ]
 
 def format_errmsg(errmsg, *args):

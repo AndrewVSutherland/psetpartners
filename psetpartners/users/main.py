@@ -31,6 +31,7 @@ from psetpartners.utils import (
     location_options,
     gender_affinity_options,
     year_affinity_options,
+    group_size_options,
     strength_options,
     forum_options,
     start_options,
@@ -54,6 +55,7 @@ def info_options():
             'year_affinity': year_affinity_options,
             'gender': gender_options,
             'gender_affinity': gender_affinity_options,
+            'group_size': group_size_options,
             'strength': strength_options,
             'forum': forum_options,
             'start': start_options,
@@ -79,7 +81,7 @@ def login():
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)
-    if user.preferred_names:
+    if user.preferred_name:
         flash(Markup("Hello %s, your login was successful!" % user.preferred_name))
     else:
         flash(Markup("Hello, your login was successful!"))
@@ -96,65 +98,57 @@ def info():
         next=request.args.get("next", ""),
         title=title,
         options=info_options(),
-        maxlength={"time_slots":12},
     )
 
 @login_page.route("/set_info", methods=["POST"])
 @login_required
 def set_info():
+    print("")
+    print("*** IN SET_INFO ***")
+    print("")
     errmsgs = []
     prefs = {}
     sprefs = {}
     data = {"preferences": prefs, "strengths": sprefs}
     raw_data = request.form
-    n = int(raw_data.get("num_slots"))
+    print("raw data: " + str([(col,data) for col,data in raw_data.items()]))
+    print("")
     tz = current_user.tz
-    data["weekdays"], data["time_slots"] = [], []
-    for i in range(n):
-        weekday = daytimes = None
-        try:
-            col = "weekday" + str(i)
-            val = raw_data.get(col, "")
-            weekday = process_user_input(val, col, "weekday_number", tz)
-            col = "time_slot" + str(i)
-            val = raw_data.get(col, "")
-            daytimes = process_user_input(val, col, "daytimes", tz)
-        except Exception as err:  # should only be ValueError's but let's be cautious
-            errmsgs.append(format_input_errmsg(err, val, col))
-            raise
-        if weekday is not None and daytimes is not None:
-            data["weekdays"].append(weekday)
-            data["time_slots"].append(daytimes)
-    if len(data["weekdays"]) > 1:
-        x = sorted(
-            list(zip(data["weekdays"], data["time_slots"])),
-            key=lambda t: t[0] * 24 * 60 + daytime_minutes(t[1].split("-")[0]),
-        )
-        data["weekdays"], data["time_slots"] = [t[0] for t in x], [t[1] for t in x]
+    data["hours"] = [[False for j in range(24)] for i in range(7)]
+    for i in range(7):
+        for j in range(24):
+            if raw_data.get("check-hours-%d-%d"%(i,j),False):
+                data["hours"][i][j] = True
+                print("available on %d-%d"%(i,j))
+
     # Need to do data validation
-    for col, val in request.form.items():
+    for col, val in raw_data.items():
         if col in db.students.col_type:
             try:
                 typ = db.students.col_type[col]
                 data[col] = process_user_input(val, col, typ)
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-        elif col.startswith("pref_"):
+        elif col.startswith("pref_") and val.strip():
             col = col[5:]
             try:
                 typ = preference_types[col]
                 prefs[col] = process_user_input(val, col, typ)
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-    if "group_size" in prefs and prefs["group_size"][1] <= 1:
-        errmsgs.append("Invalid group size, maximum must be greater than one!")
-    for col, val in request.form.items():
-        if col.startswith("spref_") and col[6:] in prefs:
+        elif col.startswith("spref_"):
             col = col[6:]
             try:
                 sprefs[col] = process_user_input(val, col, "posint")
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
+        elif col.startswith("hours-"):
+            try:
+                i,j = (int(x) for x in col[6:].split("-"))
+                data["hours"][i][j] = True
+            except Exception as err:
+                errmsgs.append(format_input_errmsg(err, val, col))
+    # There should never be any errors coming from the form
     if errmsgs:
         return show_input_errors(errmsgs)
     for k, v in data.items():

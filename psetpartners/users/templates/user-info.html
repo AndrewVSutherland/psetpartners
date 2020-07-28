@@ -1,35 +1,48 @@
 {% extends 'homepage.html' %}
 
-{% macro SPREF(pref,value) -%}
+{% macro PREF(pref) -%}
+  <td style="padding-right:0">
+    <select class="value" name="pref_{{pref}}">
+      <option value=""{% if not user.preferences[pref] %} selected {% endif %}></option>
+      {% for (value, display) in options[pref] %}
+      <option value="{{value}}" {% if user.preferences[pref] == value %} selected {% endif %}>{{display}}</option>
+      {% endfor %}
+    </select>
+  </td>
+  <td style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options['strength']}}[spref_{{pref}}_input.value]" /></td>
+  <td><output class="value" id="spref_{{pref}}_output">{{options['strength'][user.strengths[pref]]}}</output></td>
 {%- endmacro %}
 
 {% block content %}
 
 {% if not user.is_authenticated %}
 
-  <h1>You are not logged in</h1>
+  <h3>Please login</h3>
 
   <form name="login" action="{{ url_for('.login') }}" method="POST">
     <input type="hidden" name="next" value="{{ next }}" />
     <table>
-      <tr><td>Kerb ID:</td>
-        <td><input name="identifier" placeholder="roed" /></td></tr>
+      <tr>
+        <td class="caption" style="width:100px">Kerberos ID:</td>
+        <td><input class="value" name="identifier" style="width:100px" /></td>
+        <td><button class="save" name="submit" type="submit" style="margin-left:10px">Login</button></td>
+      </tr>
 {#
-      <tr><td>Password:</td>
-          <td><input name="password" type="password" /></td>
+      <tr><td class="caption" style="width:100px">Password:</td>
+          <td><input class="value" name="password" type="password"  style="width:100px"/></td>
           <td> (<a href="{{ url_for('.reset_password') }}">Forgot password?</a>) </td>
       </tr>
-#}
       <tr>
         <td></td>
         <td><button class="save" name="submit" type="submit">Login</button></td>
       </tr>
+#}
     </table>
   </form>
 
 {% else %}
   <form action="{{ url_for('.logout') }}" method="POST" name="logout">
-  <h2>You are logged in as {{ user.preferred_names }}<div style="float: right; margin-right: 50px"><button name="logout" type="submit">Logout</button></div></h2>
+  <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 50px"><button name="logout" type="submit">Logout</button></div></h2>
   </form>
 
   <h3>Classes</h3>
@@ -40,46 +53,45 @@
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td><input class="value" name="preferred_names" value="{{user.preferred_names}}" tabindex="1" required /></td>
+      <td><input class="value" name="preferred_name" value="{{user.preferred_name}}" tabindex="1" required /></td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td><input class="value" name="preferred_pronouns" value="{{user.preferred_pronouns}}" placeholder="e.g. he/him, she/hers, they/them" /></td>
+      <td><input class="value" name="preferred_pronouns" value="{{user.preferred_pronouns}}"  tabindex="2"  placeholder="e.g. he/him, she/hers, they/them" /></td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
       <td>
-        <select class="value" name="year">
+        <select class="value" name="year"  tabindex="3" >
           <option value=""{% if not user.year %} selected {% endif %}></option>
           {% for (value, display) in options["year"] %}
-          <option value="{{value}}" {% if user.year == "{{val}}" %} selected {% endif %}>{{display}}</option>
+          <option value="{{value}}" {% if user.year == value %} selected {% endif %}>{{display}}</option>
           {% endfor %}
         </select>
       </td>
     </tr>
     <tr>
-      <td class="caption">Gender identity (optional)</td>
+      <td class="caption">Gender identity</td>
       <td>
-        <select class="value" name="gender">
+        <select class="value" name="gender"  tabindex="4" >
           <option value=""{% if not user.gender %} selected {% endif %}></option>
           {% for (value, display) in options["gender"] %}
-          <option value="{{value}}" {% if user.gender == "{{val}}" %} selected {% endif %}>{{display}}</option>
+          <option value="{{value}}" {% if user.gender == value %} selected {% endif %}>{{display}}</option>
           {% endfor %}
         </select>
       </td>
     </tr>
     <tr>
-      <td classe="caption" style="vertical-align:top;">About me</td>
-      <td><textarea class="value" name="description" value="{{user.description}}" placeholder="A fun fact or something you would like your pset partners to know about you." rows="4"></textarea></td>
+      <td classe="caption" style="vertical-align:top; padding-top:7px;">About me</td>
+      <td><textarea class="value" name="description" tabindex="5"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4">{{user.description}}</textarea></td>
     </tr>
   </table>
 
-  <h3>Location and availability in 2020 fall term</h3>
-  <input id="num_slots" name="num_slots" style="display:none;" value="{{ user.time_slots|length }}">
-  <table class="input">
+  <h3>Location and availability for fall 2020</h3>
+  <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
-      <td colspan="4"><select class="value" name="location">
+      <td><select class="value" name="location" id="location"  tabindex="6" onchange="if ( location.value !='far' ) timezone.value='MIT';">
             {% for value, display in options["location"] %}
             <option value="{{value}}" {% if value == user.location %} selected=true {%endif%}>{{display}}</option>
             {% endfor %}
@@ -88,39 +100,32 @@
     </tr>
     <tr>
       <td class="caption">Time zone</td>
-      <td colspan="4"><select class="value" name="timezone">
+      <td><select class="value" name="timezone" id="timezone"  tabindex="7">
             {% for value, display in options["timezones"] %}
-            <option value="{{value}}" {% if tz == user.timezone %} selected=true {%endif%}>{{display}}</option>
+            <option value="{{value}}" {% if value == user.timezone %} selected=true {%endif%}>{{display}}</option>
             {% endfor %}
           </select>
       </td>
     </tr>
-    {% for i in range(maxlength["time_slots"]//2) %}
-      <tr>
-        {% if i == 0 %}
-          {% set hide="visibility:hidden;" %}
-          <td class="caption"><a>Time slots</a>
-          <a class="slotplus" id="slotplus" style="{{hide}}" href="#"><i style="color:green;" class="fas fa-plus-square"></i></a>
-          <a class="slotminus" id="slotminus" style="{{hide}}" href="#"><i style="color:darkred;" class="fas fa-minus-square"></i></a>
-          </td>
-        {% else %}
-          {% set hide="display:none;" %}
-          <td></td>
-        {% endif %}
-        {% for j in range(2) %}
-          <td style="padding-right:1px; margin-right:0px;">
-            <select class="value" id="weekday{{2*i+j}}" name="weekday{{2*i+j}}" style="width: 55px; {{hide}}">
-              <option value="" {% if user.weekdays[2*i+j] is none %} selected{% endif %}></option>
-              {% for wkday in options["weekday"] %}
-                <option value="{{loop.index0}}"{% if user.weekdays[2*i+j] == loop.index0 %} selected{% endif %}>{{wkday}}</option>
-              {% endfor %}
-            </select>
-          </td>
-          <td style="padding-left:1px; margin-left:0px; padding-right:26px;">
-            <input class="value" id="time_slot{{2*i+j}}" name="time_slot{{2*i+j}}" value="{{ user.time_slots[2*i+j] }}" style="width:90px; {{hide}}" placeholder="15:00-16:00" />
-          </td>
-        {% endfor %}
-      </tr>
+    <tr><td class="caption" colspan="2" style="padding-top:10px;">Weekly hours available to pset this term (in the time zone selected above)</td></tr>
+  </table>
+  <br>
+  <table style="margin-left:60px;">
+    <tr>
+      {% for i in range(24) %}
+        <td align="left" style="font-size:12px; padding-left:2px; vertical-align:bottom;">{{i}}</td>
+      {% endfor %}
+    </tr>
+    {% for i in range(7) %}
+    <tr>
+      {% for j in range(24) %}
+      <td><label class="checkboxgrid">
+          <input class="checkboxgrid" name="hours-{{i}}-{{j}}" id="check-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
+          <span id="hours-{{i}}-{{j}}" class="checkboxgrid"></span>
+      </label></td>
+      {% endfor %}
+      <td style="font-size:12px; vertical-align:top;">{{options["weekday"][i]}}</td>
+    </tr>
     {% endfor %}
   </table>
 
@@ -128,65 +133,29 @@
 
   <table class="input">
     <tr>
-      <td class="caption">Ideal group size</td>
-      <td><input class="value" name="pref_group_size" value="{{ current_user.preferences.group_size }}" placeholder="e.g. 2 or 3-4" /></td>
-      <td><input id="spref_group_size" type="range" min="1" max="5" value="{{ user.strengths.group_size }}" steps="1" class="slider" name="sgroup_size" oninput="spref_group_size.value = {{options['strength']}}[spref_group_size.value];" /></td>
-      <td><output class="value" id="spref_group_size">{{options['strength'][current_user.strengths.group_size]}}</output></td>
+      <td class="caption">When you like to start working</td>
+      {{PREF('start')}}
     </tr>
     <tr>
-      <td class="caption">When you start working</td>
-      <td>
-        <select class="value" name="pref_start">
-          <option value=""{% if not user.preferences.start %} selected {% endif %}></option>
-          {% for (value, display) in options["start"] %}
-          <option value="{{value}}" {% if user.preferences.start == "{{val}}" %} selected {% endif %}>{{display}}</option>
-          {% endfor %}
-        </select>
-      </td>
+      <td class="caption">How you like to collaborate</td>
+      {{PREF('together')}}
     </tr>
     <tr>
-      <td class="caption">How you like to work</td>
-      <td>
-        <select class="value" name="pref_together">
-          <option value=""{% if not user.preferences.start %} selected {% endif %}></option>
-          {% for (value, display) in options["together"] %}
-          <option value="{{value}}" {% if user.preferences.start == "{{val}}" %} selected {% endif %}>{{display}}</option>
-          {% endfor %}
-        </select>
-      </td>
+      <td class="caption">How you like to communicate</td>
+      {{PREF('forum')}}
+    </tr>
+    <tr style="height:20px;"></tr>
+    <tr>
+      <td class="caption">Your ideal group size</td>
+      {{PREF('group_size')}}
     </tr>
     <tr>
-      <td class="caption">Collaboration forum</td>
-      <td>
-        <select class="value" name="pref_forum">
-          <option value=""{% if not user.preferences.medium %} selected {% endif %}></option>
-          {% for (value, display) in options["forum"] %}
-          <option value="{{value}}" {% if user.preferences.forum == "{{val}}" %} selected {% endif %}>{{display}}</option>
-          {% endfor %}
-        </select>
-      </td>
+      <td class="caption">Your ideal group would include</td>
+      {{PREF('year_affinity')}}
     </tr>
     <tr>
-      <td class="caption">Year affinity</td>
-      <td>
-        <select class="value" name="pref_year_affinity">
-          <option value=""{% if not user.preferences.year_affinity %} selected {% endif %}></option>
-          {% for (value, display) in options["year_affinity"] %}
-          <option value="{{value}}" {% if user.preferences.year_affinity == "{{val}}" %} selected {% endif %}>{{display}}</option>
-          {% endfor %}
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td class="caption">Gender affinity</td>
-      <td>
-        <select class="value" name="pref_gender_affinity">
-          <option value=""{% if not user.preferences.year_affinity %} selected {% endif %}></option>
-          {% for (value, display) in options["gender_affinity"] %}
-          <option value="{{value}}" {% if user.preferences.gender_affinity == "{{val}}" %} selected {% endif %}>{{display}}</option>
-          {% endfor %}
-        </select>
-      </td>
+      <td class="caption"></td>
+      {{PREF('gender_affinity')}}
     </tr>
   </table>
 
@@ -194,9 +163,8 @@
   </form>
 
 <script type="text/javascript">
-  var max_slots = {{ maxlength["time_slots"] }};
   document.addEventListener("DOMContentLoaded", function() {
-    setupslots();
+    setup_checkboxgrid();
   });
 </script>
 

@@ -12,14 +12,27 @@
   font-family: Verdona, Geneva, sans-serif;
 }
 
+/* Completely disable selection highlighting */
+::selection {
+    color: none;
+    background: none;
+}
+::-moz-selection {
+    color: none;
+    background: none;
+}
+
 #header {
   background: var(--mit-maroon);
   box-shadow: 0px 5px 5px var(--shadow-color);
-  min-width: 1000px;
+  margin-top: -4px;
+  margin-left: -6px;
+  margin-right: -6px;
+  min-width: 1024px;
 }
 header.inner {
-  margin: 0 auto;
-  max-width: 1000px;
+  margin: -6px auto;
+  max-width: 1024px;
 }
 
 #header #logo {
@@ -50,7 +63,9 @@ header.inner {
 
 #footer {
   clear: both;
-  margin-top: 40px;
+  margin-top: 48px;
+  margin-left: -6px;
+  margin-right: -6px;
   background-color: var(--mit-maroon);
   border-top: 2px solid var(--shadow-color);
   padding: 25px 10px;
@@ -96,7 +111,6 @@ header.inner {
 
 #content {
   margin-top: 20px;
-  padding-right: 10px;
   min-height: calc(100vh - 217px);
 }
 
@@ -116,11 +130,13 @@ header.inner {
 
 #content h2 span.comment, h3 span.comment {
   font-weight: normal;
-  font-size: 90%;
+  font-size: 80%;
 }
 
 #content table {
-  margin-left: 10px;
+  margin-left: 20px;
+  border-collapse: collapse;
+  /* border-spacing: 0px; only relevant if border-collapse is separate */
 }
 
 #content table.input {
@@ -128,19 +144,19 @@ header.inner {
 }
 
 #content td.caption {
-  width: 200px;
+  width: 230px;
   white-space: nowrap;
   margin-right:0px;
   vertical-align:middle;
 }
 
-#content input.value, select.value {
+#content input.value, select.value, textarea.value {
   border: 1.5px solid var(--input-border-color);
   padding: 3px 6px;
-  cursor: pointer;
+  font-family: Verdona, Geneva, sans-serif;
   font-size: 100%;
   border-radius: 4px;
-  width: 370px;
+  width: 350px;
   height: 20px;
   box-sizing:content-box;
   -ms-box-sizing:content-box;
@@ -148,17 +164,22 @@ header.inner {
   -webkit-box-sizing:content-box;
 }
 
-#content textarea.value {
-  border: 1.5px solid var(--input-border-color);
-  padding: 3px 6px;
+#content input.value {
+  padding-left: 4px;
+  padding-right: 0px;
+}
+
+#content select.value {
   cursor: pointer;
-  font-size: 100%;
-  border-radius: 4px;
-  width: 370px;
-  box-sizing:content-box;
-  -ms-box-sizing:content-box;
-  -moz-box-sizing:content-box;
-  -webkit-box-sizing:content-box;
+  padding-left: 1px;
+  padding-right: 3px;
+}
+
+#content textarea.value {
+  font-style: italic;
+  padding-left: 4px;
+  padding-right: 0px;
+  height: 80px;
 }
 
 #content output.value {
@@ -190,7 +211,6 @@ select, select option {
 
 
 /* BEGIN styling to get a reasonable looking cross-platform slider */
-
 input[type="range"] {
     -webkit-appearance: none;
     overflow: hidden;
@@ -260,8 +280,55 @@ input[type="range"] {
 ::-ms-tooltip { 
     display: none;
 }
-
 /* END styling to get a reasonable looking cross-platform slider */
+
+/* BEGIN styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
+/* Note that you must call setup_checkboxgrid in psetpartners.js to use this */
+
+label.checkboxgrid {
+  display: inline-block;
+  position: relative;
+  padding: 0 0 0 1px;
+  margin: 0;
+  height: 10px;
+  width: 24px;
+  cursor: pointer;
+}
+/* Hide the default checkbox */
+input.checkboxgrid[type=checkbox] {
+  visibility: hidden;
+}
+/* creating a custom checkbox based on demand */
+span.checkboxgrid {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  padding: 0px;
+  margin: 0px 0px;
+  height: 10px;
+  width: 24px;
+  border-radius: 3px;
+  background-color: #ccc;
+}
+input.checkboxgrid {
+  position: relative;
+  top: 0;
+  left: 0;
+  padding: 0px;
+  margin: 0px 0px;
+  height: 10px;
+  width: 20px;
+}
+/* specify the background color to be shown when hovering over checkbox */
+label.checkboxgrid:hover input ~ span.checkboxgrid {
+  background-color: var(--mit-maroon);
+}
+
+/* specify the background color to be shown when checkbox is checked */
+label.checkboxgrid input:checked ~ span.checkboxgrid {
+  background-color: var(--mit-maroon);
+}
+/* END styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
 
 .debug {
   background: #FF9;

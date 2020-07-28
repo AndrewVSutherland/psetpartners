@@ -1,65 +1,22 @@
-
-// timeslots
-function showtimes() {
-    if ( document.getElementById("frequency").value == 0 ) $('.times').hide(); else $('.times').show();
-    return false;
+// disable drag and drop
+function disable_drag() {
+    document.addEventListener("drag", function(e) { e.preventDefault(); });
+    document.addEventListener("drop", function(e) { e.preventDefault(); });
+    document.addEventListener("dragstart", function(e) { e.preventDefault(); });
+    document.addEventListener("dragend", function(e) { e.preventDefault(); });
+    document.addEventListener("dragenter", function(e) { e.preventDefault(); });
+    document.addEventListener("dragover", function(e) { e.preventDefault(); });
+    document.addEventListener("dragleave", function(e) { e.preventDefault(); });
 }
 
-function showplusminus(n) {
-    document.getElementById('slotminus').style.visibility = ( n > 1 ? 'visible' : 'hidden' );
-    document.getElementById('slotplus').style.visibility = ( n < max_slots ? 'visible' : 'hidden' );
-}
-
-function addslot(e) {
-    e.preventDefault();
-    var n = parseInt(document.getElementById('num_slots').value)+1;
-    document.getElementById('num_slots').value = '' + n;
-    if ( n <= 2 ) {
-        document.getElementById('weekday'+(n-1)).style.visibility = 'visible';
-        document.getElementById('time_slot'+(n-1)).style.visibility = 'visible';
-    } else {
-        document.getElementById('weekday'+(n-1)).style.display = 'block';
-        document.getElementById('time_slot'+(n-1)).style.display = 'block';
+// must be called by any code using the checkboxgrid class
+function setup_checkboxgrid() {
+    disable_drag();
+    $("span.checkboxgrid").on("mousedown mouseover", function (e) {
+    if (e.buttons & 1 ) {
+        c = document.getElementById("check-" + e.target.id);
+        c.checked = !c.checked;
     }
-    showplusminus(n);
-    return true;
-}
-
-function removeslot(e) {
-    e.preventDefault();
-    var n = parseInt(document.getElementById('num_slots').value)-1;
-    document.getElementById('num_slots').value = '' + n;
-    document.getElementById('weekday'+n).value = '';
-    document.getElementById('time_slot'+n).value ='';
-    if ( n < 2 ) {
-        document.getElementById('weekday'+n).style.visibility = 'hidden';
-        document.getElementById('time_slot'+n).style.visibility = 'hidden';
-    } else {
-        document.getElementById('weekday'+n).style.display = 'none';
-        document.getElementById('time_slot'+n).style.display = 'none';
-    }
-    showplusminus(n);
-    return true;
-}
-
-function showslots() {
-    var n = parseInt(document.getElementById('num_slots').value);
-    if ( n <= 0 ) document.getElementById('num_slots').value = '' + (n=1);
-    for ( var i = 0 ; i < n ; i++ ) {
-        if ( i < 2) {
-            document.getElementById('weekday'+i).style.visibility = 'visible';
-            document.getElementById('time_slot'+i).style.visibility = 'visible';
-        } else {
-            document.getElementById('weekday'+i).style.display = 'block';
-            document.getElementById('time_slot'+i).style.display = 'block';
-        }
-    }
-    $('.times').show();
-    showplusminus(n);
-}
-
-function setupslots() {
-    $("a.slotplus").click(addslot);
-    $("a.slotminus").click(removeslot);
-    showslots();
+    });
+    $("span.checkboxgrid").on("click", function (e) {e.preventDefault(); });
 }
