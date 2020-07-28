@@ -24,6 +24,7 @@ kerb                  |	text	    | kerb id
 email	              | text	    | smith@gmail.com
 preferred_name        | text        | e.g. John Smith
 preferred_pronouns    | text	    | e.g. they/them
+year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
 gender                | text        | optional, currently female, male, or non-binary
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 preferences           |	jsonb	    | dictionary of preferences (see Preferences tab)
