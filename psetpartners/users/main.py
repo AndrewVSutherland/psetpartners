@@ -90,7 +90,7 @@ def login():
 @login_page.route("/info")
 def info():
     if current_user.is_authenticated:
-        title = "Pset Partners"
+        title = "pset partners"
     else:
         title = "Login"
     return render_template(

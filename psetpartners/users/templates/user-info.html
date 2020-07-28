@@ -1,15 +1,16 @@
 {% extends 'homepage.html' %}
 
 {% macro PREF(pref) -%}
-  <td style="padding-right:0">
-    <select class="value" name="pref_{{pref}}">
+  <td class="{{pref}}" style="padding-right:0">
+    <select class="value" name="pref_{{pref}}" id="pref_{{pref}}"
+            onchange="spref_{{pref}}_input.style.visibility = spref_{{pref}}_output.style.visibility = pref_{{pref}}.value == '' ? 'hidden' : 'visible';">
       <option value=""{% if not user.preferences[pref] %} selected {% endif %}></option>
       {% for (value, display) in options[pref] %}
       <option value="{{value}}" {% if user.preferences[pref] == value %} selected {% endif %}>{{display}}</option>
       {% endfor %}
     </select>
   </td>
-  <td style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options['strength']}}[spref_{{pref}}_input.value]" /></td>
+  <td class="{{pref}}" style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options['strength']}}[spref_{{pref}}_input.value]" /></td>
   <td><output class="value" id="spref_{{pref}}_output">{{options['strength'][user.strengths[pref]]}}</output></td>
 {%- endmacro %}
 
@@ -62,7 +63,8 @@
     <tr>
       <td class="caption">Current year</td>
       <td>
-        <select class="value" name="year"  tabindex="3" >
+        <select class="value" name="year"  tabindex="3"
+          onchange="if ( year.value == '' ) $('.year_affinity').hide(); else $('.year_affinity').show();">
           <option value=""{% if not user.year %} selected {% endif %}></option>
           {% for (value, display) in options["year"] %}
           <option value="{{value}}" {% if user.year == value %} selected {% endif %}>{{display}}</option>
@@ -73,7 +75,8 @@
     <tr>
       <td class="caption">Gender identity</td>
       <td>
-        <select class="value" name="gender"  tabindex="4" >
+        <select class="value" name="gender" id="gender" tabindex="4"
+          onchange="if ( gender.value == '' ) { $('.gender_affinity').hide(); } else $('.gender_affinity').show();">
           <option value=""{% if not user.gender %} selected {% endif %}></option>
           {% for (value, display) in options["gender"] %}
           <option value="{{value}}" {% if user.gender == value %} selected {% endif %}>{{display}}</option>
@@ -91,7 +94,7 @@
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
-      <td><select class="value" name="location" id="location"  tabindex="6" onchange="if ( location.value !='far' ) timezone.value='MIT';">
+      <td><select class="value" name="location" id="location"  tabindex="6" onchange="if ( location.value !='far' ) timezone.value='';">
             {% for value, display in options["location"] %}
             <option value="{{value}}" {% if value == user.location %} selected=true {%endif%}>{{display}}</option>
             {% endfor %}
@@ -149,12 +152,12 @@
       <td class="caption">Your ideal group size</td>
       {{PREF('group_size')}}
     </tr>
-    <tr>
-      <td class="caption">Your ideal group would include</td>
+    <tr class="year_affinity">
+      <td class="caption year_affinity">Your ideal group would include</td>
       {{PREF('year_affinity')}}
     </tr>
-    <tr>
-      <td class="caption"></td>
+    <tr class="gender_affinity">
+      <td class="caption gender_affinity">Your ideal group would include</td>
       {{PREF('gender_affinity')}}
     </tr>
   </table>
