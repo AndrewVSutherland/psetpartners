@@ -28,9 +28,8 @@ gender                | text        | optional, currently female, male, or non-b
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 preferences           |	jsonb	    | dictionary of preferences (see Preferences tab)
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
-timezone              |	text	    | e.g. US/Eastern
-weekdays              | smallint[]  | together with time_slots, times available to pset this term
-time_slots            | text[]      | times available to pset this term
+timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
+hours                 | boolean[]   | a 7x24 array of booleans indicating hours available to pset (in timezone)
 description           |	text	    | Student's public description of themself
 blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
 rejected_group_ids    | bigint[]    | list of group ids theis student has rejectd
