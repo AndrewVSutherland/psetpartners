@@ -168,16 +168,19 @@
     </tr>
   </table>
 
-  <button type="submit" name="submit" value="save">Save</button>
+  <button type="submit" name="submit" id="save" value="save">Save</button>
   </form>
 
 <script type="text/javascript">
   document.addEventListener("DOMContentLoaded", function() {
     setup_checkboxgrid();
     setup_url_tester("homepage","homepage_link","","invalid url");
+    $('#userinfo').data('initial',$('#userinfo').serialize())
+    $("#userinfo :input").change(function() {
+      if $('#userinfo').serialize() != $('#userinfo').data('initial') $('#save').show(); else $('#save').hide();
+    });
   });
 </script>
-
 
 {% endif %}
 

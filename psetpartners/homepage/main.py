@@ -99,6 +99,10 @@ def info():
         maxlength=maxlength,
     )
 
+@app.route("/test", methods=['GET', 'POST'])
+def test():
+    return jsonify({'reply':'hi there'})
+
 @app.route("/set_info", methods=["POST"])
 @login_required
 def set_info():
