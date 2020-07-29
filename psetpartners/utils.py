@@ -185,10 +185,23 @@ def date_and_daytimes_to_times(date, s, tz):
         end += timedelta(days=1)
     return start, end
 
-MAX_SLOTS = 12 # Must be a multiple of 3
+MAX_SHORT_NAME_LEN = 48 # used for preferred name and group names
+MAX_LONG_NAME_LEN = 96 # used for class names
+MAX_ID_LEN = 16 # used for kerbs and course numbers
+MAX_TEXT_LEN = 256
+MAX_URL_LEN = 256
 
 maxlength = {
-    'time_slots' : MAX_SLOTS,
+    'class_name': MAX_LONG_NAME_LEN,
+    'class_number': MAX_ID_LEN,
+    'description': MAX_TEXT_LEN,
+    'group_name' : MAX_SHORT_NAME_LEN,
+    'homepage': MAX_URL_LEN,
+    'instructor_name' : MAX_SHORT_NAME_LEN,
+    'kerb': MAX_ID_LEN,
+    'instructor_kerb' : MAX_SHORT_NAME_LEN,
+    'preferred_name' : MAX_SHORT_NAME_LEN,
+    'preferred_pronouns': MAX_SHORT_NAME_LEN,
 }
 
 def naive_utcoffset(tz):
@@ -257,8 +270,6 @@ def show_input_errors(errmsgs):
     for msg in errmsgs:
         flash(msg, "error")
     return render_template("inputerror.html", messages=errmsgs)
-
-maxlength = {} # TODO: add max length values for user input
 
 def process_user_input(inp, col, typ, tz=None):
     """

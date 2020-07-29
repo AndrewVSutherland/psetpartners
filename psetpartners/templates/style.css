@@ -133,6 +133,13 @@ header.inner {
   font-size: 80%;
 }
 
+#content a, a:visited {
+  color: var(--mit-maroon);
+  font-family: sans-serif;
+  text-decoration: none
+}
+
+
 #content table {
   margin-left: 20px;
   border-collapse: collapse;
@@ -209,6 +216,13 @@ select, select option {
   font-size: 100%;
 }
 
+.forminfo {
+   padding-left: 10px;
+   font-size: 80%;
+   font-style: italic;
+   color: #333333;
+   vertical-align: middle;
+}
 
 /* BEGIN styling to get a reasonable looking cross-platform slider */
 input[type="range"] {
@@ -282,6 +296,16 @@ input[type="range"] {
 }
 /* END styling to get a reasonable looking cross-platform slider */
 
+/* BEGIN styling to stop chrome autofill from changing the background color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active  {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}
+/* END styling to stop chrome autofill from changing the background color */
+
+
 /* BEGIN styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
 /* Note that you must call setup_checkboxgrid in psetpartners.js to use this */
 
@@ -321,7 +345,7 @@ input.checkboxgrid {
 }
 /* specify the background color to be shown when hovering over checkbox */
 label.checkboxgrid:hover input ~ span.checkboxgrid {
-  //*background-color: var(--mit-maroon);*//
+  background-color: var(--select-fill);
 }
 
 /* specify the background color to be shown when checkbox is checked */

@@ -53,12 +53,12 @@
 
   <table class="input">
     <tr>
-      <td class="caption">Preferred name</td>
-      <td><input class="value" name="preferred_name" value="{{user.preferred_name}}" tabindex="1" required /></td>
+      <td class="caption">Preferred name (required)</td>
+      <td><input class="value" spellcheck="false" name="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" /></td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td><input class="value" name="preferred_pronouns" value="{{user.preferred_pronouns}}"  tabindex="2"  placeholder="e.g. he/him, she/hers, they/them" /></td>
+      <td><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/hers, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
@@ -85,9 +85,15 @@
       </td>
     </tr>
     <tr>
-      <td classe="caption" style="vertical-align:top; padding-top:7px;">About me</td>
-      <td><textarea class="value" name="description" tabindex="5"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4">{{user.description}}</textarea></td>
+      <td class="caption">Homepage</td>
+      <td><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="5" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td><td class=forminfo id="homepage_link"></td>
     </tr>
+    {#
+    <tr>
+      <td classe="caption" style="vertical-align:top; padding-top:7px;">About me</td>
+      <td><textarea class="value" name="description" tabindex="5"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4" maxlength="{{maxlength['description']}}">{{user.description}}</textarea></td>
+    </tr>
+    #}
   </table>
 
   <h3>Location and availability for fall 2020</h3>
@@ -168,6 +174,7 @@
 <script type="text/javascript">
   document.addEventListener("DOMContentLoaded", function() {
     setup_checkboxgrid();
+    setup_url_tester("homepage","homepage_link","","invalid url");
   });
 </script>
 

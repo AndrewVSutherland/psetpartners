@@ -20,3 +20,28 @@ function setup_checkboxgrid() {
     });
     $("span.checkboxgrid").on("click", function (e) {e.preventDefault(); });
 }
+
+function validURL(str) {
+  var pattern = new RegExp('^https?:\\/\\/'+ // protocol (require)
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+    '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+    '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+  return !!pattern.test(str);
+}
+
+function url_tester(id, test_id, test_anchor, errmsg) {
+    var url = $("#"+id).val();
+    if ( url=="") { $("#"+test_id).html(""); return; }
+    if ( validURL(url) ) {
+      if ( test_anchor != "") $("#"+test_id).html("<a href='" + url + "' target='_blank'>" + test_anchor + "</a>");
+    } else {
+      $("#"+test_id).html(errmsg);
+    }
+}
+
+function setup_url_tester(id, test_id, test_anchor, errmsg) {
+  $("#"+id).keyup(function(evt) { evt.preventDefault(); url_tester(id, test_id, test_anchor, errmsg);});
+  url_tester(id, test_id, test_anchor, errmsg);
+}

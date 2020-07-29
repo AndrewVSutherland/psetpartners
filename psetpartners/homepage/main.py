@@ -17,6 +17,7 @@ from markupsafe import Markup
 from psetpartners import db
 from psetpartners.app import app
 from psetpartners.student import Student, AnonymousStudent, preference_types
+from psetpartners.group import class_options
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
@@ -59,6 +60,7 @@ def info_options():
             'location': location_options,
             'timezones' : timezones,
             'weekday' : short_weekdays,
+            'classes' : class_options(),
             }
 
 # globally define user properties and username
@@ -94,6 +96,7 @@ def info():
         next=request.args.get("next", ""),
         title=title,
         options=info_options(),
+        maxlength=maxlength,
     )
 
 @app.route("/set_info", methods=["POST"])
@@ -104,13 +107,11 @@ def set_info():
     sprefs = {}
     data = {"preferences": prefs, "strengths": sprefs}
     raw_data = request.form
-    print("RAW DATA: " + str([(col,val) for col,val in raw_data.items()]))
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
         for j in range(24):
             if raw_data.get("check-hours-%d-%d"%(i,j),False):
                 data["hours"][i][j] = True
-                print("available on %d-%d"%(i,j))
 
     # Need to do data validation
     for col, val in raw_data.items():
