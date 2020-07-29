@@ -1,7 +1,5 @@
-
 from flask import (
     render_template,
-    Blueprint,
     url_for,
     redirect,
     request,
@@ -17,7 +15,8 @@ from flask_login import (
 from datetime import datetime
 from markupsafe import Markup
 from psetpartners import db
-from .student import Student, AnonymousStudent, preference_types
+from psetpartners.app import app
+from psetpartners.student import Student, AnonymousStudent, preference_types
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
@@ -36,9 +35,7 @@ from psetpartners.utils import (
     start_options,
     together_options,
 )
-from psetpartners.app import app
 
-login_page = Blueprint("user", __name__, template_folder="templates")
 login_manager = LoginManager()
 
 @login_manager.user_loader
@@ -73,7 +70,7 @@ def ctx_proc_userdata():
     }
     return userdata
 
-@login_page.route("/login", methods=["POST"])
+@app.route("/login", methods=["POST"])
 def login():
     identifier = request.form["identifier"]
     user = Student(kerb=identifier)
@@ -86,7 +83,7 @@ def login():
         flash(Markup("Hello, your login was successful!"))
     return redirect(request.form.get("next") or url_for(".info"))
 
-@login_page.route("/info")
+@app.route("/info")
 def info():
     if current_user.is_authenticated:
         title = "pset partners"
@@ -99,7 +96,7 @@ def info():
         options=info_options(),
     )
 
-@login_page.route("/set_info", methods=["POST"])
+@app.route("/set_info", methods=["POST"])
 @login_required
 def set_info():
     errmsgs = []
@@ -151,7 +148,7 @@ def set_info():
         flash(Markup("Your information/preferences have been updated"))
     return redirect(url_for(".info"))
 
-@login_page.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()

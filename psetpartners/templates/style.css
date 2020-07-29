@@ -321,7 +321,7 @@ input.checkboxgrid {
 }
 /* specify the background color to be shown when hovering over checkbox */
 label.checkboxgrid:hover input ~ span.checkboxgrid {
-  background-color: var(--mit-maroon);
+  //*background-color: var(--mit-maroon);*//
 }
 
 /* specify the background color to be shown when checkbox is checked */

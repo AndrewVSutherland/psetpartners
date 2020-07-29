@@ -103,6 +103,22 @@ daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
 
+def current_year():
+    return datetime.now().year
+
+def current_term():
+    """ Returns the current term (0,1,2,3,4) to be used when listing courses add (possibly before the term starts) """
+    t = datetime.now()
+    if t.month == 1:
+        return 0 if t.day <= 15 else 1 # IAP or spring
+    if t.month < 6:
+        return 1 # definitely spring
+    if t.month < 8:
+        return 2 # definitely summer
+    if t.month < 12:
+        return 3 # definitely fall
+    return 3 if t.day <= 15 else 0 # fall or IAP
+
 def localize_time(t, newtz=None):
     """
     Takes a time or datetime object and adds in a timezone if not already present.

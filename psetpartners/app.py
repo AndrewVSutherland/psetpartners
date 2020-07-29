@@ -7,7 +7,6 @@ from flask import (
     render_template,
     request,
     make_response,
-    redirect,
     url_for,
     current_app,
     abort,

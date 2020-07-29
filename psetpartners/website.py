@@ -7,10 +7,11 @@
 # version 2 of the License, or (at your option) any later version.
 
 from .app import app, set_running  # So that we can set it running below
+from . import homepage
+assert homepage
 
 from psetpartners import db
 assert db
-from . import users
 
 def main():
     from .config import Configuration
