@@ -4,6 +4,7 @@ from flask import (
     redirect,
     request,
     flash,
+    jsonify,
 )
 from flask_login import (
     login_required,
@@ -106,11 +107,13 @@ def test():
 @app.route("/set_info", methods=["POST"])
 @login_required
 def set_info():
+    raw_data = request.form
+    if raw_data.get("submit") == "cancel":
+        return redirect(url_for(".info"))
     errmsgs = []
     prefs = {}
     sprefs = {}
     data = {"preferences": prefs, "strengths": sprefs}
-    raw_data = request.form
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
         for j in range(24):

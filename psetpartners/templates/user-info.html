@@ -1,8 +1,8 @@
 {% extends 'homepage.html' %}
 
-{% macro PREF(pref) -%}
+{% macro PREF(pref,tabindex) -%}
   <td class="{{pref}}" style="padding-right:0">
-    <select class="value" name="pref_{{pref}}" id="pref_{{pref}}"
+    <select class="value" name="pref_{{pref}}" id="pref_{{pref}}" tabindex="{{tabindex}}"
             onchange="spref_{{pref}}_input.style.visibility = spref_{{pref}}_output.style.visibility = pref_{{pref}}.value == '' ? 'hidden' : 'visible';">
       <option value=""{% if not user.preferences[pref] %} selected {% endif %}></option>
       {% for (value, display) in options[pref] %}
@@ -10,7 +10,8 @@
       {% endfor %}
     </select>
   </td>
-  <td class="{{pref}}" style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options['strength']}}[spref_{{pref}}_input.value]" /></td>
+  <td class="{{pref}}" style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options['strength']}}[spref_{{pref}}_input.value]" spref_{{pref}}_ouput.dispatchEvent(new Event('change'));
+/></td>
   <td><output class="value" id="spref_{{pref}}_output">{{options['strength'][user.strengths[pref]]}}</output></td>
 {%- endmacro %}
 
@@ -24,18 +25,18 @@
     <input type="hidden" name="next" value="{{ next }}" />
     <table>
       <tr>
-        <td class="caption" style="width:100px">Kerberos ID:</td>
+        <td class="caption" style="width:100px" tabindex="1">Kerberos ID:</td>
         <td><input class="value" name="identifier" style="width:100px" /></td>
         <td><button class="save" name="submit" type="submit" style="margin-left:10px">Login</button></td>
       </tr>
 {#
-      <tr><td class="caption" style="width:100px">Password:</td>
+      <tr><td class="caption" style="width:100px" tabindex="2">Password:</td>
           <td><input class="value" name="password" type="password"  style="width:100px"/></td>
           <td> (<a href="{{ url_for('.reset_password') }}">Forgot password?</a>) </td>
       </tr>
       <tr>
         <td></td>
-        <td><button class="save" name="submit" type="submit">Login</button></td>
+        <td><button class="save" name="submit" type="submit" tabindex="3">Login</button></td>
       </tr>
 #}
     </table>
@@ -43,12 +44,12 @@
 
 {% else %}
   <form action="{{ url_for('.logout') }}" method="POST" name="logout">
-  <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 50px"><button name="logout" type="submit">Logout</button></div></h2>
+  <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 50px"><button name="logout" type="submit" tabindex="-1">Logout</button></div></h2>
   </form>
 
   <h3>Classes</h3>
 
-  <form action="{{ url_for('.set_info') }}" method="post" name="userinfo">
+  <form action="{{ url_for('.set_info') }}" method="post" name="userinfo" id="userinfo">
   <h3>Personal details</h3>
 
   <table class="input">
@@ -63,7 +64,7 @@
     <tr>
       <td class="caption">Current year</td>
       <td>
-        <select class="value" name="year"  tabindex="3"
+        <select class="value" name="year" id="year" tabindex="3"
           onchange="if ( year.value == '' ) $('.year_affinity').hide(); else $('.year_affinity').show();">
           <option value=""{% if not user.year %} selected {% endif %}></option>
           {% for (value, display) in options["year"] %}
@@ -86,12 +87,12 @@
     </tr>
     <tr>
       <td class="caption">Homepage</td>
-      <td><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="5" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td><td class=forminfo id="homepage_link"></td>
+      <td><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="5" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td><td class="alertinfo" id="homepage_link"></td>
     </tr>
     {#
     <tr>
-      <td classe="caption" style="vertical-align:top; padding-top:7px;">About me</td>
-      <td><textarea class="value" name="description" tabindex="5"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4" maxlength="{{maxlength['description']}}">{{user.description}}</textarea></td>
+      <td class="caption" style="vertical-align:top; padding-top:7px;">About me</td>
+      <td><textarea class="value" name="description" tabindex="6"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4" maxlength="{{maxlength['description']}}">{{user.description}}</textarea></td>
     </tr>
     #}
   </table>
@@ -100,7 +101,7 @@
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
-      <td><select class="value" name="location" id="location"  tabindex="6" onchange="if ( location.value !='far' ) timezone.value='';">
+      <td><select class="value" name="location" id="location"  tabindex="7" onchange="if ( location.value !='far' ) timezone.value='';">
             {% for value, display in options["location"] %}
             <option value="{{value}}" {% if value == user.location %} selected=true {%endif%}>{{display}}</option>
             {% endfor %}
@@ -109,7 +110,7 @@
     </tr>
     <tr>
       <td class="caption">Time zone</td>
-      <td><select class="value" name="timezone" id="timezone"  tabindex="7">
+      <td><select class="value" name="timezone" id="timezone"  tabindex="8">
             {% for value, display in options["timezones"] %}
             <option value="{{value}}" {% if value == user.timezone %} selected=true {%endif%}>{{display}}</option>
             {% endfor %}
@@ -119,7 +120,7 @@
     <tr><td class="caption" colspan="2" style="padding-top:10px;">Weekly hours available to pset this term (in the time zone selected above)</td></tr>
   </table>
   <br>
-  <table style="margin-left:60px;">
+  <table id="hours" style="margin-left:60px; margin-top:-10px;">
     <tr>
       {% for i in range(24) %}
         <td align="left" style="font-size:12px; padding-left:2px; vertical-align:bottom;">{{i}}</td>
@@ -143,42 +144,62 @@
   <table class="input">
     <tr>
       <td class="caption">When you like to start working</td>
-      {{PREF('start')}}
+      {{PREF('start',9)}}
     </tr>
     <tr>
       <td class="caption">How you like to collaborate</td>
-      {{PREF('together')}}
+      {{PREF('together',10)}}
     </tr>
     <tr>
       <td class="caption">How you like to communicate</td>
-      {{PREF('forum')}}
+      {{PREF('forum',11)}}
     </tr>
     <tr style="height:20px;"></tr>
     <tr>
       <td class="caption">Your ideal group size</td>
-      {{PREF('group_size')}}
+      {{PREF('group_size',12)}}
     </tr>
     <tr class="year_affinity">
       <td class="caption year_affinity">Your ideal group would include</td>
-      {{PREF('year_affinity')}}
+      {{PREF('year_affinity',13)}}
     </tr>
     <tr class="gender_affinity">
       <td class="caption gender_affinity">Your ideal group would include</td>
-      {{PREF('gender_affinity')}}
+      {{PREF('gender_affinity',14)}}
     </tr>
   </table>
 
-  <button type="submit" name="submit" id="save" value="save">Save</button>
+<h3>{{user.is_new}}</h3>
+
+  <table class="submit">
+    <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="-1" disabled>Save</button></td>
+        <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" disabled>Reset</button></td>
+        <td class="alertinfo" colspan="2" id="submitalert"></td>
+    </tr>
+  </table>
   </form>
 
 <script type="text/javascript">
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener('DOMContentLoaded', function() {
     setup_checkboxgrid();
-    setup_url_tester("homepage","homepage_link","","invalid url");
-    $('#userinfo').data('initial',$('#userinfo').serialize())
-    $("#userinfo :input").change(function() {
-      if $('#userinfo').serialize() != $('#userinfo').data('initial') $('#save').show(); else $('#save').hide();
-    });
+    setup_url_tester('homepage','homepage_link','','invalid url');
+    if ( ! $('#hours input:checkbox').is(':checked') ) $('#cancel').hide();
+    $('#userinfo').data('initial',$('#userinfo').serialize());
+    function check_change () {
+      var change =  $('#userinfo').serialize() != $('#userinfo').data('initial');
+      var hours = $('#hours input:checkbox').is(':checked');
+      $('#userinfo :submit').prop('disabled',!change);
+      if ( !hours ) {
+        $('#save').prop('disabled',true);
+        $('#submitalert').html('Please indicate hours available.');
+      } else {
+        $('#submitalert').html('');
+      }
+    }
+    $('#userinfo :input').change(check_change);
+    $('#userinfo :input').keyup(check_change);
+    check_change();
+    console.log('setup done');
   });
 </script>
 

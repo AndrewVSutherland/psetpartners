@@ -3,28 +3,36 @@
   --mit-light-gray: #dce0df;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
-  --shadow-color: #babbbc;
+  --shadow-color: var(--mit-maroon);
+  --alert-color: #e32f54;
   --button-fill: #a31f34;
   --select-fill: #f9e9e5;
   --slider-fill: var(--mit-maroon);
   --input-border-color: var(--mit-maroon);
-  --input-border: 1.5px;
+  --input-border-width: 1.5px;
+  --input-focus-border-color: var(--mit-maroon);
+  --input-focus-border-width: 2px;
   font-family: Verdona, Geneva, sans-serif;
 }
 
-/* Completely disable selection highlighting */
+/* Disable selction except for text input */
+:not(input):not(textarea),
+:not(input):not(textarea)::after,
+:not(input):not(textarea)::before {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+}
 ::selection {
-    color: none;
-    background: none;
+    background: var(--select-fill);
 }
 ::-moz-selection {
-    color: none;
-    background: none;
+    background: var(--select-fill);
 }
 
 #header {
   background: var(--mit-maroon);
-  box-shadow: 0px 5px 5px var(--shadow-color);
+  box-shadow: 0px 3px 3px var(--shadow-color);
   margin-top: -4px;
   margin-left: -6px;
   margin-right: -6px;
@@ -70,9 +78,10 @@ header.inner {
   border-top: 2px solid var(--shadow-color);
   padding: 25px 10px;
   text-align: center;
-  font-size: 90%;
+  font-size: 80%;
   color: #F0F0F0;
   min-height: 15px;
+  box-shadow: 0px 3px 3px var(--shadow-color);
 }
 
 #footer a {
@@ -140,14 +149,17 @@ header.inner {
 }
 
 
-#content table {
-  margin-left: 20px;
+#content table.input table.output {
   border-collapse: collapse;
+  margin-left: 20px;
+  min-width: 600px;
   /* border-spacing: 0px; only relevant if border-collapse is separate */
 }
 
-#content table.input {
-  min-width: 600px;
+#content table.submit {
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-left: 0px;
 }
 
 #content td.caption {
@@ -158,7 +170,7 @@ header.inner {
 }
 
 #content input.value, select.value, textarea.value {
-  border: 1.5px solid var(--input-border-color);
+  border: var(--input-border-width) solid var(--input-border-color);
   padding: 3px 6px;
   font-family: Verdona, Geneva, sans-serif;
   font-size: 100%;
@@ -169,6 +181,12 @@ header.inner {
   -ms-box-sizing:content-box;
   -moz-box-sizing:content-box;
   -webkit-box-sizing:content-box;
+}
+
+#content input.value:focus, select.value:focus, textarea.value:focus {
+  outline: none !important
+  border: var(--input-focus-border-width) solid var(--input-focus-border-color);
+  box-shadow: 0 0 5px var(--shadow-color);
 }
 
 #content input.value {
@@ -183,14 +201,12 @@ header.inner {
 }
 
 #content textarea.value {
-  font-style: italic;
   padding-left: 4px;
   padding-right: 0px;
   height: 80px;
 }
 
 #content output.value {
-  font-weight: lighter;
   font-size: 75%;
   vertical-align: text-top;
   color: var(--mit-maroon);
@@ -198,29 +214,34 @@ header.inner {
 
 button {
   background: var(--mit-light-gray);
-  border: var(--input-border) solid var(--input-border-color);
+  border: var(--input-border-width) solid var(--input-border-color);
   color: var(--mit-maroon);
   font-weight: bold;
   font-size: 14px;
   min-width: 60px;
-  margin: 0px;
+  margin: 0px 10px 0px 0px;
   padding: 3px 6px;
   border-radius: 4px;
   cursor: pointer;
   height: 26px;
 }
 
+button:disabled {
+  color: white;
+}
+
 select, select option {
   background: var(--select-fill);
-  border: var(--input-border) solid var(--input-border-color);
+  border: var(--input-border-width) solid var(--input-border-color);
   font-size: 100%;
 }
 
-.forminfo {
+.alertinfo {
    padding-left: 10px;
-   font-size: 80%;
+   font-size: 75%;
+   font-weight: bold;
    font-style: italic;
-   color: #333333;
+   color: var(--alert-color);
    vertical-align: middle;
 }
 
@@ -233,7 +254,7 @@ input[type="range"] {
     cursor: pointer;
     margin-left: 20px;
     border-radius: 0px;
-    border: var(--input-border) solid var(--input-border-color);
+    border: var(--input-border-width) solid var(--input-border-color);
 }
 
 ::-webkit-slider-runnable-track {
@@ -246,7 +267,7 @@ input[type="range"] {
     width: 8px;
     background: var(--select-fill);
     box-shadow: -100vw 0 0 100vw var(--slider-fill);
-    border: var(--input-border) solid var(--input-border-color);
+    border: var(--input-border-width) solid var(--input-border-color);
 }
 
 ::-moz-range-track {
@@ -258,7 +279,7 @@ input[type="range"] {
     background: #fff;
     height: 10px;
     width: 10px;
-    border: var(--input-border) solid var(--input-border-color);
+    border: var(--input-border-width) solid var(--input-border-color);
     border-radius: 0 !important;
     box-shadow: -100vw 0 0 100vw var(--slider-fill);
     box-sizing: border-box;
@@ -270,7 +291,7 @@ input[type="range"] {
 
 ::-ms-thumb { 
     background: #fff;
-    border: : var(--input-border) solid var(--input-border-color);
+    border: : var(--input-border-width) solid var(--input-border-color);
     height: 10px;
     width: 10px;
     box-sizing: border-box;

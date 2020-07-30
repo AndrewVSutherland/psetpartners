@@ -1,4 +1,3 @@
-
 from flask import request
 from psetpartners import db
 from flask_login import UserMixin, AnonymousUserMixin
@@ -23,11 +22,9 @@ class Student(UserMixin):
             self._authenticated = True # for now auto authenticate, eventually use Touchstone
         data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         if data is None:
-            print("creating new user record for "+kerb)
             db.students.insert_many([{"kerb": kerb, "preferred_name": kerb}])
             data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         else:
-            print("loaded user record for "+kerb)
             if not data.get("preferred_name"):
                 data["preferred_name"] = kerb
         self.__dict__.update(data)
@@ -49,7 +46,6 @@ class Student(UserMixin):
         for col in preference_types:
             if not col in self.strengths:
                 self.strengths[col] = 3
-        print(self.__dict__)
 
     def get_id(self):
         return self.kerb
