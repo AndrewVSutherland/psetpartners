@@ -46,7 +46,7 @@ class_id	      | bigint	    | id in classes table
 group_name            | text	    | custom name, editable by anyone in group
 visibility            | smalling    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
-preferences_strength  | jsonb       | preference strengths
+strengths             | jsonb       | preference strengths
 
 ## classlist
 
@@ -56,7 +56,7 @@ id                    |	bigint      | unique identifier automatically assigned b
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
-preferences_strength  | jsonb       | replaces students preferences if preferences is not None
+strengths             | jsonb       | replaces students preferences if preferences is not None
 			
 ## grouplist
 
