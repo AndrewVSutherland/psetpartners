@@ -7,8 +7,8 @@ This file provides documentation on the underlying schema; try to keep it up to 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    | bigint      | unique identifier automatically assigned by postgres
-name                  | text        | Course name, e.g. Algebra I
-number                | text        | Course number, e.g. 18.701
+class_name            | text        | Course name, e.g. Algebra I
+class_number          | text        | Course number, e.g. 18.701
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
 instructor_names[]    | text[]      | list of instructor names
