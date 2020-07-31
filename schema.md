@@ -63,5 +63,6 @@ strengths             | jsonb       | replaces students preferences if preferenc
 Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      |	unique identifier automatically assigned by postgres (not MIT id)
-group_id	      | bigint	id  | id in groups table
-student_id            | bigint	id  | id in students table
+class_id              | bigint      | id in classes_table
+group_id	      | bigint      | id in groups table
+student_id            | bigint      | id in students table
