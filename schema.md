@@ -55,8 +55,8 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
-preferences           |	jsonb       | overrides students preferences
-preferences_strength  | jsonb       | overrides students preferences
+preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
+preferences_strength  | jsonb       | replaces students preferences if preferences is not None
 			
 ## grouplist
 
