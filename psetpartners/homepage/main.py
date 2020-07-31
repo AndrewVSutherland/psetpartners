@@ -18,7 +18,7 @@ from markupsafe import Markup
 from psetpartners import db
 from psetpartners.app import app
 from psetpartners.student import Student, AnonymousStudent, preference_types
-from psetpartners.group import class_options
+from psetpartners.group import current_classes
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
@@ -33,6 +33,7 @@ from psetpartners.utils import (
     year_affinity_options,
     group_size_options,
     strength_options,
+    term_options,
     forum_options,
     start_options,
     together_options,
@@ -49,6 +50,7 @@ login_manager.login_view = "user.info"
 login_manager.anonymous_user = AnonymousStudent
 
 def info_options():
+    classes, class_names = current_classes()
     return {'year': year_options,
             'year_affinity': year_affinity_options,
             'gender': gender_options,
@@ -57,11 +59,13 @@ def info_options():
             'strength': strength_options,
             'forum': forum_options,
             'start': start_options,
+            'term' : term_options,
             'together': together_options,
             'location': location_options,
-            'timezones' : timezones,
+            'timezone' : timezones,
             'weekday' : short_weekdays,
-            'classes' : class_options(),
+            'classes' : classes,
+            'class_names' : class_names,
             }
 
 # globally define user properties and username
@@ -80,18 +84,11 @@ def login():
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)
-    if user.preferred_name:
-        flash(Markup("Hello %s, your login was successful!" % user.preferred_name))
-    else:
-        flash(Markup("Hello, your login was successful!"))
     return redirect(request.form.get("next") or url_for(".info"))
 
 @app.route("/info")
 def info():
-    if current_user.is_authenticated:
-        title = "pset partners"
-    else:
-        title = "Login"
+    title = "" if current_user.is_authenticated else "login"
     return render_template(
         "user-info.html",
         next=request.args.get("next", ""),

@@ -3,6 +3,7 @@ from psetpartners import db
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import DEFAULT_TIMEZONE
+from psetpartners.group import class_number_key
 
 preference_types = {
     "gender_affinity": "posint",
@@ -46,6 +47,15 @@ class Student(UserMixin):
         for col in preference_types:
             if not col in self.strengths:
                 self.strengths[col] = 3
+        # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
+        classes = list(db.classlist.search({"student_id":self.id},projection=["class_id", "preferences", "strengths"]))
+        # we should really be using a join here
+        for r in classes:
+            r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number", "class_name", "homepage", "pset_dates", "instructor_names"]))
+            group_id = db.grouplist.lucky({"class_id":r["class_id"],"student_id":self.id},projection="group_id")
+            if group_id is not None:
+                r["group"] = db.groups.lucky({"id": group_id}, projection=["id", "group_name", "visibility", "preferences", "strengths"])
+        self.classes = sorted(classes, key=lambda x: class_number_key(x["class_number"]))
 
     def get_id(self):
         return self.kerb

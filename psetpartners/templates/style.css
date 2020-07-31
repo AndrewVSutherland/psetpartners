@@ -68,6 +68,11 @@ header.inner {
   min-width: 300px;
   text-align: center;
 }
+#header #title a {
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+}
 
 #footer {
   clear: both;
@@ -85,7 +90,9 @@ header.inner {
 }
 
 #footer a {
-  color: #E0E0E0;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 #flashes p {
@@ -119,7 +126,7 @@ header.inner {
 }
 
 #content {
-  margin-top: 20px;
+  margin-top: 30px;
   min-height: calc(100vh - 217px);
 }
 
@@ -145,7 +152,8 @@ header.inner {
 #content a, a:visited {
   color: var(--mit-maroon);
   font-family: sans-serif;
-  text-decoration: none
+  text-decoration: none;
+  cursor: pointer;
 }
 
 

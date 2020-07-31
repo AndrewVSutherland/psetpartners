@@ -1,0 +1,45 @@
+{% extends "homepage.html" %}
+{% block content %}
+
+<div class="text_content auto">
+
+  <h2>Contact information</h2>
+
+ {# First, check the <a href="{{ url_for("faq") }}">FAQ</a> to see if your question or issue is addressed there. #}
+ <ul>
+  <li>
+    <p>
+      <b>Need support or have a suggestion for improving the site?</b>
+      <a href="mailto:psetpartners@mit.edu?subject=psetpartners support" target="_blank">Send an email</a>
+     </p>
+  </li>
+  <li>
+    <p>
+    <b>Need to report a bug?</b>
+          <a href="mailto:psetpartners@mit.edu?subject=psetpartners bug report" target="_blank">Send an email</a>.
+    </p>
+  </li>
+  </ul>
+<br>
+
+<p>
+To be most helpful, bug reports should include
+<ul>
+<li>a one-line description of the problem,
+<li>the exact URL which shows the issue (copied and pasted from the
+  browser location bar), and
+<li>a full description of the problem.
+</ul>
+</p>
+
+
+<p>
+The current list of issues being tracked can be found
+<a href="https://github.com/andrewvsutherland/psetpartners/issues"
+target="_blank">here</a>.
+</p>
+
+
+</div>
+
+{% endblock %}

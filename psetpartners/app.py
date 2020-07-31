@@ -4,6 +4,7 @@ import time
 
 from flask import (
     Flask,
+    redirect,
     render_template,
     request,
     make_response,
@@ -12,6 +13,10 @@ from flask import (
     abort,
 )
 from .knowls import static_knowl
+from psetpartners.utils import (
+    current_year,
+    current_term,
+    )
 
 ############################
 #         Main app         #
@@ -25,19 +30,15 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # App attribute functions  #
 ############################
 
-
 def is_debug_mode():
     from flask import current_app
 
     return current_app.debug
 
-
 app.is_running = False
-
 
 def set_running():
     app.is_running = True
-
 
 def is_running():
     return app.is_running
@@ -79,11 +80,11 @@ def ctx_proc_userdata():
     data = {"info": {}, "body_class": ""}
     data["meta_description"] = r"Welcome to psetpartners, a tool for finding others to help work on problem sets!"
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
-
     data["static_knowl"] = static_knowl
-
-    # debug mode?
     data["DEBUG"] = is_debug_mode()
+
+    data["current_year"] = current_year()
+    data["current_term"] = current_term()
     return data
 
 ##############################
@@ -99,13 +100,13 @@ def not_found_404(error):
     messages = (
         error.description if isinstance(error.description, (list, tuple)) else (error.description,)
     )
-    return render_template("404.html", title="Page not found", messages=messages), 404
+    return render_template("404.html", title="page not found", messages=messages), 404
 
 
 @app.errorhandler(500)
 def not_found_500(error):
     app.logger.error("%s 500 error on URL %s %s" % (timestamp(), request.url, error.args))
-    return render_template("500.html", title="Error"), 500
+    return render_template("500.html", title="error"), 500
 
 
 @app.errorhandler(503)
@@ -132,12 +133,11 @@ def alive():
 
 @app.route("/acknowledgments")
 def acknowledgment():
-    return render_template("acknowledgments.html")
+    return render_template("acknowledgments.html", title="acknowledgments")
 
 @app.route("/contact")
 def contact():
-    t = "Contact and feedback"
-    return render_template("contact.html", title=t)
+    return render_template("contact.html", title="contact")
 
 @app.route("/robots.txt")
 def robots_txt():
@@ -149,7 +149,7 @@ def robots_txt():
 
 @app.route("/humans.txt")
 def humans_txt():
-    return render_template("acknowledgments.html", title="Acknowledgments")
+    return render_template("acknowledgments.html", title="acknowledgments")
 
 def routes():
     """
@@ -169,7 +169,7 @@ def routes():
 
 @app.route("/")
 def index():
-    return render_template("matches.html", title="Pset Partners")
+    return redirect(url_for(".info"))
 
 @app.route("/sitemap")
 def sitemap():

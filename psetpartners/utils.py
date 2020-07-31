@@ -16,6 +16,7 @@ DEFAULT_TIMEZONE_PREFIX = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 
 strength_options = ["", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
+term_options = ["IAP", "spring", "summer", "fall"]
 
 gender_options = [
     ("female", "female"),
@@ -112,11 +113,11 @@ def current_term():
     if t.month == 1:
         return 0 if t.day <= 15 else 1 # IAP or spring
     if t.month < 6:
-        return 1 # definitely spring
-    if t.month < 8:
-        return 2 # definitely summer
+        return 1 # spring
+    if t.month < 7 or (t.month==7 and t.day<25):
+        return 2 # summer
     if t.month < 12:
-        return 3 # definitely fall
+        return 3 # fall
     return 3 if t.day <= 15 else 0 # fall or IAP
 
 def localize_time(t, newtz=None):
@@ -194,6 +195,7 @@ MAX_URL_LEN = 256
 maxlength = {
     'class_name': MAX_LONG_NAME_LEN,
     'class_number': MAX_ID_LEN,
+    'classes': 6,
     'description': MAX_TEXT_LEN,
     'group_name' : MAX_SHORT_NAME_LEN,
     'homepage': MAX_URL_LEN,
