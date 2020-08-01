@@ -23,6 +23,9 @@ from psetpartners.utils import (
     timezones,
     format_input_errmsg,
     show_input_errors,
+    flash_info,
+    flash_warning,
+    flash_error,
     process_user_input,
     maxlength,
     short_weekdays,
@@ -106,7 +109,7 @@ def test():
 def set_info():
     raw_data = request.form
     if raw_data.get("submit") == "cancel":
-        return redirect(url_for(".info"))
+        return redirect(url_for(".info"), 301)
     errmsgs = []
     prefs = {}
     sprefs = {}
@@ -149,13 +152,24 @@ def set_info():
         return show_input_errors(errmsgs)
     for k, v in data.items():
         setattr(current_user, k, v)
-    if current_user.save():
-        flash(Markup("Your information/preferences have been updated"))
-    return redirect(url_for(".info"))
+    num = raw_data.get("new_class_number","")
+    if num:
+        try:
+            current_user.add_class(num)
+            flash_info ("Added %s." % num) 
+        except Exception as err:
+            flash_warning ("Unable to add %s: " + err)
+            return redirect(url_for(".info"), 301)    
+    try:
+       current_user.save()
+       flash_info ("Changes saved.") 
+    except Exception as err:
+        flash_error("Error saving changes: " + err)
+    return redirect(url_for(".info"), 301)
 
 @app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
     flash(Markup("You are now logged out.  Have a nice day!"))
-    return redirect(url_for(".info"))
+    return redirect(url_for(".info"), 301)

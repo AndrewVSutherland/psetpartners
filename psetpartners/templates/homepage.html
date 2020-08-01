@@ -130,7 +130,7 @@
     </div>
     <div class="right">
       <div class="upper">
-        <div id="title"><a href="{{url_for('.index')}}">pset partners</a> {{ title|safe }}</div>
+        <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners</a> {{ title|safe }}</div>
       </div>
     </div>
   </header>
@@ -138,16 +138,30 @@
 
 <div id="main">
   <div id="content">
-    {% with msgs = get_flashed_messages(with_categories=true) -%}
-      <div id="flashes">
-        {% for cat, msg in msgs -%}
-          <p class="{{ cat }}">{{ msg }}</p>
+    {% with msgs = get_flashed_messages(category_filter=["error"]) -%}
+      <div id="flash-error">
+        {% for msg in msgs -%}
+          <pclass="{{cat}}"><i class="fa fa-exclamation-circle" aria-hidden="true" style="color:#cc1f12;"></i>&nbsp;{{msg}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}
     {% block content -%}
     There is nothing here. This is just a template.
     {%- endblock content %}
+    {% with msgs = get_flashed_messages(category_filter=["warning"]) -%}
+      <div id="flash-warning">
+        {% for msg in msgs -%}
+          <p class="{{warning}}"><i class="fa fa-exclamation-circle" aria-hidden="true" style="color:#f5ad42;"></i>&nbsp;{{msg}}</p>
+        {%- endfor %}
+      </div>
+    {%- endwith %}
+    {% with msgs = get_flashed_messages(category_filter=["info"]) -%}
+      <div id="flash-info">
+        {% for msg in msgs -%}
+          <p class="{{info}}"><i class="fa fa-check-circle" aria-hidden="true" style="color:#469c33;"></i>&nbsp;{{msg}}</p>
+        {%- endfor %}
+      </div>
+    {%- endwith %}
   </div>
 </div>
 
@@ -167,12 +181,17 @@ The function which was called for this page is: {{calling_function}}
 <div id="footer">
   <div>
     <a href="{{url_for('.acknowledgment')}}">acknowledgments</a>
-    &nbsp;&nbsp;&nbsp;&nbsp;<b>&middot;</b>&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AndrewVSutherland/psetpartners">repository</a>
-    &nbsp;&nbsp;&nbsp;&nbsp;<b>&middot;</b>&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="{{url_for('.contact')}}">contact</a>
   </div>
 </div>
-
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+	$("#flash-info p").fadeOut(3000);
+	$("#flash-warning p").fadeOut(10000);
+});
+</script>
 
 {%- endblock body %}

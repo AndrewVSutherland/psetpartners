@@ -254,7 +254,6 @@ def format_errmsg(errmsg, *args):
         )
     )
 
-
 def format_input_errmsg(err, inp, col):
     return format_errmsg(
         "Unable to process input %s for property %s: {0}".format(err),
@@ -262,15 +261,20 @@ def format_input_errmsg(err, inp, col):
         col,
     )
 
-def flash_error(errmsg, *args):
-    """ flash errmsg in red with args in black; errmsg may contain markup, including latex math mode"""
-    flash(Markup("Error: " + (errmsg % tuple("<span style='color:black'>%s</span>" % escape(x) for x in args))), "error")
+def flash_info(msg):
+    flash(msg, "info")
+
+def flash_warning(msg):
+    flash(msg, "warning")
+
+def flash_error(msg):
+    flash(msg, "error")
 
 def show_input_errors(errmsgs):
     """ Flashes a list of specific user input error messages then displays a generic message telling the user to fix the problems and resubmit. """
     assert errmsgs
     for msg in errmsgs:
-        flash(msg, "error")
+        flash_error(msg)
     return render_template("inputerror.html", messages=errmsgs)
 
 def process_user_input(inp, col, typ, tz=None):

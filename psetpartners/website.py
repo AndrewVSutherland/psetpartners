@@ -17,6 +17,7 @@ def main():
     from .config import Configuration
 
     flask_options = Configuration().get_flask()
+    # flask_options["debug"] = True
 
     if "profiler" in flask_options and flask_options["profiler"]:
         from werkzeug.contrib.profiler import ProfilerMiddleware

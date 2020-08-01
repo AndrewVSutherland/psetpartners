@@ -1,17 +1,18 @@
 :root {
   --mit-maroon: #a31f34;
-  --mit-light-gray: #dce0df;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
   --shadow-color: var(--mit-maroon);
+  --light-gray: #d6d7d8;
   --alert-color: #e32f54;
   --button-fill: #a31f34;
-  --select-fill: #f9e9e5;
+  --select-fill: #f7eeec;
   --slider-fill: var(--mit-maroon);
   --input-border-color: var(--mit-maroon);
   --input-border-width: 1.5px;
   --input-focus-border-color: var(--mit-maroon);
   --input-focus-border-width: 2px;
+  --knowl_background: #f9f5f1;
   font-family: Verdona, Geneva, sans-serif;
 }
 
@@ -97,25 +98,23 @@ header.inner {
 
 #flashes p {
   border-left: 15px solid #FFF59D;
+  font-size: 90%;
   padding: 5px;
   background: #FFFDE7;
+}
+
+#flashes p.warning {
+  margin: 15px 0;
+  border: 0;
+  border-left: 15px solid #FDD;
+  color: #000;
 }
 
 #flashes p.error {
   margin: 15px 0;
   border: 0;
   border-left: 15px solid #FDD;
-  background: #FEE;
   color: red;
-}
-
-#flashes p.warning {
-  margin: 15px 0;
-  font-size: 90%;
-  border: 0;
-  border-left: 15px solid #FDD;
-  background: #FEE;
-  color: #000;
 }
 
 #main {
@@ -221,7 +220,7 @@ header.inner {
 }
 
 button {
-  background: var(--mit-light-gray);
+  background: var(--light-gray);
   border: var(--input-border-width) solid var(--input-border-color);
   color: var(--mit-maroon);
   font-weight: bold;
@@ -335,53 +334,351 @@ input:-webkit-autofill:active  {
 /* END styling to stop chrome autofill from changing the background color */
 
 
-/* BEGIN styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
-/* Note that you must call setup_checkboxgrid in psetpartners.js to use this */
+/*
+  BEGIN styling for checkboxgrid selector (intended to be used in grid of checkboxes).
+  Note that you must call setup_checkboxgrid in psetpartners.js to use this
+  Everything configurable is controlled by the variables --checkboxgrid-...
+*/
+
+:root {
+  --checkboxgrid-cell-height: 13px;
+  --checkboxgrid-cell-width: 28px;
+  --checkboxgrid-cell-horizontal-spacing: 2px;
+  --checkboxgrid-cell-vertical-spacing: 2px;
+  --checkboxgrid-font-size: 12px; /* only relevant for captions, which are up to the html to include */
+  --checkboxgrid-border-radius: 3px;
+  --checkboxgrid-checked-color: var(--mit-maroon);
+  --checkboxgrid-unchecked-color: var(--light-gray);
+  --checkboxgrid-hover-checked-color: var(--select-fill);
+  --checkboxgrid-hover-unchecked-color: var(--select-fill);
+}
+
+table.checkboxgrid {
+ border-collapse: collapse;
+}
 
 label.checkboxgrid {
   display: inline-block;
   position: relative;
-  padding: 0 0 0 1px;
+  padding: 0;
   margin: 0;
-  height: 10px;
-  width: 24px;
+  height: var(--checkboxgrid-cell-height);
+  width: var(--checkboxgrid-cell-width);
   cursor: pointer;
 }
 /* Hide the default checkbox */
 input.checkboxgrid[type=checkbox] {
-  visibility: hidden;
-}
-/* creating a custom checkbox based on demand */
-span.checkboxgrid {
-  position: absolute;
-  top: 1px;
-  left: 0;
-  padding: 0px;
-  margin: 0px 0px;
-  height: 10px;
-  width: 24px;
-  border-radius: 3px;
-  background-color: #ccc;
-}
-input.checkboxgrid {
-  position: relative;
-  top: 0;
-  left: 0;
-  padding: 0px;
-  margin: 0px 0px;
-  height: 10px;
-  width: 20px;
-}
-/* specify the background color to be shown when hovering over checkbox */
-label.checkboxgrid:hover input ~ span.checkboxgrid {
-  background-color: var(--select-fill);
+  display: none;
 }
 
-/* specify the background color to be shown when checkbox is checked */
+tr.checkboxgrid {
+  padding: 0;
+  height: var(--checkboxgrid-cell-height);
+  line-height: var(--checkboxgrid-cell-height);
+}
+
+td.checkboxgrid {
+  padding-bottom: var(--checkboxgrid-cell-vertical-spacing);
+  padding-left: var(--checkboxgrid-cell-horizontal-spacing);
+  padding-top: 0;
+  padding-right: 0;
+  font-size: var(--checkboxgrid-font-size);
+}
+
+span.checkboxgrid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0;
+  margin: 0;
+  height: var(--checkboxgrid-cell-height);
+  width: var(--checkboxgrid-cell-width);
+  border-radius: var(--checkboxgrid-border-radius);
+  background-color: var(--checkboxgrid-unchecked-color);
+  cursor: pointer;
+}
+
+label.checkboxgrid input:hover ~ span.checkboxgrid {
+  background-color: var(--checkboxgrid-hover-unchecked-color);
+}
+
 label.checkboxgrid input:checked ~ span.checkboxgrid {
-  background-color: var(--mit-maroon);
+  background-color: var(--checkboxgrid-checked-color);
+}
+
+label.checkboxgrid input:checked ~ span.checkboxgrid:hover {
+  background-color: var(--checkboxgrid-hover-checked-color);
 }
 /* END styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
+
+/* knowl styling */
+#content > h2 a[knowl], #content > h3 a[knowl] {
+    color: black;
+}
+body.knowl {
+  background: none;
+}
+body.knowl #header {
+  background: var(--knowl_l);
+  box-shadow: 0px 5px 5px var(--knowl_shadow);
+}
+body.knowl form button,
+body.knowl form select {
+  border: 2px solid var(--knowl_thin_border);
+  background: var(--knowl_border);
+}
+body.knowl form textarea,
+body.knowl form input {
+    border: 2px solid var(--knowl_thin_border);
+}
+body.knowl form button:hover,
+body.knowl form select:hover {
+    background:    var(--knowl_hover);
+    border: 2px solid var(--knowl_thin_border);
+}
+
+/* start cut-and-paste from seminars line 1518 */
+table a.knowl-link,
+table a[knowl] {
+  display: inline;
+  padding: 0;
+}
+table .knowl-link {
+  display: inline;
+  border-bottom: 1px dotted var(--knowl_hyper_text);
+  border-radius: 0px;
+  padding: 1px;
+}
+.knowl-bar {
+  white-space: nowrap;
+  background: var(--knowl_background);
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--knowl_thin_border);
+  border-top-left-radius: 10px;
+}
+.knowl-bar button,
+.knowl-bar input,
+.knowl-bar form {
+  font-size: small;
+  display: inline;
+  margin: 0px 2px;
+}
+#knowl-search input {
+  font-size: small;
+  background: var(--knowl_background);
+}
+.knowl-bar a {
+  padding: 2px 5px;
+}
+.knowl-editmode-sep {
+  padding: 5px;
+  margin: 30px 0;
+  border-bottom: 1px solid var(--knowl_thin_border);
+  background: var(--knowl_background);
+  color: var(--knowl_hyper_text);
+  font-weight: bold;
+}
+.knowl-inc-edit {
+  margin-bottom: 10px;
+  border-bottom: 2px solid var(--knowl_border);
+  font-size: x-small;
+  text-align: right;
+  line-height: 100%;
+}
+.knowl-inc-edit a {
+  padding: 3px 5px 0px 5px;
+  background: var(--knowl_l_1);
+  border-top-left-radius: 5px;
+}
+.knowl {
+  padding: 0;
+}
+/* knowl-index is the big table on the main knowledge page */
+#knowl-index td div > a {
+  display: block;
+  padding: 0px;
+  position: absolute;
+  top: 12px;
+}
+#knowl-index td div > span {
+  font-size: xx-small;
+  color: var(--grey);
+  position: absolute;
+  top: 2px;
+  line-height: 1em;
+}
+#knowl-index td div {
+  position: relative;
+  display: inline;
+  width: 170px;
+  height: 70px;
+  float: left;
+  min-height: 4em;
+  overflow: hidden;
+  padding: 2px;
+  margin: 1px;
+  border-radius: 2px;
+}
+#knowl-index td div:hover {
+  background: var(--knowl_hover);
+  cursor: pointer;
+}
+#knowl-index td {
+  padding: 0;
+}
+#knowl-index tr td:first-child {
+  width: 50px;
+  vertical-align: top;
+  text-align: center;
+  font-size: x-large;
+  color: var(--knowl_hyper_text);
+  padding-top: 12px;
+}
+body.knowl table.ntdata thead tr {
+  background: var(--knowl_background);
+  border-bottom: 2px solid var(--knowl_underline);
+}
+body.knowl table.ntdata tr:nth-of-type(odd) {
+ background: var(--knowl_background);
+}
+body.knowl table.ntdata tr:nth-of-type(even) {
+    background: var(--white);
+}
+.knowl-content {
+  padding: 0 10px;
+}
+.knowl-content h1 {
+  margin: 0px 0px 10px 0px;
+}
+.knowl-content h2 {
+  margin: 0px 0px 5px 0px;
+}
+*[knowl] {
+  border-bottom: 1px dotted var(--knowl_underline);
+  cursor: pointer;
+  border-radius: 0;
+  margin: 3px 0 0 0;
+}
+*[knowl]:hover,
+*[knowl].active {
+  border-bottom: 2px solid var(--knowl_underline);
+  background: var(--knowl_hover);
+  color: var(--knowl_hyper_text);
+  margin: 0;
+  padding: 3px 0 0 0;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+body.knowl #header {
+    background: var(--knowl_header_background);
+}
+body.knowl #header #title {
+    color: var(--knowl_title_text);
+}
+body.knowl #content h1,
+body.knowl #content h2,
+body.knowl #content a {
+  color: var(--knowl_hyper_text);
+}
+body.knowl a:hover {
+  background: var(--knowl_hover);
+}
+
+div > *[knowl], p > *[knowl] {
+  position: relative;
+}
+
+table .knowl a {
+    padding: 0;
+}
+
+.knowl-error {
+   color: var(--knowl_error);
+   border-bottom: 0;
+   text-decoration: underline;
+}
+
+.knowl-error a {
+   font-size:60%;
+   color: var(--knowl_error);
+}
+
+.knowl-output {
+  background: var(--knowl_background);
+  border: 5px solid var(--knowl_border);
+  border-radius: 10px;
+  padding: 0px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+  margin-right: 10px;
+  text-align: left;
+  overflow-y: hidden;
+  max-height: 1000px;
+  transition: max-height 0.1s ease, border-width 0.1s step-start;
+}
+
+.knowl-output:not(.open) {
+  transition: max-height 0.1s ease, border-width 0.1s step-end;
+  max-height: 0px;
+  border-width: 0px;
+  margin: 0px;
+}
+
+
+.knowl-output .knowl-output,
+.knowl-output .knowl-output.loading {
+ margin-left: 0;
+ margin-right: 0;
+}
+.knowl-output.loading {
+ color: var(--grey);
+ font-style: italic;
+ font-size: small;
+}
+
+.knowl-output h1, .knowl-output h2 {
+  margin: 5px 0;
+}
+.knowl-output h1 {
+  color: var(--knowl_hyper_text);
+}
+.knowl-output h2 {
+  color: var(--knowl_hyper_text);
+}
+.knowl-output a { display: inline; }
+
+.knowl-footer {
+  position: relative;
+  bottom: -10px;
+  font-size: x-small;
+  line-height: 100%;
+  background: var(--knowl_border);
+  color: var(--knowl_border_text);
+  padding: 1px 0 1px 10px;
+  margin:  0 0 0 0;
+}
+.knowl-header {
+  position: relative;
+  top: -10px;
+  font-size: x-small;
+  line-height: 100%;
+  background: var(--knowl_border);
+  color: var(--grey);
+  padding: 1px 0 1px 10px;
+  margin:  0 0 0 0;
+}
+.knowl-header a,
+.knowl-footer a {
+    color: var(--knowl_border_links);
+}
+.knowl-header a:hover,
+.knowl-footer a:hover {
+  background: none;
+  color: var(--knowl_border_hover);
+}
+
 
 .debug {
   background: #FF9;

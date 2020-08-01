@@ -138,6 +138,8 @@ function knowl_click_handler(evt) {
 
   var table_mode = tagname == "td" || tagname == "th"
 
+  console.log(knowl_id + " was clicked!");
+
   // if we already have the content, toggle visibility
   if (output) {
     if (table_mode) {
@@ -177,16 +179,6 @@ function knowl_click_handler(evt) {
       knowl_div.innerHTML = '';
       knowl_output.classList.remove("loading");
       knowl_div.appendChild(knowl_content);
-      // render latex
-      defer( function () {
-        try
-        {
-          renderMathInElement(document.getElementById(output_id), katexOpts)
-        }
-        catch(err) {
-          console.log("err:" + err)
-        }
-      }, 'renderMathInElement')
       // enable knowls inside knowls
       knowl_register_onclick(knowl_output);
     }
@@ -200,26 +192,21 @@ function knowl_click_handler(evt) {
 
       // figure out max_width
       var row_width = tr_tag.clientWidth;
-      console.log("row_width: " + row_width);
       // no larger than the current row width (for normal tables)
       // at least 700px (for small tables)
       // and deduce margins and borders
       var margins_and_borders = 2*20 + parseInt(window.getComputedStyle(td_tag, null).getPropertyValue('padding-left')) + parseInt(window.getComputedStyle(td_tag, null).getPropertyValue('padding-right'));
-      console.log("margins_and_borders: " + margins_and_borders);
       var max_width = Math.max(700, row_width) - margins_and_borders;
 
-      console.log("max_width: " + max_width);
       knowl_output.style.maxWidth = max_width + "px"
 
       //max rowspan of this row
       var max_rowspan = Array.from(tr_tag.children).reduce((acc, td) => Math.max(acc, td.rowSpan), 0)
-      console.log("max_rowspan: " + max_rowspan);
 
       //compute max number of columns in the table
       var cols = Array.from(tr_tag.children).reduce((acc, td) => acc + td.colSpan, 0)
       var tr_siblings = siblings(tr_tag, 'tr');
       cols = Array.from(tr_siblings).reduce((ac, tr) => Math.max(ac, Array.from(tr.children).reduce((acc, td) => acc + td.colSpan, 0)), cols);
-      console.log("cols: " + cols);
       for(var i = 0; i < tr_siblings.length; i++) {
         if(tr_tag == tr_siblings[i]) {
           tr_tag = tr_siblings[i + max_rowspan - 1];
@@ -288,7 +275,6 @@ function knowl_handle(evt) {
 }
 
 function knowl_register_onclick(element) {
-  console.log("knowl_register_onclick");
   element.querySelectorAll('a[knowl]').forEach(
    (knowl) => {
      knowl.onclick = debounce(knowl_handle, 500, true)
@@ -297,7 +283,6 @@ function knowl_register_onclick(element) {
 }
 
 if( document.readyState !== 'loading' ) {
-    console.log( 'document is already ready, registering knowls');
     knowl_register_onclick(document);
 } else {
     document.addEventListener('DOMContentLoaded', function () {

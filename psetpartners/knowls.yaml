@@ -1,4 +1,4 @@
-time_slots:
-  title: Time slots
+test:
+  title: Click me!
   contents: |
-    Enter the time slots that you are available in our local time zone.
+    This is a test knowl.

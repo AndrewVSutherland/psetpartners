@@ -10,7 +10,7 @@
       {% endfor %}
     </select>
   </td>
-  <td class="{{pref}}" style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options.strength}}[spref_{{pref}}_input.value]" spref_{{pref}}_ouput.dispatchEvent(new Event('change'));
+  <td class="{{pref}}" style="padding-left:0;"><input name="spref_{{pref}}" id="spref_{{pref}}_input" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" class="slider" oninput="spref_{{pref}}_output.value = {{options.strength}}[spref_{{pref}}_input.value]; spref_{{pref}}.dispatchEvent(new Event('change'));"
 /></td>
   <td><output class="value" id="spref_{{pref}}_output">{{options.strength[user.strengths[pref]]}}</output></td>
 {%- endmacro %}
@@ -95,7 +95,7 @@
     #}
   </table>
 
-  <h3>Location and availability for {{options.term[current_term]}} {{current_year}}</h3>
+  <h3>Details for {{user.show_current_term()}}</h3>
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
@@ -115,24 +115,28 @@
           </select>
       </td>
     </tr>
+    <tr>
+      <td class="caption">Classes</td>
+      <td class="value"><span id="class_selector"></span></td>
+    </tr>
     <tr><td class="caption" colspan="2" style="padding-top:10px;">Times available for collaboration (in the time zone selected above)</td></tr>
   </table>
   <br>
-  <table id="hours" style="margin-left:60px; margin-top:-10px;">
-    <tr>
+  <table class="checkboxgrid" id="hours" style="margin-left:40px; margin-top:-10px;">
+    <tr class="checkboxgird">
       {% for i in range(24) %}
-        <td align="left" style="font-size:12px; padding-left:2px; vertical-align:bottom;">{{i}}</td>
+        <td class="checkboxgrid" style="vertical-align:bottom; padding-left:3px; padding-bottom:0px;">{{i}}</td>
       {% endfor %}
     </tr>
     {% for i in range(7) %}
-    <tr>
+    <tr class="checkboxgrid">
       {% for j in range(24) %}
-      <td><label class="checkboxgrid">
+      <td class="checkboxgrid"><label class="checkboxgrid">
           <input class="checkboxgrid" name="hours-{{i}}-{{j}}" id="check-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
           <span id="hours-{{i}}-{{j}}" class="checkboxgrid"></span>
       </label></td>
       {% endfor %}
-      <td style="font-size:12px; vertical-align:top;">{{options.weekday[i]}}</td>
+      <td class="checkboxgrid" style="vertical-align:center;">{{options.weekday[i]}}</td>
     </tr>
     {% endfor %}
   </table>
@@ -146,7 +150,7 @@
         {% if i < (user.classes | length) %}
           {% set num=user.classes[i].class_number %}
           <tr class="class_slot">
-            <td>{{num}} {{class_names[num]}}</td>
+            <td>{{num}} {{options.class_names[num]}}</td>
             <td>{% if user.classes[i].group %}{{user.classes[i].group.group_name}} {% else %} none {% endif %}</td>
           </tr>
         {% else %}
@@ -158,11 +162,14 @@
   <table class="input">
     <tr>
       <td class="caption">Add the class</td>
-      <td><select class="value" id="addclass"  tabindex="9">
+      <td><select class="value" name="new_class_number" id="addclass"  tabindex="9" onchange="$('#save').prop('disabled',false); $('#save').click();">
             <option value="" selected></option>
             {% for number in options.classes %}
             <option value="{{number}}">{{number}} {{options.class_names[number]}}</option>
             {% endfor %}
+          </select>
+          <select class="value" id="addclassdisable"  tabindex="9" style="display:none;" disabled>
+            <option value="">please save your unsaved changes first</option>
           </select>
       </td>
     </tr>
@@ -212,7 +219,7 @@
 <h3>{{user.is_new}}</h3>
 
   <table class="submit">
-    <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="-1" disabled>Save</button></td>
+    <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="17" disabled>Save</button></td>
         <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" disabled>Reset</button></td>
         <td class="alertinfo" colspan="2" id="submitalert"></td>
     </tr>
@@ -220,18 +227,31 @@
   </form>
 
 <script type="text/javascript">
-  document.addEventListener('DOMContentLoaded', function() {
+
+const classOptions = [
+  {% for num in options.classes %}
+  {
+    label: `{{num}} {{options.class_names[num]}}`,
+    value: `{{ num }}`,
+  },
+  {% endfor %}
+];
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    makeClassSelector(classOptions, {{user.classlist}})
     setup_checkboxgrid();
     setup_url_tester('homepage','homepage_link','','invalid url');
-    if ( ! $('#hours input:checkbox').is(':checked') ) $('#cancel').hide();
     $('#userinfo').data('initial',$('#userinfo').serialize());
-    function check_change () {
+    function check_change (e) {
       var change =  $('#userinfo').serialize() != $('#userinfo').data('initial');
-      var hours = $('#hours input:checkbox').is(':checked');
+      var hours = $('#hours input:checkbox:checked').length;
       $('#userinfo :submit').prop('disabled',!change);
-      if ( !hours ) {
+      $('#addclass')[0].style.display = change ? 'none' : 'block';
+      $('#addclassdisable')[0].style.display = change ? 'block' : 'none';;
+      if ( hours < 6 ) {
         $('#save').prop('disabled',true);
-        $('#submitalert').html('Please indicate hours available.');
+        $('#submitalert').html('Please pick at least 6 times you are available to collaborate each week.');
       } else {
         $('#submitalert').html('');
       }
@@ -240,7 +260,7 @@
     $('#userinfo :input').keyup(check_change);
     check_change();
     console.log('setup done');
-  });
+});
 </script>
 
 {% endif %}
