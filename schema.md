@@ -44,7 +44,7 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
 class_id	      | bigint	    | id in classes table
 group_name            | text	    | custom name, editable by anyone in group
-visibility            | smalling    | 0=closed, 1=open, 2=public  (closed+open are system created)
+visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
 
@@ -55,6 +55,8 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
+year		      | smallint    | year of class (used to quickly get a list of current classes for a student)
+term                  | smallint    | term of class (used to quickly get a list of current classes for a student)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
 			
