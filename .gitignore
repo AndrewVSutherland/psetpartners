@@ -1,6 +1,5 @@
 secrets.ini
 secret_key
-psycodict/config.init
 slow_queries.log
 flasklog
 *~
