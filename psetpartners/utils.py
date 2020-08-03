@@ -1,8 +1,7 @@
 # This file is made up of selected bits copied from researchseminars.org's codebase.  It should be factored out at some point.
 
-
 import pytz
-import re
+import re, ast
 from collections.abc import Iterable
 from datetime import time as maketime
 from datetime import datetime, timedelta
@@ -12,11 +11,23 @@ from dateutil.parser import parse as parse_time
 from flask_login import current_user
 
 DEFAULT_TIMEZONE = 'America/New_York'
-DEFAULT_TIMEZONE_PREFIX = 'MIT'
+DEFAULT_TIMEZONE_NAME = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 
 strength_options = ["", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 term_options = ["IAP", "spring", "summer", "fall"]
+
+department_affinity_options = [
+    (1, "someone else in my department"),
+    (2, "only students in my department"),
+    (3, "students in different departments"),
+    ]
+
+departments_affinity_options = [
+    (1, "someone else in one of my departments"),
+    (2, "only students in one of my departments"),
+    (3, "students in many departments"),
+    ]
 
 gender_options = [
     ("female", "female"),
@@ -27,11 +38,13 @@ gender_options = [
 gender_affinity_options = [
     (1, "someone else with my gender identity"),
     (2, "only students with my gender identity"),
+    (3, "a diversity of gender identities"),
     ]
 
 year_affinity_options = [
     (1, "someone else in my year"),
     (2, "only students in my year"),
+    (3, "students in multiple years"),
     ]
 
 year_options = [
@@ -108,17 +121,14 @@ def current_year():
     return datetime.now().year
 
 def current_term():
-    """ Returns the current term (0,1,2,3,4) to be used when listing courses add (possibly before the term starts) """
-    t = datetime.now()
-    if t.month == 1:
-        return 0 if t.day <= 15 else 1 # IAP or spring
-    if t.month < 6:
-        return 1 # spring
-    if t.month < 7 or (t.month==7 and t.day<25):
-        return 2 # summer
-    if t.month < 12:
-        return 3 # fall
-    return 3 if t.day <= 15 else 0 # fall or IAP
+    """ Returns the current/upcoming term, which is currently always 1 (spring) or 3 (fall)"""
+    return 1 if datetime.now().month < 6 else 3
+
+def current_term_pretty():
+    return term_options[current_term()] + " " + str(current_year())
+
+def current_upcoming():
+    return "current" if datetime.now().month in [2,3,4,5,9,10,11,12] else "upcoming"
 
 def localize_time(t, newtz=None):
     """
@@ -132,8 +142,32 @@ def localize_time(t, newtz=None):
         return t
 
 def cleanse_dashes(s):
-    # replace unicode variants of dashes (which users might cut-and-paste in) with ascii dashes
+    # replace unicode variants of dashes (which users might cut-and-paste) with ascii dashes
     return '-'.join(re.split(dash_re,s))
+
+#TODO: handle strings encoding lists of strings that may contain commas
+def list_of_strings(inp):
+    if inp is None:
+        return []
+    if isinstance(inp, str):
+        inp = inp.strip()
+        if not inp:
+            return []
+        # if there are any quotes present, use literal_eval
+        if "'" in inp or '"' in inp:
+            if inp[0] != "[":
+                inp = "[" + inp + "]"
+            return ast.literal_eval(inp)
+        if len(inp) == 1:
+            return ["",""] if inp == "," else [inp]
+        if inp[0] == "[" and inp[-1] == "]":
+            inp = inp[1:-1].strip();
+        if not "," in inp:
+            return [inp]
+        return [elt.strip() for elt in inp.split(",")]
+    if isinstance(inp, Iterable):
+        inp = [elt for elt in inp]
+    RaiseValueError("Unrecognized input, expected a list of strings")
 
 def validate_daytime(s):
     if not daytime_re.fullmatch(s):
@@ -218,7 +252,7 @@ def naive_utcoffset(tz):
         ):
             pass
 
-def pretty_timezone(tz, dest="selecter", base_prefix='UTC', base_timezone='UTC'):
+def pretty_timezone(tz, dest="selecter", base_name='UTC', base_timezone='UTC'):
     foo = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(base_timezone).total_seconds())
     foo 
     hours, remainder = divmod(abs(foo), 3600)
@@ -228,7 +262,7 @@ def pretty_timezone(tz, dest="selecter", base_prefix='UTC', base_timezone='UTC')
             diff = "-{:02d}:{:02d}".format(hours, minutes)
         else:
             diff = "+{:02d}:{:02d}".format(hours, minutes)
-        return "({} {}) {}".format(base_prefix, diff, tz)
+        return "({} {}) {}".format(base_name, diff, tz)
     else:
         tz = str(tz).replace("_", " ")
         if minutes == 0:
@@ -239,10 +273,10 @@ def pretty_timezone(tz, dest="selecter", base_prefix='UTC', base_timezone='UTC')
             diff = "-" + diff
         else:
             diff = "+" + diff
-        return "{} ({} {})".format(tz, base_prefix, diff)
+        return "{} ({} {})".format(tz, base_name, diff)
 
-timezones = [('', DEFAULT_TIMEZONE_PRETTY)] + [
-    (v, pretty_timezone(v, base_prefix=DEFAULT_TIMEZONE_PREFIX, base_timezone=DEFAULT_TIMEZONE)) for v in sorted(pytz.common_timezones, key=naive_utcoffset)
+timezones = [(DEFAULT_TIMEZONE_NAME, DEFAULT_TIMEZONE_PRETTY)] + [
+    (v, pretty_timezone(v, base_name=DEFAULT_TIMEZONE_NAME, base_timezone=DEFAULT_TIMEZONE)) for v in sorted(pytz.common_timezones, key=naive_utcoffset)
 ]
 
 def format_errmsg(errmsg, *args):
@@ -326,7 +360,7 @@ def process_user_input(inp, col, typ, tz=None):
         raise ValueError("Invalid boolean")
     elif typ == "text":
         if col.endswith("timezone"):
-            return inp if pytz.timezone(inp) else ""
+            return inp if (inp == DEFAULT_TIMEZONE_NAME or pytz.timezone(inp)) else ""
         # should sanitize somehow?
         return "\n".join(inp.splitlines())
     elif typ == "posint":
@@ -345,20 +379,6 @@ def process_user_input(inp, col, typ, tz=None):
     elif typ in ["int", "smallint", "bigint", "integer"]:
         return int(inp)
     elif typ == "text[]":
-        if inp == "":
-            return []
-        elif isinstance(inp, str):
-            if inp[0] == "[" and inp[-1] == "]":
-                res = [elt.strip().strip("'") for elt in inp[1:-1].split(",")]
-                if res == [""]:  # was an empty array
-                    return []
-                else:
-                    return res
-            else:
-                return [inp]
-        elif isinstance(inp, Iterable):
-            return [str(x) for x in inp]
-        else:
-            raise ValueError("Unrecognized input")
+        return list_of_strings(inp)
     else:
         raise ValueError("Unrecognized type %s" % typ)

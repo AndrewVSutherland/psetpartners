@@ -14,8 +14,8 @@ from flask import (
 )
 from .knowls import static_knowl
 from psetpartners.utils import (
-    current_year,
-    current_term,
+    current_upcoming,
+    current_term_pretty,
     )
 
 ############################
@@ -68,6 +68,10 @@ app.jinja_env.trim_blocks = True
 app.jinja_env.add_extension("jinja2.ext.loopcontrols")
 app.jinja_env.add_extension("jinja2.ext.do")
 
+@app.template_filter("blanknone")
+def blanknone(x):
+    return "" if x is None else str(x)
+
 # the following context processor inserts
 #  * empty info={} dict variable
 #  * body_class = ''
@@ -83,8 +87,8 @@ def ctx_proc_userdata():
     data["static_knowl"] = static_knowl
     data["DEBUG"] = is_debug_mode()
 
-    data["current_year"] = current_year()
-    data["current_term"] = current_term()
+    data["current_upcoming"] = current_upcoming
+    data["current_term_pretty"] = current_term_pretty
     return data
 
 ##############################

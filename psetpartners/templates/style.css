@@ -1,12 +1,17 @@
 :root {
   --mit-maroon: #a31f34;
+  --mit-pink: #fdf5f3;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
   --shadow-color: var(--mit-maroon);
+  --shadow-width: 4px;
+  --caption-width: 270px;
+  --value-width: 380px;
   --light-gray: #d6d7d8;
+  --lighter-gray: #eaebec;
   --alert-color: #e32f54;
+  --select-fill: var(--mit-pink);
   --button-fill: #a31f34;
-  --select-fill: #f7eeec;
   --slider-fill: var(--mit-maroon);
   --input-border-color: var(--mit-maroon);
   --input-border-width: 1.5px;
@@ -16,7 +21,7 @@
   font-family: Verdona, Geneva, sans-serif;
 }
 
-/* Disable selction except for text input */
+/* Disable selection except for text input */
 :not(input):not(textarea),
 :not(input):not(textarea)::after,
 :not(input):not(textarea)::before {
@@ -33,21 +38,22 @@
 
 #header {
   background: var(--mit-maroon);
-  box-shadow: 0px 3px 3px var(--shadow-color);
-  margin-top: -4px;
-  margin-left: -6px;
-  margin-right: -6px;
+  box-shadow: 0 0 var(--shadow-width) var(--shadow-color);
+  margin-top: -6px;
+  margin-left: -7px;
+  margin-right: -7px;
   min-width: 1024px;
 }
 header.inner {
-  margin: -6px auto;
+  margin: 0px auto;
+  padding: 4px 20px;
   max-width: 1024px;
 }
 
 #header #logo {
   display: inline-block;
   margin: 0px;
-  padding-top: 20px;
+  padding-top: 16px;
 }
 #header #logo img {
   max-height: 70px;
@@ -58,16 +64,16 @@ header.inner {
   padding-left: 48px;
   vertical-align: top;
   width: calc(100% - 350px);
-  height: 75px;
+  height: 60px;
   position: relative;
 }
 #header #title {
   font-size: 180%;
-  padding-top: 20px;
   color: #FFFFFF;
   min-height: 32px;
   min-width: 300px;
   text-align: center;
+  padding-top: 12px;
 }
 #header #title a {
   color: white;
@@ -77,9 +83,9 @@ header.inner {
 
 #footer {
   clear: both;
-  margin-top: 48px;
-  margin-left: -6px;
-  margin-right: -6px;
+  margin-top: 42px;
+  margin-left: -7px;
+  margin-right: -7px;
   background-color: var(--mit-maroon);
   border-top: 2px solid var(--shadow-color);
   padding: 25px 10px;
@@ -143,11 +149,6 @@ header.inner {
   margin-bottom: 10px;
 }
 
-#content h2 span.comment, h3 span.comment {
-  font-weight: normal;
-  font-size: 80%;
-}
-
 #content a, a:visited {
   color: var(--mit-maroon);
   font-family: sans-serif;
@@ -155,12 +156,10 @@ header.inner {
   cursor: pointer;
 }
 
-
-#content table.input table.output {
+#content table.input, table.output {
   border-collapse: collapse;
   margin-left: 20px;
-  min-width: 600px;
-  /* border-spacing: 0px; only relevant if border-collapse is separate */
+  min-width: 610px;
 }
 
 #content table.submit {
@@ -170,20 +169,45 @@ header.inner {
 }
 
 #content td.caption {
-  width: 250px;
+  width: var(--caption-width);
   white-space: nowrap;
   margin-right:0px;
   vertical-align:middle;
 }
 
+#content td.forminfo, span.forminfo {
+   padding-left: 8px;
+   font-size: 80%;
+   font-weight: normal;
+   font-style: italic;
+   color: #333;
+   vertical-align: middle;
+}
+
+#content span.forminfo {
+   padding-left: 2px;
+}
+
+#content span.forminfo::before {
+  content: "(";
+  font-style: normal;
+}
+
+#content span.forminfo::after {
+  content: ")";
+  font-style: normal;
+}
+
+
 #content input.value, select.value, textarea.value {
   border: var(--input-border-width) solid var(--input-border-color);
+  background: var(--mit-white);
   padding: 3px 6px;
   font-family: Verdona, Geneva, sans-serif;
   font-size: 100%;
   border-radius: 4px;
-  width: 350px;
-  height: 20px;
+  width: var(--value-width);
+  height: 23px;
   box-sizing:content-box;
   -ms-box-sizing:content-box;
   -moz-box-sizing:content-box;
@@ -193,7 +217,7 @@ header.inner {
 #content input.value:focus, select.value:focus, textarea.value:focus {
   outline: none !important
   border: var(--input-focus-border-width) solid var(--input-focus-border-color);
-  box-shadow: 0 0 5px var(--shadow-color);
+  box-shadow: 0 0 var(--shadow-width) var(--shadow-color);
 }
 
 #content input.value {
@@ -201,10 +225,21 @@ header.inner {
   padding-right: 0px;
 }
 
+#content select.value option {
+  background: var(--lighter-gray);
+  font-size: 95%;
+}
+
 #content select.value {
   cursor: pointer;
+  background: var(--mit-white);
   padding-left: 1px;
   padding-right: 3px;
+}
+
+#content select.value:hover {
+  cursor: pointer;
+  background: var(--select-fill);
 }
 
 #content textarea.value {
@@ -235,12 +270,6 @@ button {
 
 button:disabled {
   color: white;
-}
-
-select, select option {
-  background: var(--select-fill);
-  border: var(--input-border-width) solid var(--input-border-color);
-  font-size: 100%;
 }
 
 .alertinfo {
@@ -342,7 +371,7 @@ input:-webkit-autofill:active  {
 
 :root {
   --checkboxgrid-cell-height: 13px;
-  --checkboxgrid-cell-width: 28px;
+  --checkboxgrid-cell-width: 30px;
   --checkboxgrid-cell-horizontal-spacing: 2px;
   --checkboxgrid-cell-vertical-spacing: 2px;
   --checkboxgrid-font-size: 12px; /* only relevant for captions, which are up to the html to include */
@@ -396,6 +425,10 @@ span.checkboxgrid {
   border-radius: var(--checkboxgrid-border-radius);
   background-color: var(--checkboxgrid-unchecked-color);
   cursor: pointer;
+}
+
+span.checkboxgrid::after {
+  content: "";
 }
 
 label.checkboxgrid input:hover ~ span.checkboxgrid {

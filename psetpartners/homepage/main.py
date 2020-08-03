@@ -17,8 +17,13 @@ from datetime import datetime
 from markupsafe import Markup
 from psetpartners import db
 from psetpartners.app import app
-from psetpartners.student import Student, AnonymousStudent, preference_types
-from psetpartners.group import current_classes
+from psetpartners.student import (
+    Student,
+    AnonymousStudent,
+    preference_types,
+    departments,
+    current_classes,
+    )
 from psetpartners.utils import (
     timezones,
     format_input_errmsg,
@@ -32,6 +37,8 @@ from psetpartners.utils import (
     gender_options,
     year_options,
     location_options,
+    department_affinity_options,
+    departments_affinity_options,
     gender_affinity_options,
     year_affinity_options,
     group_size_options,
@@ -40,6 +47,7 @@ from psetpartners.utils import (
     forum_options,
     start_options,
     together_options,
+    list_of_strings,
 )
 
 login_manager = LoginManager()
@@ -53,8 +61,9 @@ login_manager.login_view = "user.info"
 login_manager.anonymous_user = AnonymousStudent
 
 def info_options():
-    classes, class_names = current_classes()
-    return {'year': year_options,
+    return {'department_affinity': department_affinity_options,
+            'departments_affinity': departments_affinity_options,
+            'year': year_options,
             'year_affinity': year_affinity_options,
             'gender': gender_options,
             'gender_affinity': gender_affinity_options,
@@ -67,8 +76,8 @@ def info_options():
             'location': location_options,
             'timezone' : timezones,
             'weekday' : short_weekdays,
-            'classes' : classes,
-            'class_names' : class_names,
+            'classes' : current_classes(),
+            'departments' : departments(),
             }
 
 # globally define user properties and username
@@ -113,6 +122,7 @@ def set_info():
     errmsgs = []
     prefs = {}
     sprefs = {}
+    print(dict(raw_data))
     data = {"preferences": prefs, "strengths": sprefs}
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
@@ -150,21 +160,15 @@ def set_info():
     # There should never be any errors coming from the form
     if errmsgs:
         return show_input_errors(errmsgs)
+    data["classes"] = list_of_strings(raw_data.get("classes",[]))
     for k, v in data.items():
         setattr(current_user, k, v)
-    num = raw_data.get("new_class_number","")
-    if num:
-        try:
-            current_user.add_class(num)
-            flash_info ("Added %s." % num) 
-        except Exception as err:
-            flash_warning ("Unable to add %s: " + err)
-            return redirect(url_for(".info"), 301)    
+    current_user.save()
     try:
-       current_user.save()
+       #current_user.save()
        flash_info ("Changes saved.") 
     except Exception as err:
-        flash_error("Error saving changes: " + err)
+        flash_error("Error saving changes: %s" % err)
     return redirect(url_for(".info"), 301)
 
 @app.route("/logout", methods=["POST"])
