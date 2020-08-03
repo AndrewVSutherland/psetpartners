@@ -2,6 +2,15 @@
 
 This file provides documentation on the underlying schema; try to keep it up to date if you make changes.
 
+## departments
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    | bigint      | unique identifier automatically assigned by postgres
+course_name           | text        | Course name, e.g. Mathematics
+course_number         | text        | Course number, e.g. 18
+
+
 ## classes	
 
 Column                | Type        |  Notes
@@ -21,19 +30,20 @@ pset_dates            | date[] 	    | list of due dates for psets (optional, pos
 Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
+departments           | text[]      | List of course_numbers in departments table, e.g. ["18"] or ["6","18"]
+description           |	text	    | Student's public description of themself (not currently used)
+email	              | text	    | smith@gmail.com (not currently used, we just email kerb@mit.edu)
+gender                | text        | optional, currently female, male, or non-binary (optional)
+hours                 | boolean[]   | a 7x24 array of booleans indicating hours available to pset (in timezone)
+kerb                  |	text	    | kerberos id
+location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 name                  |	text        | e.g. Johnathan Smith
-kerb                  |	text	    | kerb id
-email	              | text	    | smith@gmail.com
 preferred_name        | text        | e.g. John Smith
 preferred_pronouns    | text	    | e.g. they/them
-year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
-gender                | text        | optional, currently female, male, or non-binary
-location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 preferences           |	jsonb	    | dictionary of preferences (see Preferences tab)
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
-hours                 | boolean[]   | a 7x24 array of booleans indicating hours available to pset (in timezone)
-description           |	text	    | Student's public description of themself
+year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
 blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
 rejected_group_ids    | bigint[]    | list of group ids theis student has rejectd
 			
