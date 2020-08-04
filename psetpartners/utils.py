@@ -14,7 +14,7 @@ DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 
-strength_options = ["", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
+strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 term_options = ["IAP", "spring", "summer", "fall"]
 
 department_affinity_options = [
@@ -167,7 +167,7 @@ def list_of_strings(inp):
         return [elt.strip() for elt in inp.split(",")]
     if isinstance(inp, Iterable):
         inp = [elt for elt in inp]
-    RaiseValueError("Unrecognized input, expected a list of strings")
+    raise ValueError("Unrecognized input, expected a list of strings")
 
 def validate_daytime(s):
     if not daytime_re.fullmatch(s):

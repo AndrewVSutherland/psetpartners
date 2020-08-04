@@ -58,7 +58,7 @@ function makeMultiSelect(name, available, selected, auto=false, short=false) {
 
 
 // disable drag and drop
-function disable_drag() {
+function disableDrag() {
   document.addEventListener('drag', function(e) { e.preventDefault(); });
   document.addEventListener('drop', function(e) { e.preventDefault(); });
   document.addEventListener('dragstart', function(e) { e.preventDefault(); });
@@ -69,8 +69,8 @@ function disable_drag() {
 }
 
 // must be called by any code using the checkboxgrid class
-function setup_checkboxgrid(name,rows,cols) {
-  disable_drag();
+function makeCheckboxGrid(name,rows,cols) {
+  disableDrag();
   $('span.checkboxgrid').on('mousedown mouseup mouseover', function a (e) {
     if ( typeof a.active === 'undefined' ) a.active = false;
     if ( e.type == 'mouseup' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
@@ -106,7 +106,7 @@ function validURL(str) {
   return !!pattern.test(str);
 }
 
-function url_tester(id, test_id, test_anchor, errmsg) {
+function showURLtest(id, test_id, test_anchor, errmsg) {
   const url = $('#'+id).val();
   if ( url == '' ) { $('#'+test_id).html(''); return; }
   if ( validURL(url) ) {
@@ -117,7 +117,7 @@ function url_tester(id, test_id, test_anchor, errmsg) {
   }
 }
 
-function setup_url_tester(id, test_id, test_anchor, errmsg) {
+function makeURLtester(id, test_id, test_anchor, errmsg) {
   $('#'+id).keyup(function(evt) { evt.preventDefault(); url_tester(id, test_id, test_anchor, errmsg);});
   url_tester(id, test_id, test_anchor, errmsg);
 }

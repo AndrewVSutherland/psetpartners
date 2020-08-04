@@ -88,6 +88,7 @@ class Student(UserMixin):
                 self.strengths[col] = 3
         self.class_data = student_class_data(self.id)
         self.classes = sorted(list(self.class_data), key=class_number_key)
+        print(self.classes)
 
     @property
     def tz(self):

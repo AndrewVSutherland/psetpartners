@@ -33,7 +33,7 @@ span.select-pure__placeholder::after {
   font-weight: 500;
   justify-content: left;
   min-height: var(--min-height);
-  padding: 2px 8px 2px 2px;
+  padding: 2px 4px;
   margin: 0;
   position: relative;
   transition: 0.1s;
@@ -102,15 +102,20 @@ span.select-pure__placeholder::after {
   display: none;
 }
 
+.select-pure-label {
+  padding-top: 2px;
+  padding-bottom: 1px;
+}
+
 .select-pure__selected-label {
   background: var(--mit-maroon);
   border-radius: 3px;
   color: var(--mit-white);
   cursor: initial;
   display: inline-block;
-  margin: 2px;
-  padding: 2px 4px 2px 4px;
-  font-size: 95%;
+  margin: 2px 3px 2px 1px;
+  padding: 2px 4px 0px 4px;
+  font-size: 100%;
 }
 
 .select-pure__selected-label:last-of-type {

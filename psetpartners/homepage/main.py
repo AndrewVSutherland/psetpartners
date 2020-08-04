@@ -4,7 +4,6 @@ from flask import (
     redirect,
     request,
     flash,
-    jsonify,
 )
 from flask_login import (
     login_required,
@@ -29,7 +28,6 @@ from psetpartners.utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
-    flash_warning,
     flash_error,
     process_user_input,
     maxlength,
@@ -108,10 +106,6 @@ def info():
         options=info_options(),
         maxlength=maxlength,
     )
-
-@app.route("/test", methods=['GET', 'POST'])
-def test():
-    return jsonify({'reply':'hi there'})
 
 @app.route("/set_info", methods=["POST"])
 @login_required

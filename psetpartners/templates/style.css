@@ -10,6 +10,7 @@
   --light-gray: #d6d7d8;
   --lighter-gray: #eaebec;
   --alert-color: #e32f54;
+  --info-color: black;
   --select-fill: var(--mit-pink);
   --button-fill: #a31f34;
   --slider-fill: var(--mit-maroon);
@@ -248,10 +249,11 @@ header.inner {
   height: 80px;
 }
 
-#content output.value {
+#content label.strength {
   font-size: 75%;
+  font-style: italic;
   vertical-align: text-top;
-  color: var(--mit-maroon);
+  padding-left:4px;
 }
 
 button {
@@ -273,83 +275,127 @@ button:disabled {
 }
 
 .alertinfo {
-   padding-left: 10px;
-   font-size: 75%;
-   font-weight: bold;
-   font-style: italic;
-   color: var(--alert-color);
-   vertical-align: middle;
+  padding-left: 10px;
+  font-size: 75%;
+  font-weight: bold;
+  font-style: italic;
+  color: var(--alert-color);
+  vertical-align: middle;
 }
+
+.info {
+  padding-left: 10px;
+  font-size: 75%;
+  font-style: italic;
+  color: var(--info-color);
+  vertical-align: middle;
+}
+
+/* BEGIN pref-toggler */
+div.pref-toggler {
+  margin: -10px 0px 25px -10px;
+}
+
+div.pref-toggler-inner {
+  padding: 0;
+  margin:0;
+  border-bottom: 1.5px solid var(--mit-maroon);
+}
+
+div.toggler-nav {
+  display: inline-block;
+  font-size: 16px;
+  padding: 8px;
+  min-width: 50px;
+  color: var(--mit-maroon);
+}
+
+div.toggler-nav {
+  margin: 0px 12px;
+}
+
+div.toggler-nav a {
+  padding: 8px 16px;
+  color: var(--mit-maroon);
+}
+
+div.toggler-active {
+  border-bottom: 2px solid var(--mit-maroon);
+}
+
+div.toggler-nav:hover {
+  cursor: pointer;
+}
+/* END pref-toggler */
 
 /* BEGIN styling to get a reasonable looking cross-platform slider */
 input[type="range"] {
-    -webkit-appearance: none;
-    overflow: hidden;
-    height: 8px;
-    width: 100px;
-    cursor: pointer;
-    margin-left: 20px;
-    border-radius: 0px;
-    border: var(--input-border-width) solid var(--input-border-color);
+  -webkit-appearance: none;
+  overflow: hidden;
+  height: 8px;
+  width: 100px;
+  cursor: pointer;
+  border-radius: 0px;
+  border: var(--input-border-width) solid var(--input-border-color);
 }
 
 ::-webkit-slider-runnable-track {
-    background: #fff;
+  background: #fff;
 }
 
 ::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    height: 12px;
-    width: 8px;
-    background: var(--select-fill);
-    box-shadow: -100vw 0 0 100vw var(--slider-fill);
-    border: var(--input-border-width) solid var(--input-border-color);
+  -webkit-appearance: none;
+  height: 12px;
+  width: 8px;
+  background: var(--select-fill);
+  box-shadow: -100vw 0 0 100vw var(--slider-fill);
+  border: var(--input-border-width) solid var(--input-border-color);
 }
 
 ::-moz-range-track {
-    height: 10px;
-    background: #fff;
+  height: 10px;
+  background: #fff;
 }
 
 ::-moz-range-thumb {
-    background: #fff;
-    height: 10px;
-    width: 10px;
-    border: var(--input-border-width) solid var(--input-border-color);
-    border-radius: 0 !important;
-    box-shadow: -100vw 0 0 100vw var(--slider-fill);
-    box-sizing: border-box;
+  background: #fff;
+  height: 10px;
+  width: 10px;
+  border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: 0 !important;
+  box-shadow: -100vw 0 0 100vw var(--slider-fill);
+  box-sizing: border-box;
 }
 
 ::-ms-fill-lower { 
-    background: dodgerblue;
+  background: dodgerblue;
 }
 
 ::-ms-thumb { 
-    background: #fff;
-    border: : var(--input-border-width) solid var(--input-border-color);
-    height: 10px;
-    width: 10px;
-    box-sizing: border-box;
+  background: #fff;
+  border: : var(--input-border-width) solid var(--input-border-color);
+  height: 10px;
+  width: 10px;
+  box-sizing: border-box;
 }
 
 ::-ms-ticks-after { 
-    display: none; 
+  display: none; 
 }
 
 ::-ms-ticks-before { 
-    display: none; 
+  display: none; 
 }
 
 ::-ms-track { 
-    background: #fff;
-    color: transparent;
-    height: 10px;
-    border: none;
+  background: #fff;
+  color: transparent;
+  height: 10px;
+  border: none;
 }
 
 ::-ms-tooltip { 
-    display: none;
+  display: none;
 }
 /* END styling to get a reasonable looking cross-platform slider */
 
