@@ -1,0 +1,18 @@
+# WARNING: after editing this file don't forget to copy it to
+# /home/psetpartners/psetpartners-git-test/gunicorn-config-test.py
+# as gunicorn doesn't handle well the config file being part of the repo
+bind = "0.0.0.0:9594"
+workers = 15
+SESSION_PROTECTION = None
+#daemon = True
+pidfile = '/home/psetpartners/gunicorn-test.pid'
+#
+errorlog = '/home/psetpartners/logs/test/errorlog'
+accesslog = '/home/psetpartners/logs/test/accesslog'
+loglevel = 'info' # change to 'debug' for more output
+#
+default_proc_name = 'psetpartners-test'
+timeout = 30
+max_requests = 1000
+# The maximum size of HTTP request line in bytes.
+imit_request_line = 8190

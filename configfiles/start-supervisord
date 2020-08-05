@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+supervisord -c /home/psetpartners/psetpartners-git-master/configfiles/supervisord.conf

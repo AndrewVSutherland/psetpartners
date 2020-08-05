@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+echo 'Killing supervisord ...'
+kill -TERM `cat /home/psetpartners/supervisord.pid`
+rm /home/psetpartners/supervisord.pid
+echo 'Killing gunicorn ...'
+for branch in live stable master; do
+  echo branch = $branch
+  kill -TERM `cat /home/psetpartners/gunicorn-$branch.pid`
+  rm /home/psetpartners/gunicorn-$branch.pid
+done
+echo '... and done!'
