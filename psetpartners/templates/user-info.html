@@ -1,25 +1,5 @@
 {% extends 'homepage.html' %}
 
-{% macro PREF(pref,tabindex,prefoptionkey) -%}
-  {% set prefoptionkey = prefoptionkey|default(pref) %}
-    <td class="value pref_{{pref}}">
-      <span class="select" name="pref_{{pref}}" tabindex="10"></span>
-      <input type="hidden" name="pref_{{pref}}" value="{{user.preferences[pref]}}"/>
-    </td>
-    <td style="padding-left:10px;"><input class="slider pref_{{pref}}" name="spref_{{pref}}" type="range" min="1" max="5" value="{{user.strengths[pref]}}" steps="1" oninput="changeStrength(this.name,this.value); this.dispatchEvent(new Event('change'));"
-  /><label class="strength pref_{{pref}}" name="spref_{{pref}}"></label></td>
-{%- endmacro %}
-
-{% macro OPTIONS(jname,oname,valprefix) -%}
-{% set oname = oname|default(jname) %}
-{% set valprefix = valprefix|default(false) %}
-const {{jname}}Options = [
-  {% for val, option in options[oname] %}
-    { label: '{% if valprefix %}{{val}} {% endif %}{{option}}', value: '{{val}}', },
-  {% endfor %}
-];
-{%- endmacro %}
-
 {% block content %}
 
 {% if not user.is_authenticated %}
@@ -61,15 +41,15 @@ const {{jname}}Options = [
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" /></td><td class="forminfo">required</td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" /></td><td class="forminfo">required</td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/hers, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td><td class="forminfo">optional</td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/hers, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td><td class="forminfo">optional</td>
     </tr>
     <tr>
       <td class="caption">Homepage</td>
-      <td><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td>
+      <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td>
       <td class="forminfo">optional</td>
     </tr>
     <tr>
@@ -130,21 +110,21 @@ const {{jname}}Options = [
     <tr><td class="caption" colspan="2" style="padding-top:10px;">Times available for collaboration</td></tr>
   </table>
   <br>
-  <table class="checkboxgrid" id="hours" style="margin-left:60px; margin-top:-10px;">
-    <tr class="checkboxgird">
+  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px;">
+    <tr class="cbg">
       {% for i in range(24) %}
-        <td class="checkboxgrid" style="vertical-align:bottom; padding-left:3px; padding-bottom:0px;">{{i}}</td>
+        <td class="cbg cbgt">{{i}}</td>
       {% endfor %}
     </tr>
     {% for i in range(7) %}
     <tr class="checkboxgrid">
       {% for j in range(24) %}
-      <td class="checkboxgrid"><label class="checkboxgrid">
-          <input class="checkboxgrid" name="hours-{{i}}-{{j}}" id="check-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
-          <span id="hours-{{i}}-{{j}}" class="checkboxgrid"></span>
+      <td class="cbg"><label class="cbg">
+          <input class="cbg" name="hours-{{i}}-{{j}}" id="check-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
+          <span id="hours-{{i}}-{{j}}" class="cbg"></span>
       </label></td>
       {% endfor %}
-      <td class="checkboxgrid" style="vertical-align:center;">{{options.weekday[i]}}</td>
+      <td class="cbg cbgr">{{options.weekday[i]}}</td>
     </tr>
     {% endfor %}
   </table>
@@ -155,14 +135,31 @@ const {{jname}}Options = [
    <div class="pref-toggler">
     <header class="inner">
       <div class="pref-toggler-inner">
-        <div class="toggler-nav" id="pref-toggle-default">General</div>
-        {% for i in range(user.classes|length) %}
-        <div class="toggler-nav">{{user.classes[i]}}</div>
+        {% for i in range(user.classes|length+1) %}
+        <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}">{{user.classes[i-1] if i else "General"}}</div>
         {% endfor %}
       </div>
     </header>
-    <input type="hidden" name="pref-toggle" value="" />
   </div>
+
+
+{% macro PREF(pref,tabindex,prefoptionkey) -%}
+{% set prefoptionkey = prefoptionkey|default(pref) %}
+  {% for i in range(user.classes|length+1) %}
+    <td class="value pref-{{pref}} pref-{{i}}" {% if i %} style="display:none;" {% endif %}>
+      <span class="select" name="pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
+      <input type="hidden" name="pref-{{pref}}-{{i}}"
+             value="{{ user.class_data[user.classes[i-1]].preferences[pref] if i else user.preferences[pref] }}"/>
+    </td>
+    <td class="pref-{{pref}} pref-{{i}}" style="padding-left:10px;{% if i %} display:none;{% endif %}">
+      <input class="slider pref-{{pref}}" name="spref-{{pref}}-{{i}}" type="range" min="1" max="5"
+             value="{{ user.class_data[user.classes[i-1]].strengths[pref] if i else user.strengths[pref] }}" steps="1"
+             oninput="changeStrength(this.name,this.value); this.dispatchEvent(new Event('change'));" />
+      <label class="strength pref-{{pref}}" name="spref-{{pref}}-{{i}}"></label>
+    </td>
+  {% endfor %}
+{%- endmacro %}
+
 
   <table class="input" class="pref">
     <tr>
@@ -180,7 +177,7 @@ const {{jname}}Options = [
     {# <tr style="height:20px;"></tr> #}
     <tr>
       <td class="caption">Your ideal group size</td>
-      {{PREF('group_size',13)}}
+      {{PREF('size',13)}}
     </tr>
     <tr class="departments_affinity">
       <td class="caption"><label class="departments_affinity">Your ideal group would include</label></td>
@@ -196,8 +193,6 @@ const {{jname}}Options = [
     </tr>
   </table>
 
-<h3>{{user.is_new}}</h3>
-
   <table class="submit">
     <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="17" disabled>Save</button></td>
         <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" disabled>Reset</button></td>
@@ -208,24 +203,32 @@ const {{jname}}Options = [
 
 <script type="text/javascript">
 
-{{OPTIONS("departments",valprefix=true)}}
-{{OPTIONS("classes",valprefix=true)}}
-{% if (user.departments|length) == 1 %}
-  {{OPTIONS("departments_affinity",oname="department_affinity")}}
-{% else %}
-  {{OPTIONS("departments_affinity")}}
-{% endif %}
-{% for name in ["year", "gender", "location", "timezone", "start", "together", "forum", "group_size", "year_affinity", "gender_affinity"] %}
-  {{OPTIONS(name)}}
+const classesOptions = [
+{% for val, option in options.classes %}
+  { label: '{{val}} {{option}}', value: '{{val}}', },
 {% endfor %}
-strengthOptions = [{% for label in options.strength %} "{{label}}", {% endfor %}];
+];
+
+const strengthOptions = [ "no preference",  "nice to have",  "weakly preferred",  "preferred",  "strongly preferred",  "required", ];
 
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
-userClasses = {
+userClasses = [
 {% for class_number in user.classes %}
- '{{class_number}}' : {{user.class_data[class_number]|tojson|safe}},
+  {{user.class_data[class_number]|tojson|safe}},
 {% endfor %}
-};
+];
+
+
+function togglePrefs(e) {
+  const id = e.id;
+  const oldid = $('.toggler-nav.toggler-active').attr('id');
+  if ( id == oldid ) return;
+  i = parseInt(id.split('-')[1]);
+  $('#prefheader').text('Preferences' + (i ? ' for ' + userClasses[i-1]['class_number'] + ' ' + userClasses[i-1]['class_name'] : ''));
+  console.log('hiding ' + oldid + ', showing ' + id);
+  $('.' + oldid).hide();  $('.'+id).show();
+  $('#' + oldid).toggleClass('toggler-active'); jQuery(e).toggleClass('toggler-active');
+}
 
 function saveErrorMessage() {
   if ( $('#preferred_name').val().trim() == '' )
@@ -248,40 +251,37 @@ function changeStrength(name, value) {
 }
 
 function showStrengths() {
-  ["start", "together", "forum", "group_size", "year_affinity", "gender_affinity", "departments_affinity"].forEach(function (pref) {
-    const val = $('input[name="pref_' + pref + '"]').val();
-    const i = 'input[name="spref_' + pref + '"]';
-    const l = 'label[name="spref_' + pref + '"]';
-    if ( val == '' || val == '[]' ) {     
-      $(i).hide();
-      if ( $(i).val() != '3' ) $(i).val('3');
-      $(l).text(strengthOptions[0]);
-    } else {
-      $(i).show();
-      $(l).text(strengthOptions[$(i).val()]);
+  ["start", "together", "forum", "size", "year_affinity", "gender_affinity", "departments_affinity"].forEach(function (pref) {
+    for ( i = 0 ; i < userClasses.length+1 ; i++ ) {
+      const val = $('input[name="pref-' + pref + '-' + i + '"]').val();
+      const inp = 'input[name="spref-' + pref + '-' + i + '"]';
+      const lab = 'label[name="spref-' + pref + '-' + i + '"]';
+      if ( val == '' || val == '[]' ) {     
+        $(inp).hide();
+        if ( $(inp).val() != '3' ) $(inp).val('3');
+        $(lab).text(strengthOptions[0]);
+      } else {
+        $(lab).text(strengthOptions[$(inp).val()]);
+        $(inp).show();
+      }
     }
   });
 }
 
 function showPreferences() {
   var caption = false;
-  ["departments", "year", "gender"].forEach(function (pref) {
-    const val = $('input[name="' + pref + '"]').val();
-    const a = '.' + pref + '_affinity';
-    const as = '.' + pref + '_affinity_strength';
+  ["departments", "year", "gender"].forEach(function (x) {
+    const val = $('input[name="' + x + '"]').val();
+    const a = x + '_affinity';
     if ( val == '' || val == '[]' ) {
-      $(a).hide();
-      const i = 'input[name="pref_' + pref + '_affinity"]';
-      $(i).val('');
-      $(i).data('select').reset();
-    } else {
-      $(a).show();
-      if ( ! caption ) {
-        $("label" + a).show();
-        caption = true;
-      } else {
-        $("label" + a).hide();
+      $('.' + a).hide();
+      for ( i = 0 ; i < userClasses.length + 1 ; i++ ) {
+        const inp = 'input[name="pref-' + a + '-' + i + '"]';
+        $(inp).val(''); $(inp).data('select').reset();
       }
+    } else {
+      $('.' + a).show();
+      if ( ! caption ) { $("label." + a).show(); caption = true; } else { $("label." + a).hide(); }
     }
   });
 }
@@ -301,35 +301,24 @@ function checkChanges (e) {
   if ( msg ) $('#save').prop('disabled',true);
   $('#submitalert').text(msg?msg:saveInfoMessage());
  if ( ["departments", "year", "gender"].find(x => x == e.target.name) ) { showStrengths(); showPreferences(); }
-  if ( e.target.name.slice(0,5) == 'pref_' ) showStrengths();
+  if ( e.target.name.slice(0,5) == 'pref-' ) showStrengths();
 }
-
-
-function togglePrefs(e) {
-  if ( e.id == 'pref-toggle-default' ) {
-    $('#prefheader').text('Preferences');
-    $('input[name="pref-toggle"]').val('');
-  } else {
-    const key = e.innerText;
-    $('#prefheader').text('Preferences for ' + userClasses[key].class_number + ' ' + userClasses[key].class_name);
-    $('input[name="pref-toggle"]').val(key);
-  }
-  $('.toggler-nav.toggler-active').toggleClass('toggler-active');
-  jQuery(e).toggleClass('toggler-active');
-}
-
 
 document.addEventListener('DOMContentLoaded', function() {
     // hide content during setup
-    $('#content').toggle();
     makeMultiSelect('departments', departmentsOptions, {{user.departments|safe}});
     makeMultiSelect('classes', classesOptions, {{user.classes|safe}}, true, true);
-    makeSingleSelect('location', locationOptions, '{{user.location}}');
-    makeSingleSelect('timezone', timezoneOptions, '{{user.timezone}}');
-    makeSingleSelect('year', yearOptions, '{{user.year|blanknone}}', true);
-    makeSingleSelect('gender', genderOptions, '{{user.gender|blanknone}}', true);
-    {% for pref in ["start", "together", "forum", "group_size", "departments_affinity", "year_affinity", "gender_affinity"] %}
-      makeSingleSelect('pref_{{pref}}', {{pref}}Options, '{{user.preferences[pref]|blanknone}}', true);
+    makeSingleSelect('location', locationOptions);
+    makeSingleSelect('timezone', timezoneOptions);
+    makeSingleSelect('year', yearOptions, true);
+    makeSingleSelect('gender', genderOptions, true);
+    {% for pref in ["start", "together", "forum", "size", "year_affinity", "gender_affinity"] %}
+      {% for i in range(user.classes|length+1) %}
+        makeSingleSelect('pref-{{pref}}-{{i}}', {{pref}}Options, true);
+      {% endfor %}
+    {% endfor %}
+    {% for i in range(user.classes|length+1) %}
+      makeSingleSelect('pref-departments_affinity-{{i}}', {{"departmentsOptions" if (user.departments|length)>1 else "departmentOptions"}}, true);
     {% endfor %}
     makeCheckboxGrid();
     showTimezoneOffset();
@@ -338,14 +327,14 @@ document.addEventListener('DOMContentLoaded', function() {
     showPreferences();
 
     $('.toggler-nav').click(function(e) { e.preventDefault(); togglePrefs(e.target); return false; });
-    togglePrefs(document.getElementById('pref-toggle-default'));
+    togglePrefs(document.getElementById('pref-0'));
     $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
     $('#userinfo').data('initial',$('#userinfo').serialize());
     $('#userinfo :input').change(checkChanges);
     $('#userinfo :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
     console.log('user-info ready');
-    $('#content').toggle();
+    //jQuery("body").fadeIn(0);
 });
 </script>
 

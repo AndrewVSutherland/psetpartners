@@ -1,3 +1,4 @@
+import re
 from flask import (
     render_template,
     url_for,
@@ -20,11 +21,9 @@ from psetpartners.student import (
     Student,
     AnonymousStudent,
     preference_types,
-    departments,
     current_classes,
     )
 from psetpartners.utils import (
-    timezones,
     format_input_errmsg,
     show_input_errors,
     flash_info,
@@ -32,19 +31,7 @@ from psetpartners.utils import (
     process_user_input,
     maxlength,
     short_weekdays,
-    gender_options,
-    year_options,
-    location_options,
-    department_affinity_options,
-    departments_affinity_options,
-    gender_affinity_options,
-    year_affinity_options,
-    group_size_options,
-    strength_options,
     term_options,
-    forum_options,
-    start_options,
-    together_options,
     list_of_strings,
 )
 
@@ -58,24 +45,11 @@ login_manager.login_view = "user.info"
 
 login_manager.anonymous_user = AnonymousStudent
 
+# Don't include options in static/options.js used only in javascript
 def info_options():
-    return {'department_affinity': department_affinity_options,
-            'departments_affinity': departments_affinity_options,
-            'year': year_options,
-            'year_affinity': year_affinity_options,
-            'gender': gender_options,
-            'gender_affinity': gender_affinity_options,
-            'group_size': group_size_options,
-            'strength': strength_options,
-            'forum': forum_options,
-            'start': start_options,
-            'term' : term_options,
-            'together': together_options,
-            'location': location_options,
-            'timezone' : timezones,
+    return {'term' : term_options,
             'weekday' : short_weekdays,
             'classes' : current_classes(),
-            'departments' : departments(),
             }
 
 # globally define user properties and username
@@ -99,6 +73,8 @@ def login():
 @app.route("/info")
 def info():
     title = "" if current_user.is_authenticated else "login"
+    print("user.classes = %s" % current_user.classes);
+    print("user.class_data = %s" % current_user.class_data);
     return render_template(
         "user-info.html",
         next=request.args.get("next", ""),
@@ -107,6 +83,8 @@ def info():
         maxlength=maxlength,
     )
 
+PREF_RE = re.compile(r"^s?pref-([a-z_]*)-(\d+)$")
+
 @app.route("/set_info", methods=["POST"])
 @login_required
 def set_info():
@@ -114,10 +92,10 @@ def set_info():
     if raw_data.get("submit") == "cancel":
         return redirect(url_for(".info"), 301)
     errmsgs = []
-    prefs = {}
-    sprefs = {}
-    print(dict(raw_data))
-    data = {"preferences": prefs, "strengths": sprefs}
+    print("raw_data: %s" % dict(raw_data))
+    prefs = [ {} for i in range(len(current_user.classes)+1) ]
+    sprefs = [ {} for i in range(len(current_user.classes)+1) ]
+    data = {"preferences": prefs[0], "strengths": sprefs[0]}
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
         for j in range(24):
@@ -132,19 +110,16 @@ def set_info():
                 data[col] = process_user_input(val, col, typ)
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-        elif col.startswith("pref_") and val.strip():
-            col = col[5:]
-            try:
-                typ = preference_types[col]
-                prefs[col] = process_user_input(val, col, typ)
-            except Exception as err:
-                errmsgs.append(format_input_errmsg(err, val, col))
-        elif col.startswith("spref_"):
-            col = col[6:]
-            try:
-                sprefs[col] = process_user_input(val, col, "posint")
-            except Exception as err:
-                errmsgs.append(format_input_errmsg(err, val, col))
+        elif PREF_RE.match(col) and val.strip():
+            t = col.split('-')
+            if t[1] in preference_types:
+                n = int(t[2])
+                p = prefs[n] if col[0] == 'p' else sprefs[n]
+                try:
+                    typ = preference_types[t[1]] if col[0] == 'p' else "posint"
+                    p[t[1]] = process_user_input(val, t[1], typ)
+                except Exception as err:
+                    errmsgs.append(format_input_errmsg(err, val, col))
         elif col.startswith("hours-"):
             try:
                 i,j = (int(x) for x in col[6:].split("-"))
@@ -154,7 +129,11 @@ def set_info():
     # There should never be any errors coming from the form
     if errmsgs:
         return show_input_errors(errmsgs)
+    for i in range(len(current_user.classes)):
+        current_user.class_data[current_user.classes[i]]["preferences"] = prefs[i+1]
+        current_user.class_data[current_user.classes[i]]["strengths"] = sprefs[i+1]
     data["classes"] = list_of_strings(raw_data.get("classes",[]))
+    print("data: %s" % data)
     for k, v in data.items():
         setattr(current_user, k, v)
     current_user.save()
@@ -163,6 +142,7 @@ def set_info():
        flash_info ("Changes saved.") 
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
+
     return redirect(url_for(".info"), 301)
 
 @app.route("/logout", methods=["POST"])
