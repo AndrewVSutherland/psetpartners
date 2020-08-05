@@ -1,0 +1,18 @@
+# WARNING: after editing this file don't forget to copy it to
+# /home/psetpartners/psetpartners-git-master/gunicorn-config-master.py
+# as gunicorn doesn't handle well the config file being part of the repo
+bind = "0.0.0.0:9593"
+workers = 15
+SESSION_PROTECTION = None
+#daemon = True
+pidfile = '/home/psetpartners/gunicorn-master.pid'
+#
+errorlog = '/home/psetpartners/logs/master/errorlog'
+accesslog = '/home/psetpartners/logs/master/accesslog'
+loglevel = 'info' # change to 'debug' for more output
+#
+default_proc_name = 'psetpartners-master'
+timeout = 30
+max_requests = 1000
+# The maximum size of HTTP request line in bytes.
+imit_request_line = 8190
