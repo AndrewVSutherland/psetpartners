@@ -15,14 +15,13 @@ var selectPureClassNames = {
 
 /*
   makeSelect functions should be called from templates with a span and hidden input with name="name".
+  resetOptionValue = "__reset__" is defined in options.js
 */
-function makeSingleSelect (name, available, selected, reset=false, auto=false) {
+function makeSingleSelect (name, available, reset=false, auto=false) {
   const q = 'input[name="' + name + '"]';
-  const reset_value = '__reset__';
-  if ( reset ) available.unshift({label: '', value:' __reset__'});
   function onchange(v) {
     v = v.trim();
-    if ( reset && v == reset_value ) v = '';
+    if ( reset && v == resetOptionValue ) v = '';
     if ( $(q).val() != v ) {
         $(q).data('oldvalue', $(q).val());
         if ( ! v ) $(q).data('select').reset();
@@ -30,7 +29,7 @@ function makeSingleSelect (name, available, selected, reset=false, auto=false) {
         $(q)[0].dispatchEvent(new Event('change'));
     }
   }
-  const s = new SelectPure('span[name="' + name + '"]', { options: available, value: selected, onChange: onchange, autocompute: auto});
+  const s = new SelectPure('span[name="' + name + '"]', { options: available, value: $(q).val(), onChange: onchange, autocompute: auto});
   $(q).data('select',s);
   return s;
 }
@@ -40,13 +39,14 @@ function makeMultiSelect(name, available, selected, auto=false, short=false) {
   function onchange(v) {
     if ( $(q).val() != v ) { $(q).val(v); $(q)[0].dispatchEvent(new Event('change')); }
   }
+  var customIcon = document.createElement('i');
+  customIcon.textContent = '×'; // &times;
   const s = new SelectPure('span[name="' + name + '"]', {
     onChange: onchange,
     options: available,
     multiple: true,
     autocomplete: auto,
-    icon: "fa fa-times",
-    inlineIcon: false,
+    inlineIcon: customIcon,
     value: selected,
     shortlabels: short,
     classNames: selectPureClassNames,
@@ -71,7 +71,7 @@ function disableDrag() {
 // must be called by any code using the checkboxgrid class
 function makeCheckboxGrid(name,rows,cols) {
   disableDrag();
-  $('span.checkboxgrid').on('mousedown mouseup mouseover', function a (e) {
+  $('span.cbg').on('mousedown mouseup mouseover', function a (e) {
     if ( typeof a.active === 'undefined' ) a.active = false;
     if ( e.type == 'mouseup' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
     if ( e.buttons&1 ) {
@@ -93,7 +93,7 @@ function makeCheckboxGrid(name,rows,cols) {
     }
     return false;
   });
-  $('span.checkboxgrid').on('click', function (e) { e.preventDefault(); });
+  $('span.cbg').on('click', function (e) { e.preventDefault(); });
 }
 
 function validURL(str) {

@@ -288,8 +288,39 @@ button:disabled {
   font-size: 75%;
   font-style: italic;
   color: var(--info-color);
-  vertical-align: middle;
 }
+
+p.flash-info, p.flash-warning {
+  margin-left: 0px;
+  margin-top: 8px;
+  font-size: 90%;
+  padding-bottom: 6px;
+}
+p.flash-info::before {
+  font-size:120%;
+  content:"✔";
+  color:#469c33;
+}
+p.flash-warning::before {
+  font-size:120%;
+  content:"☡";
+  color:#f5ad42;
+  margin-bottom: -5px;
+}
+p.flash-error {
+  margin-left: 0px;
+}
+p.flash-error::before {
+  font-size: 125%;
+  font-weight: bold;
+  content:"⚠";
+  color:#d01f12;
+  margin-bottom: -5px;
+}
+p.flash-error::before {
+  padding-right: 6px;
+}
+
 
 /* BEGIN pref-toggler */
 div.pref-toggler {
@@ -410,85 +441,95 @@ input:-webkit-autofill:active  {
 
 
 /*
-  BEGIN styling for checkboxgrid selector (intended to be used in grid of checkboxes).
-  Note that you must call setup_checkboxgrid in psetpartners.js to use this
-  Everything configurable is controlled by the variables --checkboxgrid-...
+  BEGIN styling for cbg selector (intended to be used in grid of checkboxes).
+  Note that you must call setup_cbg in psetpartners.js to use this
+  Everything configurable is controlled by the variables --cbg-...
 */
 
 :root {
-  --checkboxgrid-cell-height: 13px;
-  --checkboxgrid-cell-width: 30px;
-  --checkboxgrid-cell-horizontal-spacing: 2px;
-  --checkboxgrid-cell-vertical-spacing: 2px;
-  --checkboxgrid-font-size: 12px; /* only relevant for captions, which are up to the html to include */
-  --checkboxgrid-border-radius: 3px;
-  --checkboxgrid-checked-color: var(--mit-maroon);
-  --checkboxgrid-unchecked-color: var(--light-gray);
-  --checkboxgrid-hover-checked-color: var(--select-fill);
-  --checkboxgrid-hover-unchecked-color: var(--select-fill);
+  --cbg-cell-height: 13px;
+  --cbg-cell-width: 30px;
+  --cbg-cell-horizontal-spacing: 2px;
+  --cbg-cell-vertical-spacing: 2px;
+  --cbg-font-size: 12px; /* only relevant for captions, which are up to the html to include */
+  --cbg-border-radius: 3px;
+  --cbg-checked-color: var(--mit-maroon);
+  --cbg-unchecked-color: var(--light-gray);
+  --cbg-hover-checked-color: var(--select-fill);
+  --cbg-hover-unchecked-color: var(--select-fill);
 }
 
-table.checkboxgrid {
+table.cbg {
  border-collapse: collapse;
 }
 
-label.checkboxgrid {
+label.cbg {
   display: inline-block;
   position: relative;
   padding: 0;
   margin: 0;
-  height: var(--checkboxgrid-cell-height);
-  width: var(--checkboxgrid-cell-width);
+  height: var(--cbg-cell-height);
+  width: var(--cbg-cell-width);
   cursor: pointer;
 }
 /* Hide the default checkbox */
-input.checkboxgrid[type=checkbox] {
+input.cbg[type=checkbox] {
   display: none;
 }
 
-tr.checkboxgrid {
+tr.cbg {
   padding: 0;
-  height: var(--checkboxgrid-cell-height);
-  line-height: var(--checkboxgrid-cell-height);
+  height: var(--cbg-cell-height);
+  line-height: var(--cbg-cell-height);
 }
 
-td.checkboxgrid {
-  padding-bottom: var(--checkboxgrid-cell-vertical-spacing);
-  padding-left: var(--checkboxgrid-cell-horizontal-spacing);
+td.cbg {
+  padding-bottom: var(--cbg-cell-vertical-spacing);
+  padding-left: var(--cbg-cell-horizontal-spacing);
   padding-top: 0;
   padding-right: 0;
-  font-size: var(--checkboxgrid-font-size);
+  font-size: var(--cbg-font-size);
 }
 
-span.checkboxgrid {
+td.cbg.cbgt {
+  vertical-align:bottom;
+  padding-left:3px;
+  padding-bottom:0px;
+}
+
+td.cbg.cbgr {
+  vertical-align:center;
+}
+
+span.cbg {
   position: absolute;
   top: 0;
   left: 0;
   padding: 0;
   margin: 0;
-  height: var(--checkboxgrid-cell-height);
-  width: var(--checkboxgrid-cell-width);
-  border-radius: var(--checkboxgrid-border-radius);
-  background-color: var(--checkboxgrid-unchecked-color);
+  height: var(--cbg-cell-height);
+  width: var(--cbg-cell-width);
+  border-radius: var(--cbg-border-radius);
+  background-color: var(--cbg-unchecked-color);
   cursor: pointer;
 }
 
-span.checkboxgrid::after {
+span.cbg::after {
   content: "";
 }
 
-label.checkboxgrid input:hover ~ span.checkboxgrid {
-  background-color: var(--checkboxgrid-hover-unchecked-color);
+label.cbg input:hover ~ span.cbg {
+  background-color: var(--cbg-hover-unchecked-color);
 }
 
-label.checkboxgrid input:checked ~ span.checkboxgrid {
-  background-color: var(--checkboxgrid-checked-color);
+label.cbg input:checked ~ span.cbg {
+  background-color: var(--cbg-checked-color);
 }
 
-label.checkboxgrid input:checked ~ span.checkboxgrid:hover {
-  background-color: var(--checkboxgrid-hover-checked-color);
+label.cbg input:checked ~ span.cbg:hover {
+  background-color: var(--cbg-hover-checked-color);
 }
-/* END styling for checkboxgrid selector (intended to be used in grid of checkboxes) */
+/* END styling for cbg selector (intended to be used in grid of checkboxes) */
 
 /* knowl styling */
 #content > h2 a[knowl], #content > h3 a[knowl] {

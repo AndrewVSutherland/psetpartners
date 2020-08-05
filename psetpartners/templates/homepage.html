@@ -141,7 +141,7 @@
     {% with msgs = get_flashed_messages(category_filter=["error"]) -%}
       <div id="flash-error">
         {% for msg in msgs -%}
-          <pclass="{{cat}}"><i class="fa fa-exclamation-circle" aria-hidden="true" style="color:#cc1f12;"></i>&nbsp;{{msg}}</p>
+          <p class="flash-error">{{msg}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}
@@ -151,14 +151,14 @@
     {% with msgs = get_flashed_messages(category_filter=["warning"]) -%}
       <div id="flash-warning">
         {% for msg in msgs -%}
-          <p class="{{warning}}"><i class="fa fa-exclamation-circle" aria-hidden="true" style="color:#f5ad42;"></i>&nbsp;{{msg}}</p>
+          <p class="flash-warning">{{msg}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}
     {% with msgs = get_flashed_messages(category_filter=["info"]) -%}
       <div id="flash-info">
         {% for msg in msgs -%}
-          <p class="{{info}}"><i class="fa fa-check-circle" aria-hidden="true" style="color:#469c33;"></i>&nbsp;{{msg}}</p>
+          <p class="flash-info">{{msg}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}

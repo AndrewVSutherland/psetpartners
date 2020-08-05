@@ -17,6 +17,7 @@ DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 term_options = ["IAP", "spring", "summer", "fall"]
 
+# Client-side version of these is in static/options.js, you need to change in both places
 department_affinity_options = [
     (1, "someone else in my department"),
     (2, "only students in my department"),
@@ -73,7 +74,7 @@ together_options = [
     (3, "work independently but check answers"),
     ]
 
-group_size_options = [
+size_options = [
     (2, "2 students"),
     (3, "3-4 students"),
     (5, "5-8 students"),
