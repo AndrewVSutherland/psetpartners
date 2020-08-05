@@ -14,7 +14,7 @@ preference_types = {
     "departments_affinity": "posint",
     "year_affinity": "posint",
     "gender_affinity": "posint",
-    "group_size": "posint",
+    "size": "posint",
     "forum": "text",
     "start": "posint",
     "together": "posint",
@@ -40,18 +40,6 @@ def current_classes(year=current_year(), term=current_term()):
 def departments():
     departments = [(r["course_number"], r["course_name"]) for r  in db.departments.search({}, projection=["course_number", "course_name"])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
-
-def student_class_data(id,include_groups=False):
-    # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
-    classes = list(db.classlist.search({"student_id":id, "year": current_year(), "term": current_term()},
-        projection=["class_id", "preferences", "strengths"]))
-    for r in classes:
-        r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number", "class_name", "homepage", "pset_dates", "instructor_names"]))
-        if include_groups:
-            group_id = db.grouplist.lucky({"class_id":r["class_id"],"student_id":id},projection="group_id")
-            if group_id is not None:
-                r["group"] = db.groups.lucky({"id": group_id}, projection=["id", "group_name", "visibility", "preferences", "strengths"])
-    return { r["class_number"]: r for r in classes }
 
 class Student(UserMixin):
     properties = sorted(db.students.col_type) + ["id"]
@@ -82,13 +70,8 @@ class Student(UserMixin):
                     setattr(self, col, {})
                 if typ.endswith("[]"):
                     setattr(self, col, [])
-        # Set default preference strengths (will be ignored if preference not specified)
-        for col in preference_types:
-            if not col in self.strengths:
-                self.strengths[col] = 3
-        self.class_data = student_class_data(self.id)
+        self.class_data = self.student_class_data()
         self.classes = sorted(list(self.class_data), key=class_number_key)
-        print(self.classes)
 
     @property
     def tz(self):
@@ -113,17 +96,37 @@ class Student(UserMixin):
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
             r = q.copy()
             r["class_id"] = class_id
-            r["preferences"] = self.class_data[class_number]["preferences"] if class_number in self.class_data else None
-            r["strengths"] = self.class_data[class_number]["strengths"] if class_number in self.class_data else None
+            if class_number in self.class_data and any([self.class_data[class_number]["preferences"] != self.preferences,
+                self.class_data[class_number]["strengths"] != self.strengths]):
+                r["preferences"] = self.class_data[class_number]["preferences"]
+                r["strengths"] = self.class_data[class_number]["strengths"]
+            else:
+                r["preferences"] = None
+                r["strengths"] = None
             S.append(r)
         S = sorted(S, key=lambda x: x["class_id"])
         T = sorted(db.classlist.search(q), key=lambda x: x["class_id"])
         if S != T:
             db.classlist.delete(q)
             if S:
-                print(S)
+                print("Updating classlist with %s" % S)
                 db.classlist.insert_many(S)
             print("Updated classlist")
+
+    def student_class_data(self, year=current_year(), term=current_term(), include_groups=False):
+        # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
+        class_data = {}
+        for r in db.classlist.search({"student_id":self.id, "year": year, "term": term}, projection=["class_id", "preferences", "strengths"]):
+            r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number", "class_name", "homepage", "pset_dates", "instructor_names"]))
+            if not r["preferences"]:
+                r["preferences"] = self.preferences
+                r["strengths"] = self.strengths
+            if include_groups:
+                group_id = db.grouplist.lucky({"class_id":r["class_id"],"student_id":id},projection="group_id")
+                if group_id is not None:
+                    r["group"] = db.groups.lucky({"id": group_id}, projection=["id", "group_name", "visibility", "preferences", "strengths"])
+            class_data[r["class_number"]] = r
+        return class_data
 
 class AnonymousStudent(AnonymousUserMixin):
     # This mainly exists so that login page works   

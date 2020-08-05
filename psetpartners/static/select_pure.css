@@ -68,7 +68,6 @@ span.select-pure__placeholder::after {
 
 .select-pure__option {
   background: var(--lighter-gray);
- /*border-bottom: 0.5px solid var(--mit-maroon);*/
   color: black;
   box-sizing: border-box;
   cursor: pointer;
@@ -113,8 +112,8 @@ span.select-pure__placeholder::after {
   color: var(--mit-white);
   cursor: initial;
   display: inline-block;
-  margin: 2px 3px 2px 1px;
-  padding: 2px 4px 0px 4px;
+  margin: 1px 3px 1px 0px;
+  padding: 1.5px 2px 1.5px 3px;
   font-size: 100%;
 }
 
@@ -124,11 +123,15 @@ span.select-pure__placeholder::after {
 
 .select-pure__selected-label i {
   display: inline-block;
-  margin-left: 6px;
+  font-weight: bold;
+  padding-left: 1px;
+  padding-right: 2px;
+  margin-left: 1px;
 }
 
 .select-pure__selected-label i:hover {
-  color: var(--mit-gray);
+  background-color: var(--select-fill);
+  color: black;
 }
 
 .select-pure__autocomplete {
