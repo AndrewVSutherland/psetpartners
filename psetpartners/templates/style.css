@@ -37,6 +37,11 @@
     background: var(--select-fill);
 }
 
+#javascript-explanation {
+  padding: 20px;
+  text-align: center;
+}
+
 #header {
   background: var(--mit-maroon);
   box-shadow: 0 0 var(--shadow-width) var(--shadow-color);

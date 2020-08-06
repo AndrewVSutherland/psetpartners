@@ -8,3 +8,8 @@ config = Configuration()
 print(config.options["postgresql"])
 db = PostgresDatabase(config)
 assert db
+
+from .app import app
+from .main import login_manager
+
+login_manager.init_app(app)

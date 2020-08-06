@@ -45,7 +45,7 @@
 
     {% block extra_head -%}{%- endblock extra_head %}
   </head>
-  <body class="{{ body_class }}" style="display:none;">
+  <body class="{{ body_class }}">
 {#
 {% macro KNOWL(kid, title=none) -%}
 {{ static_knowl(kid, title) | safe }}
@@ -56,8 +56,4 @@
 #}
    {% block body -%}{%- endblock body %}
   </body>
-
-<script>
-window.addEventListener('load', function() { jQuery('body').fadeIn(0); });
-</script>
 </html>

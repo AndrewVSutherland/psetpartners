@@ -143,53 +143,54 @@
   </div>
 
 
-{% macro PREF(pref,tabindex,prefoptionkey) -%}
-{% set prefoptionkey = prefoptionkey|default(pref) %}
+{% macro PREF(pref,tabindex,general) -%}
+{% set general = general|default(true) %}
   {% for i in range(user.classes|length+1) %}
-    <td class="value pref-{{pref}} pref-{{i}}" {% if i %} style="display:none;" {% endif %}>
-      <span class="select" name="pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
-      <input type="hidden" name="pref-{{pref}}-{{i}}"
-             value="{{ user.class_data[user.classes[i-1]].preferences[pref] if i else user.preferences[pref] }}"/>
-    </td>
-    <td class="pref-{{pref}} pref-{{i}}" style="padding-left:10px;{% if i %} display:none;{% endif %}">
-      <input class="slider pref-{{pref}}" name="spref-{{pref}}-{{i}}" type="range" min="1" max="5"
-             value="{{ user.class_data[user.classes[i-1]].strengths[pref] if i else user.strengths[pref] }}" steps="1"
-             oninput="changeStrength(this.name,this.value); this.dispatchEvent(new Event('change'));" />
-      <label class="strength pref-{{pref}}" name="spref-{{pref}}-{{i}}"></label>
-    </td>
+    {% if general or i %}
+      <td class="value pref-{{pref}} pref-{{i}}" {% if i %} style="display:none;" {% endif %}>
+        <span class="select" name="pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
+        <input type="hidden" name="pref-{{pref}}-{{i}}"
+               value="{{ user.class_data[user.classes[i-1]].preferences[pref] if i else user.preferences[pref] }}"/>
+      </td>
+      <td class="pref-{{pref}} pref-{{i}}" style="padding-left:10px;{% if i %} display:none;{% endif %}">
+        <input class="slider pref-{{pref}}" name="spref-{{pref}}-{{i}}" type="range" min="1" max="5"
+               value="{{ user.class_data[user.classes[i-1]].strengths[pref] if i else user.strengths[pref] }}" steps="1"
+               oninput="changeStrength(this.name,this.value); this.dispatchEvent(new Event('change'));" />
+        <label class="strength pref-{{pref}}" name="spref-{{pref}}-{{i}}"></label>
+      </td>
+    {% endif %}
   {% endfor %}
 {%- endmacro %}
-
 
   <table class="input" class="pref">
     <tr>
       <td class="caption">When you like to start working</td>
-      {{PREF('start',10)}}
+      {{PREF('start',11)}}
     </tr>
     <tr>
       <td class="caption">How you like to collaborate</td>
-      {{PREF('together',11)}}
+      {{PREF('together',12)}}
     </tr>
     <tr>
       <td class="caption">How you like to communicate</td>
-      {{PREF('forum',12)}}
+      {{PREF('forum',13)}}
     </tr>
     {# <tr style="height:20px;"></tr> #}
     <tr>
       <td class="caption">Your ideal group size</td>
-      {{PREF('size',13)}}
+      {{PREF('size',14)}}
     </tr>
     <tr class="departments_affinity">
       <td class="caption"><label class="departments_affinity">Your ideal group would include</label></td>
-      {{PREF('departments_affinity',14)}}
+      {{PREF('departments_affinity',15)}}
     </tr>
     <tr class="year_affinity">
       <td class="caption year_affinity"><label class="year_affinity">Your ideal group would include</label></td>
-      {{PREF('year_affinity',15)}}
+      {{PREF('year_affinity',16)}}
     </tr>
     <tr class="gender_affinity">
       <td class="caption gender_affinity"><label class="gender_affinity">Your ideal group would include</label></td>
-      {{PREF('gender_affinity',16)}}
+      {{PREF('gender_affinity',17)}}
     </tr>
   </table>
 
@@ -334,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#userinfo :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
     console.log('user-info ready');
-    //jQuery("body").fadeIn(0);
 });
 </script>
 
