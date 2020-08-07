@@ -181,10 +181,6 @@ def routes():
             links.append((url, str(rule)))
     return sorted(links, key=lambda elt: elt[1])
 
-@app.route("/")
-def index():
-    return redirect(url_for(".info"))
-
 @app.route("/sitemap")
 def sitemap():
     """

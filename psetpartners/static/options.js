@@ -1,3 +1,7 @@
+// This replicates data defined in the database and/or python source code, you need to update both
+
+const studentPreferences = [ "start", "together", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
+
 const resetOptionValue = '__reset__';
 
 const departmentsOptions = [

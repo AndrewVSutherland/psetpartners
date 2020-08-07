@@ -10,15 +10,110 @@ from psetpartners.utils import (
     current_term,
     )
 
-preference_types = {
-    "departments_affinity": "posint",
-    "year_affinity": "posint",
-    "gender_affinity": "posint",
-    "size": "posint",
-    "forum": "text",
-    "start": "posint",
-    "together": "posint",
-    }
+strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
+default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
+
+# Note that these also appear in static/options.js, you need to update both
+year_options = [
+    (1, "first year"),
+    (2, "sophomore"),
+    (3, "junior"),
+    (4, "senior or super senior"),
+    (5, "graduate student"),
+    ]
+
+gender_options = [
+    ("female", "female"),
+    ("male", "male"),
+    ("non-binary", "non-binary"),
+    ]
+
+location_options = [
+    ("near", "on campus or near MIT"),
+    ("far", "not hear MIT"),
+    #("baker", "Baker House"),
+    #("buron-conner", "Burton Conner House"),
+    #("east", "East Campus"),
+    #("macgregor", "MacGregor House"),
+    #("maseeh", "Maseeh Hall"),
+    #("mccormick", "McCormick Hall"),
+    #("new", "New House"),    
+    #("next", "Next House"),
+    #("random", "Random Hall"),
+    #("simmons", "Simmons Hall"),
+    #("epsilontheta", "Epsilon Theta"),
+    #("fenway", "Fenway House"),
+    #("pika", "pika"),
+    #("student", "Student House"),
+    #("wilg", "WILG"),
+    #("amherst", "70 Amherst Street"),
+    #("ashdown", "Ashdown House"),
+    #("edgerton", "Edgerton House"),
+    #("tower4", "Graduate Tower at Site 4"),
+    #("sidneypacific", "Sidney-Pacific"),
+    #("tang", "Tang Hall"),
+    #("warehouse", "The Warehous"),
+    #("westgate", "Westgate"),    
+    ]
+
+student_options = {
+    "year" : year_options,
+    "gender": gender_options,
+    "location": location_options,
+}
+
+start_options = [
+    (6, "shortly after the problem set is posted"),
+    (4, "3-4 days before the pset is due"),
+    (2, "1-2 days before the pset is due"),
+    ]
+
+together_options = [
+    (1, "solve the problems together"),
+    (2, "discuss strategies, work together if stuck"),
+    (3, "work independently but check answers"),
+    ]
+
+forum_options = [
+    ("text", "text (e.g. Slack or Zulip)"),
+    ("video", "video (e.g. Zoom)"),
+    ("in-person", "in person"),
+    ]
+
+size_options = [
+    (2, "2 students"),
+    (3, "3-4 students"),
+    (5, "5-8 students"),
+    (8, "more than 8 students"),
+    ]
+
+departments_affinity_options = [
+    (1, "someone else in one of my departments"),
+    (2, "only students in one of my departments"),
+    (3, "students in many departments"),
+    ]
+
+year_affinity_options = [
+    (1, "someone else in my year"),
+    (2, "only students in my year"),
+    (3, "students in multiple years"),
+    ]
+
+gender_affinity_options = [
+    (1, "someone else with my gender identity"),
+    (2, "only students with my gender identity"),
+    (3, "a diversity of gender identities"),
+    ]
+
+student_preferences = {
+    "start": { "type": "posint", "options": start_options },
+    "together": { "type": "posint", "options": together_options },
+    "forum": { "type": "text", "options": forum_options },
+    "size": { "type": "posint", "options": size_options },
+    "departments_affinity": { "type": "posint", "options": departments_affinity_options },
+    "year_affinity": { "type": "posint", "options": year_affinity_options },
+    "gender_affinity": { "type": "posint", "options": gender_affinity_options },
+}
 
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
@@ -41,6 +136,39 @@ def departments():
     departments = [(r["course_number"], r["course_name"]) for r  in db.departments.search({}, projection=["course_number", "course_name"])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
 
+def cleanse_student_data(data):
+    kerb = data.get("kerb","")
+    if not data.get("preferred_name"):
+        data["preferred_name"] = kerb
+    for col in student_options:
+        if data.get(col):
+            if not data[col] in [r[0] for r in student_options[col]]:
+                print("Ignoring unknown %s %s for student %s"%(col,data[col],data,kerb))
+                data.col = None # None will get set later
+    if data["preferences"] is None:
+        data["preferences"] = {}
+    if data["strengths"] is None:
+        data["strengths"] = {}
+    for pref in list(data["preferences"]):
+        if not pref in student_preferences:
+            print("Ignoring unknown preference %s for student %s"%(pref,kerb))
+            data["preferences"].pop(pref)
+        else:
+            if not data["preferences"][pref]:
+                data["preferences"].pop(pref)
+            elif not data["preferences"][pref] in [r[0] for r in student_preferences[pref]["options"]]:
+                print("Ignoring invalid preference %s = %s for student %s"%(pref,data["preferences"][pref],kerb))
+                data["preferences"].pop(pref)
+    for pref in list(data["strengths"]):
+        if not pref in data["preferences"]:
+            data["strengths"].pop(pref)
+        else:
+           if data["strengths"][pref] < 1 or data["strengths"][pref] > len(strength_options):
+                data["strengths"][pref] = default_strength
+    for pref in data["preferences"]:
+        if not pref in data["strengths"]:
+            data["strengths"][pref] = default_strength
+
 class Student(UserMixin):
     properties = sorted(db.students.col_type) + ["id"]
     def __init__(self, kerb):
@@ -52,9 +180,7 @@ class Student(UserMixin):
         if data is None:
             db.students.insert_many([{"kerb": kerb, "preferred_name": kerb}])
             data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
-        else:
-            if not data.get("preferred_name"):
-                data["preferred_name"] = kerb
+        cleanse_student_data(data)
         self.__dict__.update(data)
         if self.timezone is None:
             self.timezone = request.cookies.get("browser_timezone", DEFAULT_TIMEZONE)

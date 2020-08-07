@@ -33,32 +33,37 @@
   <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 10px"><button name="logout" type="submit" tabindex="-1">Logout</button></div></h2>
   </form>
 
-  {# hide userinfo form initially, show only after everything is ready #}
-  <form action="{{ url_for('.set_info') }}" method="post" name="userinfo" id="userinfo">
+  <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student">
 
   <h3>Personal profile</h3>
 
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" /></td><td class="forminfo">required</td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" 
+       oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
+       <td class="forminfo" id="preferred_name_info">required</td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/hers, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td><td class="forminfo">optional</td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/hers, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
+      <td class="forminfo">optional</td>
     </tr>
     <tr>
       <td class="caption">Homepage</td>
-      <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}" /></td>
-      <td class="forminfo">optional</td>
+      <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
+        oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
+      <td class="forminfo" id="homepage_info">optional</td>
     </tr>
     <tr>
       <td class="caption">Department(s)</td>
       <td class="value">
         <span class="select" name="departments" tabindex="4"></span>
-        <input type="hidden" name="departments" value="{{user.departments|safe}}"/>
+        <input type="hidden" name="departments" value="{{user.departments|safe}}"
+        onchange="if ( trimMultiSelect('departments',{{maxlength.departments}}) ) { $('#departments_info').hide(); $('#departments_alert').show(); $('#departments_alert').fadeOut(1500); setTimeout(function() { $('#departments_info').show(); },1500); }" />
       </td>
-      <td class="forminfo">enables affinity preference</td>
+      <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
+      <td class="forminfo" id="departments_info">enables affinity preference</td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
@@ -104,7 +109,9 @@
       <td class="caption">Classes</td>
       <td class="value">
         <span class="select" name="classes" tabindex="9"></span>
-        <input type="hidden" name="classes" value="{{user.classes|safe}}"/>
+        <input type="hidden" name="classes" value="{{user.classes|safe}}"
+          onchange="if ( trimMultiSelect('classes',{{maxlength.classes}}) ) { $('#classes_alert').show(); $('#classes_alert').fadeOut(1500); }" />
+        <td class="alertinfo" id="classes_alert" style="display:none;">only {{maxlength["classes"]}} classes permitted</td>
       </td>
     </tr>
     <tr><td class="caption" colspan="2" style="padding-top:10px;">Times available for collaboration</td></tr>
@@ -120,7 +127,7 @@
     <tr class="checkboxgrid">
       {% for j in range(24) %}
       <td class="cbg"><label class="cbg">
-          <input class="cbg" name="hours-{{i}}-{{j}}" id="check-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
+          <input class="cbg" name="hours-{{i}}-{{j}}" id="cb-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
           <span id="hours-{{i}}-{{j}}" class="cbg"></span>
       </label></td>
       {% endfor %}
@@ -145,18 +152,19 @@
 
 {% macro PREF(pref,tabindex,general) -%}
 {% set general = general|default(true) %}
-  {% for i in range(user.classes|length+1) %}
+{% set n = user.classes|length + 1 %}
+  {% for i in range(maxlength["classes"]+1) %}
     {% if general or i %}
+      {% set pval = user.class_data[user.classes[i-1]].preferences[pref] if i and i < n else user.preferences[pref] %}
+      {% set sval = user.class_data[user.classes[i-1]].strengths[pref] if i and i < n else user.strengths[pref] %}
       <td class="value pref-{{pref}} pref-{{i}}" {% if i %} style="display:none;" {% endif %}>
         <span class="select" name="pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
-        <input type="hidden" name="pref-{{pref}}-{{i}}"
-               value="{{ user.class_data[user.classes[i-1]].preferences[pref] if i else user.preferences[pref] }}"/>
+        <input type="hidden" name="pref-{{pref}}-{{i}}" value="{{pval}}"/>
       </td>
       <td class="pref-{{pref}} pref-{{i}}" style="padding-left:10px;{% if i %} display:none;{% endif %}">
         <input class="slider pref-{{pref}}" name="spref-{{pref}}-{{i}}" type="range" min="1" max="5"
-               value="{{ user.class_data[user.classes[i-1]].strengths[pref] if i else user.strengths[pref] }}" steps="1"
-               oninput="changeStrength(this.name,this.value); this.dispatchEvent(new Event('change'));" />
-        <label class="strength pref-{{pref}}" name="spref-{{pref}}-{{i}}"></label>
+               value="{{sval}}" steps="1" oninput="$('#spref-{{pref}}-{{i}}-label').text(strengthOptions[this.value]);" />
+        <label class="strength pref-{{pref}}" id="spref-{{pref}}-{{i}}-label">{{options["strength"][sval]}}</label>
       </td>
     {% endif %}
   {% endfor %}
@@ -197,12 +205,18 @@
   <table class="submit">
     <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="17" disabled>Save</button></td>
         <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" disabled>Reset</button></td>
-        <td colspan="2"><label class="alertinfo" id="submitalert"></td>
+        <td colspan="2"><label class="alertinfo" id="submit_alert"></td>
     </tr>
   </table>
   </form>
 
 <script type="text/javascript">
+
+function showTimezoneOffset() {
+  const tz = $('input[name="timezone"]').val();
+  tzopt = timezoneOptions.find(x => x.value==tz);
+  $('label[name="tzoffset"]').text( (tzopt && tzopt.label.includes(')')) ? tzopt.label.split(')')[0] + ')' : '');
+}
 
 const classesOptions = [
 {% for val, option in options.classes %}
@@ -210,7 +224,7 @@ const classesOptions = [
 {% endfor %}
 ];
 
-const strengthOptions = [ "no preference",  "nice to have",  "weakly preferred",  "preferred",  "strongly preferred",  "required", ];
+const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %}];
 
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 userClasses = [
@@ -241,25 +255,14 @@ function saveErrorMessage() {
   return '';
 }
 
-function saveInfoMessage() {
-  const qc = $('input[name="classes"]');
-  if ( qc.data('initial') != qc.val() ) return 'Save changes to update preferences menu.';
-  return '';
-}
-
-function changeStrength(name, value) {
-  $('label[name="'+name+'"]').text(strengthOptions[value]); 
-}
-
 function showStrengths() {
-  ["start", "together", "forum", "size", "year_affinity", "gender_affinity", "departments_affinity"].forEach(function (pref) {
-    for ( i = 0 ; i < userClasses.length+1 ; i++ ) {
+  ["start", "together", "forum", "size", "year_affinity", "gender_affinity", "dapartments_affinity"].forEach(function (pref) {
+    for ( i = 0 ; i < {{maxlength["classes"]+1}} ; i++ ) {
       const val = $('input[name="pref-' + pref + '-' + i + '"]').val();
       const inp = 'input[name="spref-' + pref + '-' + i + '"]';
       const lab = 'label[name="spref-' + pref + '-' + i + '"]';
       if ( val == '' || val == '[]' ) {     
         $(inp).hide();
-        if ( $(inp).val() != '3' ) $(inp).val('3');
         $(lab).text(strengthOptions[0]);
       } else {
         $(lab).text(strengthOptions[$(inp).val()]);
@@ -276,7 +279,7 @@ function showPreferences() {
     const a = x + '_affinity';
     if ( val == '' || val == '[]' ) {
       $('.' + a).hide();
-      for ( i = 0 ; i < userClasses.length + 1 ; i++ ) {
+      for ( i = 0 ; i < {{maxlength["classes"]+1}} ; i++ ) {
         const inp = 'input[name="pref-' + a + '-' + i + '"]';
         $(inp).val(''); $(inp).data('select').reset();
       }
@@ -287,54 +290,43 @@ function showPreferences() {
   });
 }
 
-function showTimezoneOffset() {
-  const tz = $('input[name="timezone"]').val();
-  tzopt = timezoneOptions.find(x => x.value==tz);
-  $('label[name="tzoffset"]').text( (tzopt && tzopt.label.includes(')')) ? tzopt.label.split(')')[0] + ')' : '');
-}
-
 function checkChanges (e) {
-  if ( e ) console.log (e.target.name + ' changed to ' + e.target.value);
-  s = $('input[name="classes"]').data('select');
-  const change = $('#userinfo').serialize() != $('#userinfo').data('initial');
-  $('#userinfo :submit').prop('disabled',!change);
+  console.log (e.target.name + ' changed to ' + e.target.value);
+  const change = $('#student').serialize() != $('#student').data('initial');
+  $('#student :submit').prop('disabled',!change);
   const msg = saveErrorMessage();
   if ( msg ) $('#save').prop('disabled',true);
-  $('#submitalert').text(msg?msg:saveInfoMessage());
- if ( ["departments", "year", "gender"].find(x => x == e.target.name) ) { showStrengths(); showPreferences(); }
+  if ( ["departments", "year", "gender"].find(x => x == e.target.name) ) { showStrengths(); showPreferences(); }
   if ( e.target.name.slice(0,5) == 'pref-' ) showStrengths();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // hide content during setup
-    makeMultiSelect('departments', departmentsOptions, {{user.departments|safe}});
-    makeMultiSelect('classes', classesOptions, {{user.classes|safe}}, true, true);
-    makeSingleSelect('location', locationOptions);
-    makeSingleSelect('timezone', timezoneOptions);
-    makeSingleSelect('year', yearOptions, true);
-    makeSingleSelect('gender', genderOptions, true);
-    {% for pref in ["start", "together", "forum", "size", "year_affinity", "gender_affinity"] %}
-      {% for i in range(user.classes|length+1) %}
-        makeSingleSelect('pref-{{pref}}-{{i}}', {{pref}}Options, true);
-      {% endfor %}
+  // hide content during setup
+  makeMultiSelect('departments', departmentsOptions, {{user.departments|safe}});
+  makeMultiSelect('classes', classesOptions, {{user.classes|safe}}, true, true);
+  makeSingleSelect('location', locationOptions);
+  makeSingleSelect('timezone', timezoneOptions);
+  makeSingleSelect('year', yearOptions, true);
+  makeSingleSelect('gender', genderOptions, true);
+  {% for pref in ["start", "together", "forum", "size", "year_affinity", "gender_affinity", "departments_affinity"] %}
+    {% for i in range(maxlength["classes"]+1) %}
+      makeSingleSelect('pref-{{pref}}-{{i}}', {{pref}}Options, true);
     {% endfor %}
-    {% for i in range(user.classes|length+1) %}
-      makeSingleSelect('pref-departments_affinity-{{i}}', {{"departmentsOptions" if (user.departments|length)>1 else "departmentOptions"}}, true);
-    {% endfor %}
-    makeCheckboxGrid();
-    showTimezoneOffset();
-    $('input').attr('autocomplete','off');
-    showStrengths();
-    showPreferences();
+  {% endfor %}
+  makeCheckboxGrid();
+  showTimezoneOffset();
+  $('input').attr('autocomplete','off');
+  showStrengths();
+  showPreferences();
 
-    $('.toggler-nav').click(function(e) { e.preventDefault(); togglePrefs(e.target); return false; });
-    togglePrefs(document.getElementById('pref-0'));
-    $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
-    $('#userinfo').data('initial',$('#userinfo').serialize());
-    $('#userinfo :input').change(checkChanges);
-    $('#userinfo :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
+  $('.toggler-nav').click(function(e) { e.preventDefault(); togglePrefs(e.target); return false; });
+  togglePrefs(document.getElementById('pref-0'));
+  $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
+  $('#student').data('initial',$('#student').serialize());
+  $('#student :input').change(checkChanges);
+  $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
-    console.log('user-info ready');
+  console.log('student page ready');
 });
 </script>
 

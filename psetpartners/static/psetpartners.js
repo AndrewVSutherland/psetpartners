@@ -56,6 +56,19 @@ function makeMultiSelect(name, available, selected, auto=false, short=false) {
   return s;
 }
 
+// removes the most recently selected item of the named multi-select, if any
+// this can be used to enforce an upper limit on the number of selected items
+// (won't trigger a change by default so safe to call from within change event handler)
+function trimMultiSelect(name, limit, change=false) {
+  const q = 'input[name="' + name + '"]';
+  const s = $(q).data('select');
+  let v = s.value();
+  if ( limit < 2 || v.length <= limit ) return false;
+  while ( v.length > limit ) v.pop();
+  s._setValue(v, change, true);
+  return true;
+}
+
 
 // disable drag and drop
 function disableDrag() {
@@ -68,7 +81,7 @@ function disableDrag() {
   document.addEventListener('dragleave', function(e) { e.preventDefault(); });
 }
 
-// must be called by any code using the checkboxgrid class
+// must be called by any code using the checkboxgrid class "cbg"
 function makeCheckboxGrid(name,rows,cols) {
   disableDrag();
   $('span.cbg').on('mousedown mouseup mouseover', function a (e) {
@@ -79,13 +92,13 @@ function makeCheckboxGrid(name,rows,cols) {
        row = s[1]; col = s[2]; prefix = s[0];
        if ( e.type == 'mousedown' || (e.type == 'mouseover' && !a.active) ) {
          a.active = true;
-         c = document.getElementById("check-" + e.target.id);
+         c = document.getElementById("cb-" + e.target.id);
          a.mode = c.checked; a.row = row; a.col = col; a.prefix = prefix;
        }
        const srow = Math.min(a.row,row), erow = Math.max(a.row,row);
        const scol = Math.min(a.col,col), ecol = Math.max(a.col,col); 
        for ( let i = srow ; i <= erow ; i++ ) for ( let j = scol ; j <= ecol ; j++ ) {
-         t = "check-" + a.prefix + "-" + i + "-" + j;
+         t = "cb-" + a.prefix + "-" + i + "-" + j;
          c = document.getElementById(t);
          c.checked = !a.mode;
        }
