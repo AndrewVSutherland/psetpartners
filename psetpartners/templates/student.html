@@ -330,6 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
       togglePrefs('pref-' + ((parseInt(id.split('-')[1]) + e.which - 38 + n) % n));
     }
   });
+  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { console.log('focusing'); $('.toggler-nav.toggler-active').focus(); }});
   console.log('student page ready');
 });
 </script>

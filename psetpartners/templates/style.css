@@ -358,8 +358,8 @@ div.toggler-active {
 }
 
 div.toggler-nav:focus {
+  text-shadow: 0 0 0.5px var(--shadow-color);
   outline: none !important;
-  border-bottom: 2px solid var(--mit-maroon);
 }
 
 div.toggler-nav:hover {
