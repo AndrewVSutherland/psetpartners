@@ -80,7 +80,6 @@ def index():
 @app.route("/student")
 def student():
     title = "" if current_user.is_authenticated else "login"
-    print(current_user.preferences);
     return render_template(
         "student.html",
         next=request.args.get("next", ""),

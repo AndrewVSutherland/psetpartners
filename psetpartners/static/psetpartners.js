@@ -14,56 +14,101 @@ var selectPureClassNames = {
 };
 
 /*
-  makeSelect functions should be called from templates with a span and hidden input with name="name".
-  resetOptionValue = "__reset__" is defined in options.js
+  makeSelect functions should be called from templates with a span with id "select-id" and hidden input with id="id"
+  (where the id in quotes is the value of the id argument to makeSingleSelect).
 */
-function makeSingleSelect (name, available, reset=false, auto=false) {
-  const q = 'input[name="' + name + '"]';
+function makeSingleSelect (id, available, reset=false, auto=false) {
+  const e = document.getElementById(id);
+  if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
+  const se = document.getElementById('select-'+id);
+  if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
   function onchange(v) {
     v = v.trim();
-    if ( reset && v == resetOptionValue ) v = '';
-    if ( $(q).val() != v ) {
-        $(q).data('oldvalue', $(q).val());
-        if ( ! v ) $(q).data('select').reset();
-        $(q).val(v);
-        $(q)[0].dispatchEvent(new Event('change'));
+    if ( reset && v === resetOptionValue ) v = '';  //  resetOptionValue = "__reset__" is defined in options.js
+    if ( e.value != v ) {
+        e.value = v;
+        if ( ! v ) jQuery(e).data('select').reset();
+        e.dispatchEvent(new Event('change'));
     }
   }
-  const s = new SelectPure('span[name="' + name + '"]', { options: available, value: $(q).val(), onChange: onchange, autocompute: auto});
-  $(q).data('select',s);
+  const s = new SelectPure('#select-'+id, { options: available, value: e.value, onChange: onchange, autocompute: auto});
+  se.addEventListener('keydown', function(evt) { if (evt.which === 40) selectNextOption(id); if (evt.which === 38) selectPrevOption(id); });
+  se.addEventListener('focusout', function(evt) { selectClose(s); });
+  e.value = s.value();
+  jQuery(e).data('select',s);
   return s;
 }
 
-function makeMultiSelect(name, available, selected, auto=false, short=false) {
-  const q = 'input[name="' + name + '"]';
-  function onchange(v) {
-    if ( $(q).val() != v ) { $(q).val(v); $(q)[0].dispatchEvent(new Event('change')); }
+function selectClose(s) {
+  if (s._state.opened) {
+    console.log("closing");
+    s._select.removeClass(s._config.classNames.dropdownShown);
+    s._body.removeEventListener("click", s._boundHandleClick);
+    s._select.addEventListener("click", s._boundHandleClick);
+    s._state.opened = false;
   }
+}
+
+function selectNextOption (id) {
+  const s = jQuery(document.getElementById(id)).data('select');
+  if ( s._config.multiple ) return false;
+  let i = s._config.options.findIndex(x => x.value === s._config.value);
+  if ( i === s._config.options.length-1 ) return false;
+  if ( i === -1 && s._config.options[0].value === resetOptionValue ) i=0;
+  s._setValue(s._config.options[i+1]['value'], true);
+  return true;
+}
+
+function selectPrevOption (id) {
+  const s = jQuery(document.getElementById(id)).data('select');
+  if ( s._config.multiple ) return false;
+  i = s._config.options.findIndex(x => x.value === s._config.value);
+  if ( i < 1 ) return false;
+  v = s._config.options[i-1]['value'];
+  s._setValue(s._config.options[i-1]['value'], true);
+  return true;
+}
+
+/*
+  available should be a list of { 'label': label, 'value': value } where none of the values contain commas
+*/
+function makeMultiSelect(id, available, auto=false, short=false) {
+  if ( available.find(e => e.value.includes(",")) ) throw "available values cannot contain commas";
+  const e = document.getElementById(id);
+  if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
+  const se = document.getElementById('select-'+id);
+  if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
+  function onchange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); }}
   var customIcon = document.createElement('i');
   customIcon.textContent = '×'; // &times;
-  const s = new SelectPure('span[name="' + name + '"]', {
+  const s = new SelectPure('#select-'+id, {
     onChange: onchange,
     options: available,
     multiple: true,
     autocomplete: auto,
     inlineIcon: customIcon,
-    value: selected,
+    value: eval(e.value),
     shortlabels: short,
     classNames: selectPureClassNames,
   });
-  $(q).val(s.value());
-  $(q).data('select',s);
+  if ( auto ) {
+    s._autocomplete.addEventListener('keydown', function(evt) { if (evt.which==9) { selectClose(s); se.focus(); }});
+  } else {
+    se.addEventListener('focusout', function(evt) { selectClose(s); });
+  }
+  e.value = s.value();
+  jQuery(e).data('select',s);
   return s;
 }
 
 // removes the most recently selected item of the named multi-select, if any
 // this can be used to enforce an upper limit on the number of selected items
 // (won't trigger a change by default so safe to call from within change event handler)
-function trimMultiSelect(name, limit, change=false) {
-  const q = 'input[name="' + name + '"]';
-  const s = $(q).data('select');
+function trimMultiSelect(id, limit, change=false) {
+  const s = jQuery(document.getElementById(id)).data('select');
   let v = s.value();
-  if ( limit < 2 || v.length <= limit ) return false;
+  if ( limit < 1 || v.length <= limit ) return false;
+  selectClose(s);
   while ( v.length > limit ) v.pop();
   s._setValue(v, change, true);
   return true;

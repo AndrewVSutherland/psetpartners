@@ -198,6 +198,7 @@ class Student(UserMixin):
                     setattr(self, col, [])
         self.class_data = self.student_class_data()
         self.classes = sorted(list(self.class_data), key=class_number_key)
+        print('student data ' + str(self.__dict__))
 
     @property
     def tz(self):

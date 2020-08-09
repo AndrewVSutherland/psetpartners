@@ -222,7 +222,7 @@ def show_input_errors(errmsgs):
         flash_error(msg)
     return render_template("inputerror.html", messages=errmsgs)
 
-def process_user_input(inp, col, typ, tz=None, opts=[]):
+def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankint=False):
     """
     INPUT:
 
@@ -262,6 +262,8 @@ def process_user_input(inp, col, typ, tz=None, opts=[]):
     elif typ == "date":
         return parse_time(inp).date()
     elif typ == "boolean":
+        if not inp:
+            return False if falseblankbool else None
         if inp in ["yes", "true", "y", "t", True]:
             return True
         elif inp in ["no", "false", "n", "f", False]:
@@ -286,6 +288,8 @@ def process_user_input(inp, col, typ, tz=None, opts=[]):
             return res
         raise ValueError
     elif typ in ["int", "smallint", "bigint", "integer"]:
+        if not inp:
+            return 0 if zeroblankint else None
         return int(inp)
     elif typ == "text[]":
         return list_of_strings(inp)
