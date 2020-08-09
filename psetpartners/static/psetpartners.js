@@ -1,84 +1,73 @@
 /*
   makeSelect functions should be called from templates with a span with id "select-id" and hidden input with id="id"
   (where the id in quotes is the value of the id argument to makeSingleSelect).
+
+  Eventually we should migrate some of this into select-pure.js
 */
-function makeSingleSelect (id, available, reset=false, auto=false) {
+function makeSingleSelect (id, available, config) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
   const se = document.getElementById('select-'+id);
   if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
-  function onchange(v) {
+  function onChange(v) {
     v = v.trim();
-    if ( reset && v === resetOptionValue ) v = '';  //  resetOptionValue = "__reset__" is defined in options.js
+    if ( config.resetOption && v === resetOptionValue ) v = '';  //  resetOptionValue = "__reset__" is defined in options.js
     if ( e.value != v ) {
         e.value = v;
         if ( ! v ) jQuery(e).data('select').reset();
         e.dispatchEvent(new Event('change'));
     }
   }
-  const s = new SelectPure('#select-'+id, { options: available, value: e.value, onChange: onchange, autocompute: auto});
-  se.addEventListener('keydown', function(evt) { if (evt.which === 40) selectNextOption(id); if (evt.which === 38) selectPrevOption(id); });
-  se.addEventListener('focusout', function(evt) { selectClose(s); });
+  const s = new SelectPure('#select-'+id, {
+    options: available,
+    value: e.value,
+    onChange: onChange,
+    autocomplete: config.autocomplete,
+  });
+  se.addEventListener('keydown', function(evt) {
+    if ( evt.which === 40 ) s.next();
+    if ( evt.which === 38 ) s.prev();
+    if ( evt.which === 27 ) s.close();
+  });
+  se.addEventListener('focusout', function(evt) { s.close(); });
   e.value = s.value();
   jQuery(e).data('select',s);
   return s;
 }
 
-function selectClose(s) {
-  if (s._state.opened) {
-    console.log("closing");
-    s._select.removeClass(s._config.classNames.selectOpen);
-    s._body.removeEventListener("click", s._boundHandleClick);
-    s._select.addEventListener("click", s._boundHandleClick);
-    s._state.opened = false;
-  }
-}
-
-function selectNextOption (id) {
-  const s = jQuery(document.getElementById(id)).data('select');
-  if ( s._config.multiple ) return false;
-  let i = s._config.options.findIndex(x => x.value === s._config.value);
-  if ( i === s._config.options.length-1 ) return false;
-  if ( i === -1 && s._config.options[0].value === resetOptionValue ) i=0;
-  s._setValue(s._config.options[i+1]['value'], true);
-  return true;
-}
-
-function selectPrevOption (id) {
-  const s = jQuery(document.getElementById(id)).data('select');
-  if ( s._config.multiple ) return false;
-  i = s._config.options.findIndex(x => x.value === s._config.value);
-  if ( i < 1 ) return false;
-  v = s._config.options[i-1]['value'];
-  s._setValue(s._config.options[i-1]['value'], true);
-  return true;
-}
-
 /*
   available should be a list of { 'label': label, 'value': value } where none of the values contain commas
 */
-function makeMultiSelect(id, available, auto=false, short=false) {
+function makeMultiSelect(id, available, config) {
   if ( available.find(e => e.value.includes(",")) ) throw "available values cannot contain commas";
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
   const se = document.getElementById('select-'+id);
   if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
-  function onchange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); }}
+  function onChange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); }}
   var customIcon = document.createElement('i');
   customIcon.textContent = '×'; // &times;
   const s = new SelectPure('#select-'+id, {
-    onChange: onchange,
+    limit: config.limit,
+    onLimit: config.onLimit,
+    onChange: onChange,
     options: available,
     multiple: true,
-    autocomplete: auto,
+    autocomplete: config.autocomplete,
     inlineIcon: customIcon,
     value: eval(e.value),
-    shortlabels: short,
+    shortTags: config.shortTags,
   });
-  if ( auto ) {
-    s._autocomplete.addEventListener('keydown', function(evt) { if (evt.which==9) { selectClose(s); se.focus(); }});
+  if ( config.autocomplete ) {
+    s._autocomplete.addEventListener('keydown', function(evt) {
+      if ( evt.which == 9 || evt.which == 27 ) { selectClose(s); se.focus(); }
+    });
   } else {
-    se.addEventListener('focusout', function(evt) { selectClose(s); });
+    se.addEventListener('keydown', function(evt) {
+      if ( evt.which === 40 ) s.open();
+      if ( evt.which === 38 || evt.which === 27 ) s.close();
+    });
+    se.addEventListener('focusout', function(evt) { s.close(); });
   }
   e.value = s.value();
   jQuery(e).data('select',s);

@@ -59,7 +59,7 @@
       <td class="caption">Department(s)</td>
       <td class="value">
         <span class="select" id="select-departments" tabindex="4"></span>
-        <input type="hidden" name="departments" id="departments" value="{{user.departments}}" onchange="changeDepartments(this);" />
+        <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
       <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
       <td class="forminfo" id="departments_info">enables affinity preference</td>
@@ -108,8 +108,7 @@
       <td class="caption">Classes</td>
       <td class="value">
         <span class="select" id="select-classes" tabindex="10"></span>
-        <input type="hidden" name="classes" id="classes" value="{{user.classes}}"
-          onchange="if ( trimMultiSelect('classes',{{maxlength.classes}}) ) { $('#classes_alert').show(); $('#classes_alert').fadeOut(1500); }" />
+        <input type="hidden" name="classes" id="classes" value="{{user.classes}}" />
         <td class="alertinfo" id="classes_alert" style="display:none;">only {{maxlength["classes"]}} classes permitted</td>
       </td>
     </tr>
@@ -228,14 +227,6 @@ var studentClasses = [
 {% endfor %}
 ];
 
-function changeDepartments(e) {
-  if ( trimMultiSelect('departments', {{maxlength.departments}}) ) {
-    const info = document.getElementById('departments_info'), alert  = document.getElementById('departments_alert');
-    jQuery(info).hide(); jQuery(alert).show();
-    jQuery(alert).fadeOut(1500); setTimeout(function() { jQuery(info).show(); },1500);
-  }
-}
-
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
   tzopt = timezoneOptions.find(x => x.value==tz);
@@ -299,16 +290,25 @@ function checkChanges (e) {
   if ( studentAffinityOptions.find(x => x === e.target.name) ) showAffinityPreferences();
 }
 
+function classesLimit (n) {
+  q = jQuery(document.getElementById('classes_alert')); q.show(); q.fadeOut(1500);
+}
+
+function departmentsLimit (n) {
+  const qi = jQuery(document.getElementById('departments_info')), qa = jQuery(document.getElementById('departments_alert'));
+  qi.hide(); qa.show(); qa.fadeOut(1500); setTimeout(function() { qi.show(); },1500);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  makeMultiSelect('departments', departmentsOptions);
-  makeMultiSelect('classes', classesOptions, false, true);
-  makeSingleSelect('location', locationOptions);
-  makeSingleSelect('timezone', timezoneOptions);
-  makeSingleSelect('year', yearOptions, true);
-  makeSingleSelect('gender', genderOptions, true);
+  makeMultiSelect('departments', departmentsOptions, {limit: {{maxlength['departments']}}, onLimit: departmentsLimit});
+  makeMultiSelect('classes', classesOptions, {shortTags: true, limit: {{maxlength['classes']}}, onLimit: classesLimit});
+  makeSingleSelect('location', locationOptions, {});
+  makeSingleSelect('timezone', timezoneOptions, {});
+  makeSingleSelect('year', yearOptions, {resetOption: true});
+  makeSingleSelect('gender', genderOptions, {resetOption: true});
   studentPreferences.forEach(function(pref) {
     for ( i = 0 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentPreferenceOptions[pref], true);
+      makeSingleSelect('pref-' + pref + '-' + i, studentPreferenceOptions[pref], {resetOption: true});
   });
   makeCheckboxGrid();
   showTimezoneOffset();

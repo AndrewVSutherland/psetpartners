@@ -63,11 +63,16 @@ class SelectPure {
   // Public API
   value() { return this._config.value; }
   reset() { this._config.value = this._config.multiple ? [] : null; this._setValue(); }
+  open() { this._open(); }
+  close() { this._close(); }
+  // only applicable for single select
+  next() { this._next(); }
+  prev() { this._prev(); }
 
   // Private methods
   _create(_element) {
     const element = typeof _element === "string" ? document.querySelector(_element) : _element;
-
+    if ( element.tagName != "SPAN"  ) throw "wanted a span element in SelectPure constructor";
     this._parent = new Element(element);
     this._select = new Element("div", { class: this._config.classNames.select });
     this._label = new Element("span", { class: this._config.classNames.label });
@@ -102,35 +107,62 @@ class SelectPure {
     });
   }
 
+  _open() {
+    if ( this._state.opened ) return;
+    this._select.addClass(this._config.classNames.selectOpen);
+    this._body.addEventListener("click", this._boundHandleClick);
+    this._select.removeEventListener("click", this._boundHandleClick);
+    this._state.opened = true;
+    if ( this._autocomplete ) this._autocomplete.focus();
+  }
+
+  _close() {
+      if ( ! this._state.opened ) return;
+      this._select.removeClass(this._config.classNames.selectOpen);
+      this._body.removeEventListener("click", this._boundHandleClick);
+      this._select.addEventListener("click", this._boundHandleClick);
+      this._state.opened = false;
+  }
+
+  _next() {
+    if ( this._config.multiple ) return false;
+    let i = this._config.options.findIndex(x => x.value === this._config.value);
+    if ( i === this._config.options.length-1 ) return false;
+    if ( i === -1 && this._config.options[0].label === '' ) i++;
+    this._setValue(this._config.options[i+1]['value'], true);
+    return true;
+  }
+
+  _prev() {
+    if ( this._config.multiple ) return false;
+    let i = this._config.options.findIndex(x => x.value === this._config.value);
+    if ( i < 1 ) return false;
+    this._setValue(this._config.options[i-1]['value'], true);
+    return true;
+  }
+
   _handleClick(event) {
     event.stopPropagation();
-
+    if ( event.target.className === this._config.icon ) return;
     if ( event.target.className === this._config.classNames.autocompleteInput ) return;
-
     if ( this._state.opened ) {
       const option = this._options.find(_option => _option.get() === event.target);
       if (option) {
         if ( option.get().classList.contains(this._config.classNames.optionSelected) ) {
           if ( this._config.multiple ) { this._unselectOption(event); return; }
         } else {
+          if ( this._config.multiple && this._config.limit && this._config.value.length == this._config.limit ) {
+            if ( this._config.onLimit ) this._config.onLimit(this._config.limit);
+            return;
+          }
           this._setValue(option.get().getAttribute("data-value"), true);
           if ( this._config.multiple ) return;
         }
       }
-      this._select.removeClass(this._config.classNames.selectOpen);
-      this._body.removeEventListener("click", this._boundHandleClick);
-      this._select.addEventListener("click", this._boundHandleClick);
-      this._state.opened = false;
-      return;
+      this._close();
+    } else {
+      this._open();
     }
-
-    if ( event.target.className === this._config.icon ) return;
-
-    this._select.addClass(this._config.classNames.selectOpen);
-    this._body.addEventListener("click", this._boundHandleClick);
-    this._select.removeEventListener("click", this._boundHandleClick);
-    this._state.opened = true;
-    if ( this._autocomplete ) this._autocomplete.focus();
   }
 
   _setValue(value, manual, unselected) {
@@ -174,9 +206,9 @@ class SelectPure {
   _selectOptions(options, manual) {
     this._label.setText("");
     this._icons = options.map(_option => {
-      const tag = new Element("span", {
+      const tag = new Element("span", { 
         class: this._config.classNames.tag,
-        textContent:  this._config.shortlabels ? _option.value : _option.label,
+        textContent:  this._config.shortTags ? _option.value : _option.label,
       });
       const icon = new Element(this._config.inlineIcon ?
         this._config.inlineIcon.cloneNode(true) : "i", {
@@ -188,9 +220,8 @@ class SelectPure {
       this._label.append(tag.get());
       return icon.get();
     });
-
-    if (manual) this._optionsWrapper.setTop(Number(this._select.getHeight().split("px")[0]) + 5);
-    if (this._config.onChange && manual) this._config.onChange(this._config.value);
+    if ( manual ) this._optionsWrapper.setTop(Number(this._select.getHeight().split("px")[0]) + 5);
+    if ( this._config.onChange && manual ) this._config.onChange(this._config.value);
   }
 
   _unselectOption(event) {
@@ -203,7 +234,7 @@ class SelectPure {
 
   _sortOptions(event) {
     this._options.forEach(_option => {
-      if (!_option.get().textContent.toLowerCase().includes(event.target.value.toLowerCase())) {
+      if ( ! _option.get().textContent.toLowerCase().includes(event.target.value.toLowerCase()) ) {
         _option.addClass(this._config.classNames.optionHidden);
         return;
       }
