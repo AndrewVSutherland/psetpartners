@@ -359,6 +359,7 @@ div.toggler-active {
 
 div.toggler-nav:focus {
   outline: none !important;
+  border-bottom: 2px solid var(--mit-maroon);
 }
 
 div.toggler-nav:hover {
