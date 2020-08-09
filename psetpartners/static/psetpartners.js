@@ -1,18 +1,3 @@
-var selectPureClassNames = {
-  select: "select-pure__select",
-  dropdownShown: "select-pure__select--opened",
-  multiselect: "select-pure__select--multiple",
-  label: "select-pure__label",
-  placeholder: "select-pure__placeholder",
-  dropdown: "select-pure__options",
-  option: "select-pure__option",
-  autocompleteInput: "select-pure__autocomplete",
-  selectedLabel: "select-pure__selected-label",
-  selectedOption: "select-pure__option--selected",
-  placeholderHidden: "select-pure__placeholder--hidden",
-  optionHidden: "select-pure__option--hidden",
-};
-
 /*
   makeSelect functions should be called from templates with a span with id "select-id" and hidden input with id="id"
   (where the id in quotes is the value of the id argument to makeSingleSelect).
@@ -42,7 +27,7 @@ function makeSingleSelect (id, available, reset=false, auto=false) {
 function selectClose(s) {
   if (s._state.opened) {
     console.log("closing");
-    s._select.removeClass(s._config.classNames.dropdownShown);
+    s._select.removeClass(s._config.classNames.selectOpen);
     s._body.removeEventListener("click", s._boundHandleClick);
     s._select.addEventListener("click", s._boundHandleClick);
     s._state.opened = false;
@@ -89,7 +74,6 @@ function makeMultiSelect(id, available, auto=false, short=false) {
     inlineIcon: customIcon,
     value: eval(e.value),
     shortlabels: short,
-    classNames: selectPureClassNames,
   });
   if ( auto ) {
     s._autocomplete.addEventListener('keydown', function(evt) { if (evt.which==9) { selectClose(s); se.focus(); }});

@@ -224,7 +224,7 @@ header.inner {
 
 #content input.value, select.value, textarea.value {
   width: var(--value-width);
-  height: 23px;
+  height: 25px;
 }
 
 #content input:focus, select:focus, textarea:focus {
