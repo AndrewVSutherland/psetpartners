@@ -27,7 +27,7 @@ span.sp-placeholder::after {
   border-radius: 4px;
   border: var(--input-border-width) solid var(--input-border-color);
   box-sizing: border-box;
-  color: #363b3e;
+  color: black;
   cursor: pointer;
   display: flex;
   font-weight: 500;
@@ -50,7 +50,7 @@ span.sp-placeholder::after {
   border: var(--input-border-width) solid var(--input-border-color);
   box-shadow: 0 0 var(--shadow-size) var(--shadow-color);
   box-sizing: border-box;
-  color: black;/*363b3e;*/
+  color: black;
   display: none;
   left: -1.5px;
   top: 100%;

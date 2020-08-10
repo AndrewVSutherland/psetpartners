@@ -4,25 +4,21 @@
 
   Eventually we should migrate some of this into select-pure.js
 */
-function makeSingleSelect (id, available, config) {
+
+/* globals SelectPure */
+
+function makeSingleSelect(id, available, config) {
   const e = document.getElementById(id);
-  if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
+  if ( ! e || e.tagName != "INPUT"  ) throw 'No input element with id ' + id;
   const se = document.getElementById('select-'+id);
-  if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
-  function onChange(v) {
-    v = v.trim();
-    if ( config.resetOption && v === resetOptionValue ) v = '';  //  resetOptionValue = "__reset__" is defined in options.js
-    if ( e.value != v ) {
-        e.value = v;
-        if ( ! v ) jQuery(e).data('select').reset();
-        e.dispatchEvent(new Event('change'));
-    }
-  }
+  if ( ! se || se.tagName != "SPAN"  ) throw 'No span element with id ' + 'select-' + id;
+  function onChange(v) { if ( !v) v = ''; v = v.trim(); if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); } }
   const s = new SelectPure('#select-'+id, {
     options: available,
     value: e.value,
     onChange: onChange,
     autocomplete: config.autocomplete,
+    resetValue: config.resetValue,
   });
   se.addEventListener('keydown', function(evt) {
     if ( evt.which === 40 ) s.next();
@@ -32,7 +28,16 @@ function makeSingleSelect (id, available, config) {
   se.addEventListener('focusout', function(evt) { s.close(); });
   e.value = s.value();
   jQuery(e).data('select',s);
+  console.log('created selector for input '+e.id);
   return s;
+}
+
+function updateSingleSelect(id) {
+  const e = document.getElementById(id);
+  if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
+  const s = jQuery(e).data('select');
+  if ( !s ) throw 'Select attribute not set for in put ' + id;
+  if ( e.value ) s.value(e.value); else s.reset();
 }
 
 /*
@@ -47,6 +52,8 @@ function makeMultiSelect(id, available, config) {
   function onChange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); }}
   var customIcon = document.createElement('i');
   customIcon.textContent = '×'; // &times;
+  let v = e.value ? e.value.trim().replace(/'/g,'"') : '';
+  v = v ? JSON.parse(v) : [];
   const s = new SelectPure('#select-'+id, {
     limit: config.limit,
     onLimit: config.onLimit,
@@ -55,12 +62,12 @@ function makeMultiSelect(id, available, config) {
     multiple: true,
     autocomplete: config.autocomplete,
     inlineIcon: customIcon,
-    value: eval(e.value),
+    value: v,
     shortTags: config.shortTags,
   });
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {
-      if ( evt.which == 9 || evt.which == 27 ) { selectClose(s); se.focus(); }
+      if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
     });
   } else {
     se.addEventListener('keydown', function(evt) {
@@ -73,20 +80,6 @@ function makeMultiSelect(id, available, config) {
   jQuery(e).data('select',s);
   return s;
 }
-
-// removes the most recently selected item of the named multi-select, if any
-// this can be used to enforce an upper limit on the number of selected items
-// (won't trigger a change by default so safe to call from within change event handler)
-function trimMultiSelect(id, limit, change=false) {
-  const s = jQuery(document.getElementById(id)).data('select');
-  let v = s.value();
-  if ( limit < 1 || v.length <= limit ) return false;
-  selectClose(s);
-  while ( v.length > limit ) v.pop();
-  s._setValue(v, change, true);
-  return true;
-}
-
 
 // disable drag and drop
 function disableDrag() {
@@ -106,28 +99,28 @@ function makeCheckboxGrid(name,rows,cols) {
     if ( typeof a.active === 'undefined' ) a.active = false;
     if ( e.type == 'mouseup' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
     if ( e.buttons&1 ) {
-       const s = ('' + e.target.id).split('-'); 
-       row = s[1]; col = s[2]; prefix = s[0];
-       if ( e.type == 'mousedown' || (e.type == 'mouseover' && !a.active) ) {
+      const s = ('' + e.target.id).split('-'); 
+      const row = s[1], col = s[2], prefix = s[0];
+      if ( e.type == 'mousedown' || (e.type == 'mouseover' && !a.active) ) {
          a.active = true;
-         c = document.getElementById("cb-" + e.target.id);
+         const c = document.getElementById("cb-" + e.target.id);
          a.mode = c.checked; a.row = row; a.col = col; a.prefix = prefix;
-       }
-       const srow = Math.min(a.row,row), erow = Math.max(a.row,row);
-       const scol = Math.min(a.col,col), ecol = Math.max(a.col,col); 
-       for ( let i = srow ; i <= erow ; i++ ) for ( let j = scol ; j <= ecol ; j++ ) {
-         t = "cb-" + a.prefix + "-" + i + "-" + j;
-         c = document.getElementById(t);
-         c.checked = !a.mode;
-       }
-       c.dispatchEvent(new Event('change'));
+      }
+      const srow = Math.min(a.row,row), erow = Math.max(a.row,row);
+      const scol = Math.min(a.col,col), ecol = Math.max(a.col,col); 
+      for ( let i = srow ; i <= erow ; i++ ) for ( let j = scol ; j <= ecol ; j++ ) {
+        const t = "cb-" + a.prefix + "-" + i + "-" + j;
+        const c = document.getElementById(t);
+        if ( c.checked === a.mode ) { c.checked = !a.mode; c.dispatchEvent(new Event('change')); }
+      }
     }
     return false;
   });
   $('span.cbg').on('click', function (e) { e.preventDefault(); });
 }
 
-function validURL(str) {
+function validURL(str, allow_empty=true) {
+  if ( allow_empty && !str ) return true;
   const pattern = new RegExp('^https?:\\/\\/'+ // protocol (require)
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
     '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
@@ -139,16 +132,16 @@ function validURL(str) {
 
 function showURLtest(id, test_id, test_anchor, errmsg) {
   const url = $('#'+id).val();
-  if ( url == '' ) { $('#'+test_id).html(''); return; }
+  if ( url === '' ) { $('#'+test_id).html(''); return; }
   if ( validURL(url) ) {
     $('#'+test_id).html('');
-    if ( test_anchor != '') $('#'+test_id).html('<a href="' + url + '" target="_blank">' + test_anchor + '</a>');
+    if ( test_anchor !== '') $('#'+test_id).html('<a href="' + url + '" target="_blank">' + test_anchor + '</a>');
   } else {
     $('#'+test_id).html(errmsg);
   }
 }
 
 function makeURLtester(id, test_id, test_anchor, errmsg) {
-  $('#'+id).keyup(function(evt) { evt.preventDefault(); url_tester(id, test_id, test_anchor, errmsg);});
-  url_tester(id, test_id, test_anchor, errmsg);
+  $('#'+id).keyup(function(evt) { evt.preventDefault(); showURLtest(id, test_id, test_anchor, errmsg);});
+  showURLtest(id, test_id, test_anchor, errmsg);
 }

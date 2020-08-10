@@ -49,6 +49,7 @@ const CLASSES = {
 
 class SelectPure {
   constructor(element, config) {
+    // the line below will upset jshint (which only seems to understand esversion 6), comment out to lint
     this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
     this._state = { opened: false };
     this._icons = [];
@@ -61,11 +62,11 @@ class SelectPure {
   }
 
   // Public API
-  value() { return this._config.value; }
+  value(v) { if (v !== null) { this._setValue(v); return this._config.value; } else return this._config.value; }
   reset() { this._config.value = this._config.multiple ? [] : null; this._setValue(); }
   open() { this._open(); }
   close() { this._close(); }
-  // only applicable for single select
+  // only applicable for single selectors
   next() { this._next(); }
   prev() { this._prev(); }
 
@@ -129,7 +130,7 @@ class SelectPure {
     let i = this._config.options.findIndex(x => x.value === this._config.value);
     if ( i === this._config.options.length-1 ) return false;
     if ( i === -1 && this._config.options[0].label === '' ) i++;
-    this._setValue(this._config.options[i+1]['value'], true);
+    this._setValue(this._config.options[i+1].value, true);
     return true;
   }
 
@@ -137,7 +138,7 @@ class SelectPure {
     if ( this._config.multiple ) return false;
     let i = this._config.options.findIndex(x => x.value === this._config.value);
     if ( i < 1 ) return false;
-    this._setValue(this._config.options[i-1]['value'], true);
+    this._setValue(this._config.options[i-1].value, true);
     return true;
   }
 
@@ -167,6 +168,7 @@ class SelectPure {
 
   _setValue(value, manual, unselected) {
     if ( this._config.disabledOptions.indexOf(value) > -1 ) return;
+    if ( ! value || value === this._config.resetValue ) { value = null; this._config.value = this._config.multiple ? [] : null; }
     if ( value && !unselected ) this._config.value = this._config.multiple ? [...this._config.value || [], value] : value;
     if ( value && unselected ) this._config.value = value;
     this._options.forEach(_option => { _option.removeClass(this._config.classNames.optionSelected); });
@@ -190,7 +192,11 @@ class SelectPure {
 
     const optionNode = this._options.find (_option => _option.get().getAttribute("data-value") === option.value.toString());
 
-    if (!this._config.value) { this._label.setText(""); return; }
+    if (!this._config.value) {
+      if ( this._config.onChange && manual ) this._config.onChange(this._config_value);
+      this._label.setText("");
+      return;
+    }
 
     optionNode.addClass(this._config.classNames.optionSelected);
     this._placeholder.addClass(this._config.classNames.placeholderHidden);

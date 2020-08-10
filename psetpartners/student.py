@@ -8,6 +8,7 @@ from psetpartners.utils import (
     DEFAULT_TIMEZONE,
     current_year,
     current_term,
+    flash_error,
     )
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
@@ -171,21 +172,31 @@ def cleanse_student_data(data):
 
 class Student(UserMixin):
     properties = sorted(db.students.col_type) + ["id"]
-    def __init__(self, kerb):
-        self.kerb = kerb
-        if kerb:
-            print("automatically authenticated user "+kerb)
-            self._authenticated = True # for now auto authenticate, eventually use Touchstone
+    def __init__(self, kerb=None, new=False):
+        if not kerb:
+            return None
+        print("creating student object for "+kerb)
         data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
-        if data is None:
+        if data is None and new:
+            print("creating new student "+kerb)
             db.students.insert_many([{"kerb": kerb, "preferred_name": kerb}])
-            data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
+            data = db.students.lucky({"kerb": kerb}, projection=Student.properties)
+        elif data:
+            print("loaded student "+kerb)
+        else:
+            flash_error("No record for user \"%s\" found, please press register if you are a new user." % kerb)
+            return None
+        print("automatically authenticated user "+kerb)
+        self._authenticated = True # for now auto authenticate, eventually use Touchstone
+        self._active = True # TODO: add active/inactive flag to student database
         cleanse_student_data(data)
         self.__dict__.update(data)
         if self.timezone is None:
             self.timezone = request.cookies.get("browser_timezone", DEFAULT_TIMEZONE)
         if self.timezone == DEFAULT_TIMEZONE:
             self.timezone = DEFAULT_TIMEZONE_NAME
+        if self.location is None:
+            self.location = ("near" if self.timezone == DEFAULT_TIMEZONE_NAME else "far")
         if self.hours is None:
             self.hours = [[False for j in range(24)] for i in range(7)]
         for col, typ in db.students.col_type.items():
@@ -198,16 +209,33 @@ class Student(UserMixin):
                     setattr(self, col, [])
         self.class_data = self.student_class_data()
         self.classes = sorted(list(self.class_data), key=class_number_key)
-        print('student data ' + str(self.__dict__))
+        print('\nstudent data ' + str(self.__dict__))
 
     @property
     def tz(self):
-        if not self.timezone or self.timezone == DEFAULT_TIMEZONE_NAME:
+        if not getattr(self,"timezone","") or self.timezone == DEFAULT_TIMEZONE_NAME:
             return timezone(DEFAULT_TIMEZONE)
         try:
             return timezone(self.timezone)
         except UnknownTimeZoneError:
             return timezone(DEFAULT_TIMEZONE)
+
+    @property
+    def is_authenticated(self):
+        return getattr(self, "_authenticated", None)
+
+    @property
+    def is_active(self):
+        return getattr(self, "_active", None)
+
+    @property
+    def is_anonymous(self):
+        return False if getattr(self, "kerb", "") else True
+
+    @property
+    def get_id(self):
+        print("get_id called")
+        return lambda: getattr(self, "kerb", None)
 
     def save(self):
         db.students.update({"kerb": self.kerb}, {col: getattr(self, col, None) for col in db.students.search_cols})
@@ -240,18 +268,15 @@ class Student(UserMixin):
                 db.classlist.insert_many(S)
             print("Updated classlist")
 
-    def student_class_data(self, year=current_year(), term=current_term(), include_groups=False):
+    def student_class_data(self, year=current_year(), term=current_term()):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
+        id = self.id
         class_data = {}
-        for r in db.classlist.search({"student_id":self.id, "year": year, "term": term}, projection=["class_id", "preferences", "strengths"]):
-            r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number", "class_name", "homepage", "pset_dates", "instructor_names"]))
+        for r in db.classlist.search({"student_id":id, "year": year, "term": term}, projection=["class_id", "preferences", "strengths"]):
+            r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number"]))
             if not r["preferences"]:
                 r["preferences"] = self.preferences
                 r["strengths"] = self.strengths
-            if include_groups:
-                group_id = db.grouplist.lucky({"class_id":r["class_id"],"student_id":id},projection="group_id")
-                if group_id is not None:
-                    r["group"] = db.groups.lucky({"id": group_id}, projection=["id", "group_name", "visibility", "preferences", "strengths"])
             class_data[r["class_number"]] = r
         return class_data
 
@@ -260,3 +285,19 @@ class AnonymousStudent(AnonymousUserMixin):
     @property
     def tz(self):
         return timezone("UTC")
+
+    @property
+    def is_authenticated(self):
+        return False
+
+    @property
+    def is_active(self):
+        return False
+
+    @property
+    def is_anonymous(self):
+        return True
+
+    @property
+    def get_id(self):
+        return None

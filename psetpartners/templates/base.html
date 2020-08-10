@@ -10,16 +10,14 @@
       <title>{% if title %} {{ title|striptags }}{% endif %}</title>
     {% endif %}
   <script>
-  if (navigator.cookieEnabled) {
-    console.log("cookies enabled");
+  if ( navigator.cookieEnabled ) {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if( document.cookie.includes('browser_timezone') ) {
-    } else {
+    if ( ! document.cookie.includes('browser_timezone') ) {
       document.cookie = "browser_timezone=" + tz + ";path=/";
       location.reload();
     }
-    } else {
-      console.log("cookies disabled");
+  } else {
+    console.log("cookies disabled");
   }
   </script>
   <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />

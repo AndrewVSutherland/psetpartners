@@ -41,7 +41,8 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(kerb):
-    return Student(kerb)
+    print("*** load_user called with kerb %s ***" % kerb)
+    return Student(kerb=kerb)
 
 login_manager.login_view = "user.info"
 
@@ -58,6 +59,7 @@ def template_options():
 # globally define user properties and username
 @app.context_processor
 def ctx_proc_userdata():
+    print("*** ctx_proc_userdata ***")
     userdata = {
         "user": current_user,
         "usertime": datetime.now(tz=current_user.tz),
@@ -66,19 +68,31 @@ def ctx_proc_userdata():
 
 @app.route("/login", methods=["POST"])
 def login():
-    identifier = request.form["identifier"]
-    user = Student(kerb=identifier)
+    print("*** login ***")
+    raw_data = request.form
+    print("\nlogin raw_data: %s" % dict(raw_data))
+    if raw_data.get("submit") == "register":
+        new = True
+    elif raw_data.get("submit") == "login":
+        new = False
+    else:
+        return render_template("404.html", title="page not found", messages=["Unknown submit data in post"]), 404
+    kerb = raw_data["kerb"]
+    print ("login kerb = " + kerb)
+    user = Student(kerb=kerb,new=new)
+
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)
-    return redirect(request.form.get("next") or url_for(".student"))
+    return redirect(request.form.get("next") or url_for(".student"), 301)
 
 @app.route("/")
 def index():
-    return student()
+    return redirect(url_for(".student"), 301)
 
 @app.route("/student")
 def student():
+    print("*** student ***")
     title = "" if current_user.is_authenticated else "login"
     return render_template(
         "student.html",
@@ -93,21 +107,28 @@ PREF_RE = re.compile(r"^s?pref-([a-z_]*)-(\d+)$")
 @app.route("/save/student", methods=["POST"])
 @login_required
 def save_student():
+    print("*** save_student ***")
     raw_data = request.form
+    print("\nraw_data: %s" % dict(raw_data))
     if raw_data.get("submit") == "cancel":
         return redirect(url_for(".student"), 301)
     errmsgs = []
-    print("raw_data: %s" % dict(raw_data))
-    prefs = [ {} for i in range(len(current_user.classes)+1) ]
-    sprefs = [ {} for i in range(len(current_user.classes)+1) ]
-    data = {"preferences": prefs[0], "strengths": sprefs[0]}
+    data = {}
+    try:
+        data["classes"] = list_of_strings(raw_data.get("classes","[]"))
+    except Exception as err:
+        return show_input_errors([format_input_errmsg(err, raw_data.get("classes","[]"), "classes")])
+    print("new classes: %s" % data["classes"])
+    num_classes = len(data["classes"])
+    prefs = [ {} for i in range(num_classes+1) ]
+    sprefs = [ {} for i in range(num_classes+1) ]
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
         for j in range(24):
             if raw_data.get("cb-hours-%d-%d"%(i,j),False):
                 data["hours"][i][j] = True
 
-    # TODO: validate data values, not just type
+    # TODO: validate data values, not just type (data from form should be fine)
     for col, val in raw_data.items():
         if col in db.students.col_type:
             try:
@@ -119,9 +140,8 @@ def save_student():
                 errmsgs.append(format_input_errmsg(err, val, col))
         elif PREF_RE.match(col) and val.strip():
             t = col.split('-')
-            if t[1] in student_preferences:
-                p = t[1]
-                n = int(t[2])
+            p, n = t[1], int(t[2])
+            if p in student_preferences and n <= num_classes:
                 v = prefs[n] if col[0] == 'p' else sprefs[n]
                 try:
                     typ = student_preferences[p]["type"] if col[0] == 'p' else "posint"
@@ -144,13 +164,13 @@ def save_student():
     # There should never be any errors coming from the form
     if errmsgs:
         return show_input_errors(errmsgs)
-    for i in range(len(current_user.classes)):
-        current_user.class_data[current_user.classes[i]]["preferences"] = prefs[i+1]
-        current_user.class_data[current_user.classes[i]]["strengths"] = sprefs[i+1]
-    data["classes"] = list_of_strings(raw_data.get("classes",[]))
-    print("data: %s" % data)
+    data["preferences"] = prefs[0]
+    data["strengths"] = sprefs[0]
+    print("new data: %s" % data)
     for k, v in data.items():
         setattr(current_user, k, v)
+    current_user.class_data = { data["classes"][i]: {"preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
+    print("new class data: %s" % current_user.class_data)
     current_user.save()
     try:
        #current_user.save()

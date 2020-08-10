@@ -1,7 +1,5 @@
 // This replicates data defined in the database and/or python source code, you need to update both
 
-const resetOptionValue = '__reset__';
-
 const departmentsOptions = [
   { label: '1 Civil and Environmental Engineering', value: '1', },
   { label: '2 Mechanical Engineering', value: '2', },
@@ -38,7 +36,7 @@ const departmentsOptions = [
   ];
 
 const yearOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'first year', value: '1', },
   { label: 'sophomore', value: '2', },
   { label: 'junior', value: '3', },
@@ -47,7 +45,7 @@ const yearOptions = [
 ];
 
 const genderOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'female', value: 'female', },
   { label: 'male', value: 'male', },
   { label: 'non-binary', value: 'non-binary', },
@@ -501,64 +499,62 @@ const timezoneOptions = [
   { label: '(MIT +18:00) Pacific/Kiritimati', value: 'Pacific/Kiritimati', },
 ];
 const startOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'shortly after the problem set is posted', value: '6', },
   { label: '3-4 days before the pset is due', value: '4', },
   { label: '1-2 days before the pset is due', value: '2', },
 ];
 const togetherOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'solve the problems together', value: '1', },
   { label: 'discuss strategies, work together if stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
 const forumOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'text (e.g. Slack or Zulip)', value: 'text', },
   { label: 'video (e.g. Zoom)', value: 'video', },
   { label: 'in person', value: 'in-person', },
 ];
 const sizeOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: '2 students', value: '2', },
   { label: '3-4 students', value: '3', },
   { label: '5-8 students', value: '5', },
   { label: 'more than 8 students', value: '8', },
 ];
 const department_affinityOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'someone else in my department', value: '1', },
   { label: 'only students in my department', value: '2', },
   { label: 'students in many departments', value: '3', },
 ];
 const departments_affinityOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'someone else in one of my departments', value: '1', },
   { label: 'only students in one of my departments', value: '2', },
   { label: 'students in many departments', value: '3', },
 ];
 const year_affinityOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'someone else in my year', value: '1', },
   { label: 'only students in my year', value: '2', },
   { label: 'students in multiple years', value: '3', },
 ];
 const gender_affinityOptions = [
-  { label: '', value: resetOptionValue },
+  { label: '', value: '' },
   { label: 'someone else with my gender identity', value: '1', },
   { label: 'only students with my gender identity', value: '2', },
   { label: 'a diversity of gender identities', value: '3', },
 ];
 
 const studentAffinityOptions = [ "departments", "year", "gender" ];
-const studentPreferences = [ "start", "together", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
 const studentPreferenceOptions = {
-  "start": startOptions,
-  "together": togetherOptions,
-  "forum": forumOptions,
-  "size": sizeOptions,
-  "departments_affinity": departments_affinityOptions,
-  "year_affinity": year_affinityOptions,
-  "gender_affinity": gender_affinityOptions,
+  start: startOptions,
+  together: togetherOptions,
+  forum: forumOptions,
+  size: sizeOptions,
+  departments_affinity: departments_affinityOptions,
+  year_affinity: year_affinityOptions,
+  gender_affinity: gender_affinityOptions,
 };
-

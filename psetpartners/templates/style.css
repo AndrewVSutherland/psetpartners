@@ -7,7 +7,7 @@
   --shadow-width: 4px;
   --caption-width: 270px;
   --value-width: 380px;
-  --light-gray: #d6d7d8;
+  --light-gray: #c6c7c8;
   --lighter-gray: #eaebec;
   --alert-color: #e32f54;
   --info-color: black;
@@ -238,6 +238,11 @@ header.inner {
   padding-right: 0px;
 }
 
+#content input.value::placeholder {
+  font-size: 90%;
+  font-style:italic;
+}
+
 #content select.value option {
   background: var(--lighter-gray);
   font-size: 95%;
@@ -273,11 +278,9 @@ button {
   color: var(--mit-maroon);
   font-weight: bold;
   font-size: 14px;
-  min-width: 60px;
-  margin: 0px 10px 0px 0px;
+  margin: 0px 6px;
   padding: 3px 6px;
   border-radius: 4px;
-  cursor: pointer;
   height: 26px;
 }
 
@@ -285,8 +288,18 @@ button:disabled {
   color: white;
 }
 
+button:hover:enabled {
+  background: var(--select-fill);
+  cursor: pointer;
+}
+
+button:hover:disabled {
+  cursor: not-allowed;
+}
+
+
 .alertinfo {
-  padding-left: 10px;
+  padding-left: 6px;
   font-size: 75%;
   font-weight: bold;
   font-style: italic;
@@ -378,12 +391,13 @@ input[type="range"] {
   height: 10px;
   width: 100px;
   cursor: pointer;
+  border: var(--input-border-width) solid var(--input-border-color);
   border-radius: 1px ! important;
 }
 
-/*::-webkit-slider-runnable-track {
+::-webkit-slider-runnable-track {
   background: #fff;
-}*/
+}
 
 ::-webkit-slider-thumb {
   -webkit-appearance: none;
