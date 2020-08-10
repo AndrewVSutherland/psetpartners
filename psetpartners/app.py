@@ -46,6 +46,13 @@ def is_running():
 # Global app configuration #
 ############################
 
+file_handler = None
+def logger_file_handler():
+    # set by start_logging
+    return file_handler
+
+app.logger.addHandler(logger_file_handler())
+
 # If the debug toolbar is installed then use it
 if app.debug:
     try:
