@@ -14,100 +14,30 @@ DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 
-strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
+MAX_SHORT_NAME_LEN = 48 # used for preferred name and group names
+MAX_LONG_NAME_LEN = 96 # used for class names
+MAX_ID_LEN = 16 # used for kerbs and course numbers
+MAX_TEXT_LEN = 256
+MAX_URL_LEN = 256
+
+maxlength = {
+    'class_name': MAX_LONG_NAME_LEN,
+    'class_number': MAX_ID_LEN,
+    'classes': 8,
+    'departments': 4,
+    'description': MAX_TEXT_LEN,
+    'group_name' : MAX_SHORT_NAME_LEN,
+    'homepage': MAX_URL_LEN,
+    'instructor_names': 4,
+    'instructor_name' : MAX_SHORT_NAME_LEN,
+    'kerb': MAX_ID_LEN,
+    'instructor_kerbs': 4,
+    'instructor_kerb' : MAX_SHORT_NAME_LEN,
+    'preferred_name' : MAX_SHORT_NAME_LEN,
+    'preferred_pronouns': MAX_SHORT_NAME_LEN,
+}
+
 term_options = ["IAP", "spring", "summer", "fall"]
-
-# Client-side version of these is in static/options.js, you need to change in both places
-department_affinity_options = [
-    (1, "someone else in my department"),
-    (2, "only students in my department"),
-    (3, "students in different departments"),
-    ]
-
-departments_affinity_options = [
-    (1, "someone else in one of my departments"),
-    (2, "only students in one of my departments"),
-    (3, "students in many departments"),
-    ]
-
-gender_options = [
-    ("female", "female"),
-    ("male", "male"),
-    ("non-binary", "non-binary"),
-    ]
-
-gender_affinity_options = [
-    (1, "someone else with my gender identity"),
-    (2, "only students with my gender identity"),
-    (3, "a diversity of gender identities"),
-    ]
-
-year_affinity_options = [
-    (1, "someone else in my year"),
-    (2, "only students in my year"),
-    (3, "students in multiple years"),
-    ]
-
-year_options = [
-    (1, "first year"),
-    (2, "sophomore"),
-    (3, "junior"),
-    (4, "senior or super senior"),
-    (5, "graduate student"),
-    ]
-
-forum_options = [
-    ("text", "text (e.g. Slack or Zulip)"),
-    ("video", "video (e.g. Zoom)"),
-    ("in-person", "in person"),
-    ]
-
-start_options = [
-    (6, "shortly after the problem set is posted"),
-    (4, "3-4 days before the pset is due"),
-    (2, "1-2 days before the pset is due"),
-    ]
-
-together_options = [
-    (1, "solve the problems together"),
-    (2, "discuss strategies, work together if stuck"),
-    (3, "work independently but check answers"),
-    ]
-
-size_options = [
-    (2, "2 students"),
-    (3, "3-4 students"),
-    (5, "5-8 students"),
-    (8, "more than 8 students"),
-    ]
-
-location_options = [
-    ("near", "on campus or near MIT"),
-    ("far", "not hear MIT"),
-    #("baker", "Baker House"),
-    #("buron-conner", "Burton Conner House"),
-    #("east", "East Campus"),
-    #("macgregor", "MacGregor House"),
-    #("maseeh", "Maseeh Hall"),
-    #("mccormick", "McCormick Hall"),
-    #("new", "New House"),    
-    #("next", "Next House"),
-    #("random", "Random Hall"),
-    #("simmons", "Simmons Hall"),
-    #("epsilontheta", "Epsilon Theta"),
-    #("fenway", "Fenway House"),
-    #("pika", "pika"),
-    #("student", "Student House"),
-    #("wilg", "WILG"),
-    #("amherst", "70 Amherst Street"),
-    #("ashdown", "Ashdown House"),
-    #("edgerton", "Edgerton House"),
-    #("tower4", "Graduate Tower at Site 4"),
-    #("sidneypacific", "Sidney-Pacific"),
-    #("tang", "Tang Hall"),
-    #("warehouse", "The Warehous"),
-    #("westgate", "Westgate"),    
-    ]
 
 short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 posint_re_string = r"[1-9][0-9]*"
@@ -221,26 +151,6 @@ def date_and_daytimes_to_times(date, s, tz):
         end += timedelta(days=1)
     return start, end
 
-MAX_SHORT_NAME_LEN = 48 # used for preferred name and group names
-MAX_LONG_NAME_LEN = 96 # used for class names
-MAX_ID_LEN = 16 # used for kerbs and course numbers
-MAX_TEXT_LEN = 256
-MAX_URL_LEN = 256
-
-maxlength = {
-    'class_name': MAX_LONG_NAME_LEN,
-    'class_number': MAX_ID_LEN,
-    'classes': 6,
-    'description': MAX_TEXT_LEN,
-    'group_name' : MAX_SHORT_NAME_LEN,
-    'homepage': MAX_URL_LEN,
-    'instructor_name' : MAX_SHORT_NAME_LEN,
-    'kerb': MAX_ID_LEN,
-    'instructor_kerb' : MAX_SHORT_NAME_LEN,
-    'preferred_name' : MAX_SHORT_NAME_LEN,
-    'preferred_pronouns': MAX_SHORT_NAME_LEN,
-}
-
 def naive_utcoffset(tz):
     if isinstance(tz, str):
         tz = pytz.timezone(tz)
@@ -312,7 +222,7 @@ def show_input_errors(errmsgs):
         flash_error(msg)
     return render_template("inputerror.html", messages=errmsgs)
 
-def process_user_input(inp, col, typ, tz=None):
+def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankint=False):
     """
     INPUT:
 
@@ -320,10 +230,8 @@ def process_user_input(inp, col, typ, tz=None):
     - ''col'' -- column name (names ending in ''link'', ''page'', ''time'', ''email'' get special handling
     - ``typ`` -- a Postgres type, as a string
     """
-    if inp and isinstance(inp, str):
-        inp = inp.strip()
-    if inp == "":
-        return False if typ == "boolean" else ("" if typ == "text" else None)
+    assert isinstance(inp, str)
+    inp = inp.strip()
     if col in maxlength and len(inp) > maxlength[col]:
         raise ValueError("Input exceeds maximum length permitted")
     if typ == "time":
@@ -354,6 +262,8 @@ def process_user_input(inp, col, typ, tz=None):
     elif typ == "date":
         return parse_time(inp).date()
     elif typ == "boolean":
+        if not inp:
+            return False if falseblankbool else None
         if inp in ["yes", "true", "y", "t", True]:
             return True
         elif inp in ["no", "false", "n", "f", False]:
@@ -378,6 +288,8 @@ def process_user_input(inp, col, typ, tz=None):
             return res
         raise ValueError
     elif typ in ["int", "smallint", "bigint", "integer"]:
+        if not inp:
+            return 0 if zeroblankint else None
         return int(inp)
     elif typ == "text[]":
         return list_of_strings(inp)

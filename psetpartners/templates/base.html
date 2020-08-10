@@ -10,16 +10,14 @@
       <title>{% if title %} {{ title|striptags }}{% endif %}</title>
     {% endif %}
   <script>
-  if (navigator.cookieEnabled) {
-    console.log("cookies enabled");
+  if ( navigator.cookieEnabled ) {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if( document.cookie.includes('browser_timezone') ) {
-    } else {
+    if ( ! document.cookie.includes('browser_timezone') ) {
       document.cookie = "browser_timezone=" + tz + ";path=/";
       location.reload();
     }
-    } else {
-      console.log("cookies disabled");
+  } else {
+    console.log("cookies disabled");
   }
   </script>
   <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />
@@ -40,12 +38,12 @@
     {# <script async type="text/javascript" src="{{ url_for('static', filename='knowl.js') }}"></script> #}
 
     <!-- multi select https://github.com/dudyn5ky1/select-pure, vanilla JS-->
-    <script defer type="text/javascript" src="{{ url_for('static', filename='select-pure/dist/bundle.min.js') }}"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='select_pure.css') }}" />
+    <script defer type="text/javascript" src="{{ url_for('static', filename='select-pure.js') }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='select-pure.css') }}" />
 
     {% block extra_head -%}{%- endblock extra_head %}
   </head>
-  <body class="{{ body_class }}" style="display:none;">
+  <body class="{{ body_class }}">
 {#
 {% macro KNOWL(kid, title=none) -%}
 {{ static_knowl(kid, title) | safe }}
@@ -56,8 +54,4 @@
 #}
    {% block body -%}{%- endblock body %}
   </body>
-
-<script>
-window.addEventListener('load', function() { jQuery('body').fadeIn(0); });
-</script>
 </html>

@@ -7,7 +7,7 @@
   --shadow-width: 4px;
   --caption-width: 270px;
   --value-width: 380px;
-  --light-gray: #d6d7d8;
+  --light-gray: #c6c7c8;
   --lighter-gray: #eaebec;
   --alert-color: #e32f54;
   --info-color: black;
@@ -35,6 +35,11 @@
 }
 ::-moz-selection {
     background: var(--select-fill);
+}
+
+#javascript-explanation {
+  padding: 20px;
+  text-align: center;
 }
 
 #header {
@@ -84,7 +89,7 @@ header.inner {
 
 #footer {
   clear: both;
-  margin-top: 42px;
+  margin-top: 40px;
   margin-left: -7px;
   margin-right: -7px;
   background-color: var(--mit-maroon);
@@ -101,6 +106,7 @@ header.inner {
   color: white;
   text-decoration: none;
   cursor: pointer;
+  font-size: 110%;
 }
 
 #flashes p {
@@ -142,11 +148,13 @@ header.inner {
 
 #content h2 {
   font-size: 130%;
-  margin-bottom: 20px;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 #content h3 {
   font-size: 110%;
+  margin-top: 20px;
   margin-bottom: 10px;
 }
 
@@ -200,22 +208,26 @@ header.inner {
 }
 
 
-#content input.value, select.value, textarea.value {
+#content input, select, textarea {
   border: var(--input-border-width) solid var(--input-border-color);
   background: var(--mit-white);
-  padding: 3px 6px;
+  padding-top: 3px;
+  padding-bottom: 1px;
   font-family: Verdona, Geneva, sans-serif;
   font-size: 100%;
   border-radius: 4px;
-  width: var(--value-width);
-  height: 23px;
   box-sizing:content-box;
   -ms-box-sizing:content-box;
   -moz-box-sizing:content-box;
   -webkit-box-sizing:content-box;
 }
 
-#content input.value:focus, select.value:focus, textarea.value:focus {
+#content input.value, select.value, textarea.value {
+  width: var(--value-width);
+  height: 25px;
+}
+
+#content input:focus, select:focus, textarea:focus {
   outline: none !important
   border: var(--input-focus-border-width) solid var(--input-focus-border-color);
   box-shadow: 0 0 var(--shadow-width) var(--shadow-color);
@@ -226,6 +238,11 @@ header.inner {
   padding-right: 0px;
 }
 
+#content input.value::placeholder {
+  font-size: 90%;
+  font-style:italic;
+}
+
 #content select.value option {
   background: var(--lighter-gray);
   font-size: 95%;
@@ -233,7 +250,6 @@ header.inner {
 
 #content select.value {
   cursor: pointer;
-  background: var(--mit-white);
   padding-left: 1px;
   padding-right: 3px;
 }
@@ -262,11 +278,9 @@ button {
   color: var(--mit-maroon);
   font-weight: bold;
   font-size: 14px;
-  min-width: 60px;
-  margin: 0px 10px 0px 0px;
+  margin: 0px 6px;
   padding: 3px 6px;
   border-radius: 4px;
-  cursor: pointer;
   height: 26px;
 }
 
@@ -274,8 +288,18 @@ button:disabled {
   color: white;
 }
 
+button:hover:enabled {
+  background: var(--select-fill);
+  cursor: pointer;
+}
+
+button:hover:disabled {
+  cursor: not-allowed;
+}
+
+
 .alertinfo {
-  padding-left: 10px;
+  padding-left: 6px;
   font-size: 75%;
   font-weight: bold;
   font-style: italic;
@@ -339,22 +363,20 @@ div.toggler-nav {
   padding: 8px;
   min-width: 50px;
   color: var(--mit-maroon);
-}
-
-div.toggler-nav {
   margin: 0px 12px;
-}
-
-div.toggler-nav a {
-  padding: 8px 16px;
-  color: var(--mit-maroon);
 }
 
 div.toggler-active {
   border-bottom: 2px solid var(--mit-maroon);
 }
 
+div.toggler-nav:focus {
+  text-shadow: 0 0 0.5px var(--shadow-color);
+  outline: none !important;
+}
+
 div.toggler-nav:hover {
+  background: var(--select-fill);
   cursor: pointer;
 }
 /* END pref-toggler */
@@ -363,11 +385,14 @@ div.toggler-nav:hover {
 input[type="range"] {
   -webkit-appearance: none;
   overflow: hidden;
-  height: 8px;
+  margin-top: 6px;
+  padding-top: 0px ! important;
+  padding-bottom: 0px ! important;
+  height: 10px;
   width: 100px;
   cursor: pointer;
-  border-radius: 0px;
   border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: 1px ! important;
 }
 
 ::-webkit-slider-runnable-track {
