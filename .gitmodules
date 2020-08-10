@@ -2,6 +2,3 @@
 	path = psycodict
 	url = https://github.com/roed314/psycodict.git
         ignore = dirty
-[submodule "psetpartners/static/select-pure"]
-	path = psetpartners/static/select-pure
-	url = https://github.com/duetosymmetry/select-pure.git

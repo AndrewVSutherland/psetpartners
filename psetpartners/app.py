@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-import os, re
+import os
 import time
 
 from flask import (
     Flask,
-    redirect,
     render_template,
     request,
     make_response,
@@ -71,16 +70,6 @@ app.jinja_env.add_extension("jinja2.ext.do")
 @app.template_filter("blanknone")
 def blanknone(x):
     return "" if x is None else str(x)
-
-ID_RE = re.compile(r"^[0-9a-zA-Z-_]*$")
-
-# avoid using periods or colons in ids (screws up jquery)
-# this does not guarantee no duplicates
-@app.template_filter("safeid")
-def safeid(x):
-    t = x.replace(" ","_").replace(".","-").replace(":","__")
-    assert ID_RE.match(t)
-    return t
 
 # the following context processor inserts
 #  * empty info={} dict variable
@@ -180,10 +169,6 @@ def routes():
                 url = None
             links.append((url, str(rule)))
     return sorted(links, key=lambda elt: elt[1])
-
-@app.route("/")
-def index():
-    return redirect(url_for(".info"))
 
 @app.route("/sitemap")
 def sitemap():
