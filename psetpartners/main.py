@@ -177,7 +177,6 @@ def save_student():
        flash_info ("Changes saved.") 
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
-    raise ValueError("test flasklog");
     return redirect(url_for(".student"), 301)
 
 @app.route("/logout", methods=["POST"])
