@@ -348,7 +348,7 @@ p.flash-error::before {
 
 /* BEGIN pref-toggler */
 div.pref-toggler {
-  margin: -10px 0px 25px -10px;
+  margin: -10px 30px 25px -10px;
 }
 
 div.pref-toggler-inner {

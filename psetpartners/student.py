@@ -179,7 +179,7 @@ class Student(UserMixin):
         data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         if data is None and new:
             print("creating new student "+kerb)
-            db.students.insert_many([{"kerb": kerb, "preferred_name": kerb}])
+            db.students.insert_many([{"kerb": kerb, "preferred_name": kerb, "timezone": DEFAULT_TIMEZONE_NAME, "location": "near"}])
             data = db.students.lucky({"kerb": kerb}, projection=Student.properties)
         elif data:
             print("loaded student "+kerb)

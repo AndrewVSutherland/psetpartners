@@ -16,6 +16,7 @@ from psetpartners.utils import (
     current_upcoming,
     current_term_pretty,
     )
+from logging import (FileHandler, WARNING)
 
 ############################
 #         Main app         #
@@ -45,6 +46,21 @@ def is_running():
 ############################
 # Global app configuration #
 ############################
+
+file_handler = None
+def logger_file_handler():
+    # set by start_logging
+    return file_handler
+
+def start_logging():
+    from .config import Configuration
+    config = Configuration()
+    logging_options = config.get_logging()
+
+    file_handler = FileHandler(logging_options['logfile'])
+    file_handler.setLevel(WARNING)
+
+app.logger.addHandler(logger_file_handler())
 
 # If the debug toolbar is installed then use it
 if app.debug:
