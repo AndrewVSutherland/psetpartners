@@ -43,7 +43,7 @@
   margin: 0;
   position: relative;
   transition: 0.1s;
-  width: 387px; /* should be calc(var(--value-width)+7px); */
+  width: 407px; /* should be calc(var(--value-width)+7px); */
 }
 
 .sp-select:hover {

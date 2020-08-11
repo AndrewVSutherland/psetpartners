@@ -67,7 +67,7 @@ const CLASSES = {
 class SelectPure {
   constructor(element, config) {
     // the line below will upset jshint (which only seems to understand esversion 6), comment out to lint
-    this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
+    //this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
     this._state = { opened: false };
     this._icons = [];
     if ( this._autocomplete ) this._boundNarrowOptions = this._narrowOptions.bind(this);
@@ -242,7 +242,7 @@ class SelectPure {
   _setValues(values, init=false) {
     if ( ! this._config.multiple ) return this._setValue(values);
     if ( ! values ) values = [];
-    values.filter(val => this._config.disabledOptions.indexOf(val) == -1 && this._config.options.indexOf(val) >= 0);
+    values.filter(val => val && this._config.disabledOptions.indexOf(val) == -1 && this._config.options.indexOf(val) >= 0);
     if ( this._config.value ) this._options.forEach(_option => { _option.removeClass(this._config.classNames.optionSelected); });
     this._updatePlaceholder(values.length);
     const options = values.map(_value => {

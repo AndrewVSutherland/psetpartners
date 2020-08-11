@@ -93,6 +93,8 @@ def list_of_strings(inp):
             return ["",""] if inp == "," else [inp]
         if inp[0] == "[" and inp[-1] == "]":
             inp = inp[1:-1].strip();
+        if not inp:
+            return []
         if not "," in inp:
             return [inp]
         return [elt.strip() for elt in inp.split(",")]
@@ -216,11 +218,10 @@ def flash_error(msg):
     flash(msg, "error")
 
 def show_input_errors(errmsgs):
-    """ Flashes a list of specific user input error messages then displays a generic message telling the user to fix the problems and resubmit. """
     assert errmsgs
     for msg in errmsgs:
         flash_error(msg)
-    return render_template("inputerror.html", messages=errmsgs)
+    return render_template("inputerror.html", title="input error")
 
 def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankint=False):
     """
@@ -232,8 +233,6 @@ def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankin
     """
     assert isinstance(inp, str)
     inp = inp.strip()
-    if col in maxlength and len(inp) > maxlength[col]:
-        raise ValueError("Input exceeds maximum length permitted")
     if typ == "time":
         # Note that parse_time, when passed a time with no date, returns
         # a datetime object with the date set to today.  This could cause different
@@ -272,6 +271,8 @@ def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankin
     elif typ == "text":
         if col.endswith("timezone"):
             return inp if (inp == DEFAULT_TIMEZONE_NAME or pytz.timezone(inp)) else ""
+        if col in maxlength and len(inp) > maxlength[col]:
+            raise ValueError("Input exceeds maximum length permitted")
         # should sanitize somehow?
         return "\n".join(inp.splitlines())
     elif typ == "posint":
@@ -292,6 +293,9 @@ def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankin
             return 0 if zeroblankint else None
         return int(inp)
     elif typ == "text[]":
-        return list_of_strings(inp)
+        res = list_of_strings(inp)
+        if col in maxlength and len(res) > maxlength[col]:
+            raise ValueError("Input exceeds maximum length permitted")
+        return res
     else:
         raise ValueError("Unrecognized type %s" % typ)
