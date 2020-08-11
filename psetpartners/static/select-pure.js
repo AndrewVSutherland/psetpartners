@@ -67,7 +67,7 @@ const CLASSES = {
 class SelectPure {
   constructor(element, config) {
     // the line below will upset jshint (which only seems to understand esversion 6), comment out to lint
-    //this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
+    this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
     this._state = { opened: false };
     this._icons = [];
     if ( this._autocomplete ) this._boundNarrowOptions = this._narrowOptions.bind(this);
