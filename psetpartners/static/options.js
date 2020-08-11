@@ -514,7 +514,7 @@ const forumOptions = [
   { label: '', value: '' },
   { label: 'text (e.g. Slack or Zulip)', value: 'text', },
   { label: 'video (e.g. Zoom)', value: 'video', },
-  { label: 'in person', value: 'in-person', },
+  { label: 'in person', value: 'in-person', disabled: true },
 ];
 const sizeOptions = [
   { label: '', value: '' },
@@ -548,7 +548,7 @@ const gender_affinityOptions = [
   { label: 'a diversity of gender identities', value: '3', },
 ];
 
-const studentAffinityOptions = [ "departments", "year", "gender" ];
+const studentAffinityOptions = [ 'departments', 'year', 'gender' ];
 const studentPreferenceOptions = {
   start: startOptions,
   together: togetherOptions,
@@ -557,4 +557,13 @@ const studentPreferenceOptions = {
   departments_affinity: departments_affinityOptions,
   year_affinity: year_affinityOptions,
   gender_affinity: gender_affinityOptions,
+};
+const studentPreferencePlaceholders = {
+  start: 'how long before the due date',
+  together: 'collaboration style',
+  forum: 'communication medium',
+  size: 'size range',
+  departments_affinity: 'department affinity',
+  year_affinity: 'year affinity',
+  gender_affinity: 'gender affinity',
 };

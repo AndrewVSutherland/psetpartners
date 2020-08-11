@@ -32,20 +32,18 @@
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" required maxlength="{{maxlength['preferred_name']}}" 
+      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" required maxlength="{{maxlength['preferred_name']}}" 
        oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
-       <td class="forminfo" id="preferred_name_info">required</td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
-      <td class="forminfo">optional</td>
     </tr>
     <tr>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
-      <td class="forminfo" id="homepage_info">optional</td>
+      <td class="forminfo" id="homepage_info"></td>
     </tr>
     <tr>
       <td class="caption">Department(s)</td>
@@ -54,7 +52,6 @@
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
       <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
-      <td class="forminfo" id="departments_info">enables affinity preference</td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
@@ -62,7 +59,6 @@
         <span class="select" id="select-year" tabindex="5"></span>
         <input type="hidden" name="year" id="year" value="{{user.year|blanknone}}"/>
       </td>
-      <td class="forminfo">enables affinity preference</td>
     </tr>
     <tr>
       <td class="caption">Gender identity</td>
@@ -70,7 +66,6 @@
         <span class="select" id="select-gender" tabindex="6"></span>
         <input type="hidden" name="gender" id="gender" value="{{user.gender|blanknone}}"/>
       </td>
-      <td class="forminfo">enables affinity preference</td>
     </tr>
     {#
     <tr>
@@ -214,8 +209,9 @@ const maxlength = {{ maxlength|tojson|safe }};
 // jshint ignore:end
 
 /* global classesOptions, maxlength */
-/* global timezoneOptions, studentPreferenceOptions, studentAffinityOptions, locationOptions, yearOptions, genderOptions */ // in options.js
-/* global makeSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
+/* global timezoneOptions, studentPreferenceOptions, studentPreferencePlaceholders, studentAffinityOptions */ // in options.js
+/* global locationOptions, yearOptions, genderOptions */ // in options.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
 function classLabel(v) { return classesOptions.find(x => x.value == v).label; }
 
@@ -346,15 +342,6 @@ function checkChanges (e) {
   if ( studentAffinityOptions.find(x => x === e.target.name) ) showAffinityPreferences();
 }
 
-function classesLimit (n) {
-  const q = jQuery(document.getElementById('classes_alert')); q.show(); q.fadeOut(1500);
-}
-
-function departmentsLimit (n) {
-  const qi = jQuery(document.getElementById('departments_info')), qa = jQuery(document.getElementById('departments_alert'));
-  qi.hide(); qa.show(); qa.fadeOut(1500); setTimeout(function() { qi.show(); },1500);
-}
-
 function submitStudentForm (value) {
   if ( value === "cancel" ) { $('input').attr('name',''); return true; }
   console.log("Submitting form");
@@ -363,17 +350,26 @@ function submitStudentForm (value) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  function classesLimit (n) { const q = jQuery(document.getElementById('classes_alert')); q.show(); q.fadeOut(1500); }
+  function departmentsLimit (n) { const q = jQuery(document.getElementById('departments_alert')); q.show(); q.fadeOut(1500); }
+
   /* jshint ignore:start */
-  makeMultiSelect('departments', departmentsOptions, {limit: maxlength.departments, onLimit: departmentsLimit});
-  makeMultiSelect('classes', classesOptions, {shortTags: true, limit: maxlength.classes, onLimit: classesLimit});
+  makeMultiSelect('departments',
+    departmentsOptions,
+    { placeholder: 'select department(s) to enable affinity preference', limit: maxlength.departments, onLimit: departmentsLimit}
+  );
+  makeMultiSelect('classes',
+    classesOptions,
+    { placeholder: 'select your classes', shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
+  );
   /* jshint ignore:end */
   makeSingleSelect('location', locationOptions, {});
   makeSingleSelect('timezone', timezoneOptions, {});
-  makeSingleSelect('year', yearOptions, {resetOption: true});
-  makeSingleSelect('gender', genderOptions, {resetOption: true});
+  makeSingleSelect('year', yearOptions, { placeholder: 'select year to enable affinity preference' });
+  makeSingleSelect('gender', genderOptions, { placeholder: 'select gender to enable affinity preference' });
   for (const pref in studentPreferenceOptions) {
     for ( let i = 0 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentPreferenceOptions[pref], {});
+      makeSingleSelect('pref-' + pref + '-' + i, studentPreferenceOptions[pref], { placeholder: studentPreferencePlaceholders[pref] });
   }
   makeCheckboxGrid();
   showTimezoneOffset();

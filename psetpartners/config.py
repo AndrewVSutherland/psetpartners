@@ -194,3 +194,7 @@ class Configuration(_Configuration):
 
     def get_flask(self):
         return dict(self.options["web"])
+
+    def get_logging(self):
+        return dict(self.options["logging"])
+

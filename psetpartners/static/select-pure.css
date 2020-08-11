@@ -4,7 +4,13 @@
   --row-height: 20px;
 }
 
-span.sp-placeholder::after {
+.sp-placeholder {
+  color: gray;
+  font-style: italic;
+  font-size: 90%;
+}
+
+.sp-placeholder::after {
   content: "▽"; /*"▿";*/
   font-weight: normal;
   position: absolute;
@@ -100,6 +106,14 @@ span.sp-placeholder::after {
   display: none;
 }
 
+.sp-option-disabled {
+  color: gray;
+}
+
+.sp-option-disabled:hover {
+  cursor: not-allowed;
+}
+
 .sp-label {
   padding-top: 0.5px;
   padding-bottom: 1px;
@@ -111,7 +125,7 @@ span.sp-placeholder::after {
   color: var(--mit-white);
   cursor: initial;
   display: inline-block;
-  margin: 1px 3px 1px 0px;
+  margin: 1px 4px 1px 0px;
   padding: 1.5px 2px 1.5px 3px;
   font-size: 100%;
 }
