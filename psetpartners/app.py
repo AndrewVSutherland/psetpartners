@@ -27,21 +27,21 @@ app = Flask(__name__, static_url_path="", static_folder="static",)
 @app.before_first_request
 def setup_logging():
     from .config import Configuration
+    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
 
     logger = logging.getLogger("psetpartners")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logfile = Configuration().get_logging()["logfile"]
     print("Opening logfile %s" % logfile)
     ch = logging.FileHandler(logfile)
     ch.setLevel(logging.INFO)
-    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.debug("debug message logging on")
+    # app.logger.debug("debug message logging on")
     app.logger.info("info message logging on")
-    app.logger.warning("warning message logging on")
-    app.logger.error("error message logging on")
-    app.logger.critical("critical message logging on")
+    # app.logger.warning("warning message logging on")
+    # app.logger.error("error message logging on")
+    # app.logger.critical("critical message logging on")
 
 ############################
 # App attribute functions  #
@@ -145,8 +145,7 @@ def not_found_503(error):
 def alive():
     from . import db
 
-    app.logger.error("alive")
-
+    app.logger.info("psetpartners is alive")
     if db.is_alive():
         return "Psetpartners!"
     else:
