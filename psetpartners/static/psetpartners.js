@@ -12,13 +12,13 @@ function makeSingleSelect(id, available, config) {
   if ( ! e || e.tagName != "INPUT"  ) throw 'No input element with id ' + id;
   const se = document.getElementById('select-'+id);
   if ( ! se || se.tagName != "SPAN"  ) throw 'No span element with id ' + 'select-' + id;
-  function onChange(v) { if ( !v) v = ''; v = v.trim(); if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); } }
+  function onChange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); } }
   const s = new SelectPure('#select-'+id, {
     options: available,
     value: e.value,
     onChange: onChange,
     autocomplete: config.autocomplete,
-    resetValue: config.resetValue,
+    placeholder: config.placeholder,
   });
   se.addEventListener('keydown', function(evt) {
     if ( evt.which === 40 ) s.next();
@@ -54,17 +54,20 @@ function makeMultiSelect(id, available, config) {
   customIcon.textContent = '×'; // &times;
   let v = e.value ? e.value.trim().replace(/'/g,'"') : '';
   v = v ? JSON.parse(v) : [];
+  console.log(v);
   const s = new SelectPure('#select-'+id, {
-    limit: config.limit,
-    onLimit: config.onLimit,
     onChange: onChange,
     options: available,
     multiple: true,
-    autocomplete: config.autocomplete,
     inlineIcon: customIcon,
+    autocomplete: config.autocomplete,
     value: v,
+    limit: config.limit,
+    onLimit: config.onLimit,
+    placeholder: config.placeholder,
     shortTags: config.shortTags,
   });
+  console.log(s.value());
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {
       if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
@@ -76,7 +79,7 @@ function makeMultiSelect(id, available, config) {
     });
     se.addEventListener('focusout', function(evt) { s.close(); });
   }
-  e.value = s.value();
+  //e.value = s.value();
   jQuery(e).data('select',s);
   return s;
 }
