@@ -216,11 +216,10 @@ def flash_error(msg):
     flash(msg, "error")
 
 def show_input_errors(errmsgs):
-    """ Flashes a list of specific user input error messages then displays a generic message telling the user to fix the problems and resubmit. """
     assert errmsgs
     for msg in errmsgs:
         flash_error(msg)
-    return render_template("inputerror.html", messages=errmsgs)
+    return render_template("inputerror.html", title="input error")
 
 def process_user_input(inp, col, typ, tz=None, falseblankbool=False, zeroblankint=False):
     """

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import logging
 
 from flask import (
     Flask,
@@ -16,15 +17,31 @@ from psetpartners.utils import (
     current_upcoming,
     current_term_pretty,
     )
-from logging import (FileHandler, WARNING)
 
 ############################
 #         Main app         #
 ############################
 
 app = Flask(__name__, static_url_path="", static_folder="static",)
-# disable cache temporarily
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.before_first_request
+def setup_logging():
+    from .config import Configuration
+
+    logger = logging.getLogger("psetpartners")
+    logger.setLevel(logging.DEBUG)
+    logfile = Configuration().get_logging()["logfile"]
+    print("Opening logfile %s" % logfile)
+    ch = logging.FileHandler(logfile)
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    app.logger.debug("debug message logging on")
+    app.logger.info("info message logging on")
+    app.logger.warning("warning message logging on")
+    app.logger.error("error message logging on")
+    app.logger.critical("critical message logging on")
 
 ############################
 # App attribute functions  #
@@ -47,20 +64,8 @@ def is_running():
 # Global app configuration #
 ############################
 
-file_handler = None
-def logger_file_handler():
-    # set by start_logging
-    return file_handler
-
-def start_logging():
-    from .config import Configuration
-    config = Configuration()
-    logging_options = config.get_logging()
-
-    file_handler = FileHandler(logging_options['logfile'])
-    file_handler.setLevel(WARNING)
-
-app.logger.addHandler(logger_file_handler())
+# disable cache temporarily
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # If the debug toolbar is installed then use it
 if app.debug:
@@ -121,12 +126,10 @@ def not_found_404(error):
     )
     return render_template("404.html", title="page not found", messages=messages), 404
 
-
 @app.errorhandler(500)
 def not_found_500(error):
     app.logger.error("%s 500 error on URL %s %s" % (timestamp(), request.url, error.args))
     return render_template("500.html", title="error"), 500
-
 
 @app.errorhandler(503)
 def not_found_503(error):
@@ -140,10 +143,9 @@ def not_found_503(error):
 @app.route("/health")
 @app.route("/alive")
 def alive():
-    """
-    a basic health check
-    """
     from . import db
+
+    app.logger.error("alive")
 
     if db.is_alive():
         return "Psetpartners!"
