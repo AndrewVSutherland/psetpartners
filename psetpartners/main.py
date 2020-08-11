@@ -133,7 +133,7 @@ def save_student():
     errmsgs = []
     data = {}
     try:
-        data["classes"] = list_of_strings(raw_data.get("classes","[]"))
+        data["classes"] = [x for x in list_of_strings(raw_data.get("classes","[]")) if x]
     except Exception as err:
         return show_input_errors([format_input_errmsg(err, raw_data.get("classes","[]"), "classes")])
     print("new classes: %s" % data["classes"])

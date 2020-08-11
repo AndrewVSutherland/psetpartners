@@ -116,12 +116,12 @@ student_preferences = {
     "gender_affinity": { "type": "posint", "options": gender_affinity_options },
 }
 
-CLASS_NUMBER_RE = re.compile(r"^(\d+).(\d+)([A-Z]*)")
+CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
 def class_number_key(s):
     r = CLASS_NUMBER_RE.match(s)
-    return 260000*int(r.group(1)) + 26*int(r.group(2)) + ((ord(r.group(3)[0])-ord('A')) if r.group(3) != '' else 0)
+    return 26*260000*int(r.group(1)) + (260000*(ord(r.group(2)[0])-ord('A')) if r.group(2) else 0) + 26*int(r.group(3)) + ((ord(r.group(4)[0])-ord('A')) if r.group(4) else 0)
 
 def course_number_key(s):
     r = COURSE_NUMBER_RE.match(s)

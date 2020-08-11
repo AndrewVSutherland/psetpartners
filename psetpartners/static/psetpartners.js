@@ -28,7 +28,6 @@ function makeSingleSelect(id, available, config) {
   se.addEventListener('focusout', function(evt) { s.close(); });
   e.value = s.value();
   jQuery(e).data('select',s);
-  console.log('created selector for input '+e.id);
   return s;
 }
 
@@ -54,7 +53,6 @@ function makeMultiSelect(id, available, config) {
   customIcon.textContent = '×'; // &times;
   let v = e.value ? e.value.trim().replace(/'/g,'"') : '';
   v = v ? JSON.parse(v) : [];
-  console.log(v);
   const s = new SelectPure('#select-'+id, {
     onChange: onChange,
     options: available,
@@ -67,7 +65,6 @@ function makeMultiSelect(id, available, config) {
     placeholder: config.placeholder,
     shortTags: config.shortTags,
   });
-  console.log(s.value());
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {
       if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
