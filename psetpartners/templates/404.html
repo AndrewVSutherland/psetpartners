@@ -1,14 +1,12 @@
 {% extends 'homepage.html' %}
 {% block content %}
 
-<div class="announce red">
-<div>Unable to locate the page you requested.</div>
+<div class="announce">
+<h3>Unable to locate the page you requested.</h3>
 {% if messages %}
-<ul>
 {% for msg in messages %}
-<li>{{msg}}</li>
+<p>{{msg}}</p>
 {% endfor %}
-</ul>
 {% elif message %}
 <br>
 {{ message }}
@@ -22,7 +20,6 @@ If you think accessing "{{ request.referrer }}" is an error, please help us impr
   If you believe this page should be here, please help us improve and report this problem here <a href="{{ feedbackpage }}" target=_blank>here</a>.
 </div>
 {% endif %}
-
 {% if request.referrer %}
 <div>
 <br>
@@ -31,5 +28,4 @@ If you think accessing "{{ request.referrer }}" is an error, please help us impr
 {% endif %}
 
 </div>
-
 {% endblock %}

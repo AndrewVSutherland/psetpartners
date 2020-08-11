@@ -56,6 +56,7 @@ class Configuration(_Configuration):
             action="store_true",
             dest="web_debug",
             help="enable debug mode",
+            default=False,
         )
 
         parser.add_argument(

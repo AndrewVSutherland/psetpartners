@@ -90,6 +90,24 @@ def login():
 def index():
     return redirect(url_for(".student"), 301)
 
+@app.route("/test404")
+def test404():
+    return render_template("404.html",title="test 404 page",message="Thie is a test 404 message.")
+
+@app.route("/test404s")
+def test404s():
+    return render_template("404.html",title="test 404 page",messages=["Thie is a test 404 message.", "This is another test 404 message."])
+
+@app.route("/test500")
+def test500():
+    app.logger.error("test500 log message")
+    return render_template("500.html",title="test 500 page",)
+
+@app.route("/test503")
+def test503():
+    app.logger.error("test503 log message")
+    return render_template("503.html",title="test 503 page",message="Thie is a test message")
+
 @app.route("/student")
 def student():
     print("*** student ***")
@@ -115,7 +133,7 @@ def save_student():
     errmsgs = []
     data = {}
     try:
-        data["classes"] = list_of_strings(raw_data.get("classes","[]"))
+        data["classes"] = [x for x in list_of_strings(raw_data.get("classes","[]")) if x]
     except Exception as err:
         return show_input_errors([format_input_errmsg(err, raw_data.get("classes","[]"), "classes")])
     print("new classes: %s" % data["classes"])
