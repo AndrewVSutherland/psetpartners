@@ -256,17 +256,24 @@ function showPSL(id, val) {
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
-  let classesPrefs = {};
+  let classesPrefs = {}, classesProps = {};
 
+  let allPreferences = [...studentPreferences, ...studentClassPreferences];
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( v.includes(c) ) {
       let classPrefs = {};
-      for ( const pref of studentPreferences ) {
+      for ( const pref of allPreferences ) {
         const id = 'pref-' + pref + '-' + (i+1);
         classPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
       }
       classesPrefs[c] = classPrefs;
+      let classProps = {};
+      for ( const prop of studentClassAffinities ) {
+        const id = prop + '-' + (i+1);
+        classProps[prop] = { value: document.getElementById(id).value };
+      }
+      classesProps[c] = classProps;
     }
   }
   let generalPrefs = {};
@@ -274,11 +281,15 @@ function changeClasses(val) {
     const id = 'pref-' + pref + '-0';
     generalPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
   }
+  for ( const pref of studentClassPreferences ) generalPrefs[pref] = { value: '', strength: 3 };
   for ( const c of v ) if ( ! classesPrefs[c] ) classesPrefs[c] = generalPrefs;
+  let defaultProps = {};
+  for ( const prop of studentClassAffinities ) defaultProps[prop] = '';
+  for ( const c of v ) if ( ! classesProps[c] ) classesProps[c] = defaultProps;
   for ( let i = 0 ; i < v.length ; i++ ) {
     const c = v[i];
     if ( c != studentClasses[i] ) {
-      for ( const pref of studentPreferences ) {
+      for ( const pref of allPreferences ) {
         const id = 'pref-' + pref + '-' + (i+1);
         const e = document.getElementById(id);
         const s = jQuery(e).data('select');
@@ -286,6 +297,13 @@ function changeClasses(val) {
         if ( ! s ) makeSingleSelect(id, studentOptions[pref], { placeholder: studentPlaceholders[pref] }); else updateSingleSelect(id);
         document.getElementById('s'+id).value = classesPrefs[c][pref].strength;
         showPS(id, e.value);
+      }
+      for ( const prop of studentClassAffinities ) {
+        const id = prop + '-' + (i+1);
+        const e = document.getElementById(id);
+        const s = jQuery(e).data('select');
+        e.value = classesProps[c][prop].value;
+        if ( ! s ) makeSingleSelect(id, studentOptions[prop], { placeholder: studentPlaceholders[prop] }); else updateSingleSelect(id);
       }
       const q = $('#pref-'+(i+1)); q.html(c); q.show();
     }
@@ -359,6 +377,7 @@ function submitStudentForm (value) {
   if ( value === "cancel" ) { $('input').attr('name',''); return true; }
   console.log("Submitting form");
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
+  console.log(document.getElementById('commitment-1').value);
   return true;
 }
 
