@@ -88,6 +88,18 @@ size_options = [
     (8, "more than 8 students"),
     ]
 
+commitment_options = [
+    (1, "I'm still shopping and/or not registered"),
+    (2, "Other courses might be a higher priority"),
+    (3, "This course is a top priority for me"),
+    ]
+
+confidence_options = [
+    (1, "This will be all new for me"),
+    (2, "I have seen some of this material before"),
+    (3, "I am quite comfortable with this material"),
+    ]
+
 departments_affinity_options = [
     (1, "someone else in one of my departments"),
     (2, "only students in one of my departments"),
@@ -106,6 +118,17 @@ gender_affinity_options = [
     (3, "a diversity of gender identities"),
     ]
 
+commitment_affinity_options = [
+    (1, "someone else with my level of commitment"),
+    (2, "only students with my level of commitment"),
+    ]
+
+confidence_affinity_options = [
+    (1, "someone else at my comfort level"),
+    (2, "only students at my comfort level"),
+    (3, "a diversity of comfort levels"),
+    ]
+
 student_preferences = {
     "start": { "type": "posint", "options": start_options },
     "together": { "type": "posint", "options": together_options },
@@ -114,6 +137,13 @@ student_preferences = {
     "departments_affinity": { "type": "posint", "options": departments_affinity_options },
     "year_affinity": { "type": "posint", "options": year_affinity_options },
     "gender_affinity": { "type": "posint", "options": gender_affinity_options },
+    "commitment_affinity": { "type": "posint", "options": commitment_affinity_options },
+    "confidence_affinity": { "type": "posint", "options": confidence_affinity_options },
+}
+
+student_class_properties = {
+    "commitment" : { "type": "posint", "options": commitment_options },
+    "confidence" : { "type": "posint", "options": confidence_options },
 }
 
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
@@ -251,6 +281,7 @@ class Student(UserMixin):
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
             r = q.copy()
             r["class_id"] = class_id
+            r["properties"] = self.class_data[class_number].get("properties",None)
             if class_number in self.class_data and any([self.class_data[class_number]["preferences"] != self.preferences,
                 self.class_data[class_number]["strengths"] != self.strengths]):
                 r["preferences"] = self.class_data[class_number]["preferences"]
@@ -272,8 +303,12 @@ class Student(UserMixin):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
         id = self.id
         class_data = {}
-        for r in db.classlist.search({"student_id":id, "year": year, "term": term}, projection=["class_id", "preferences", "strengths"]):
-            r.update(db.classes.lucky({"id":r["class_id"]},projection=["class_number"]))
+        classes = db.classlist.search(
+            {"student_id":id, "year": year, "term": term},
+            projection=["class_id", "properties", "preferences", "strengths"],
+            )
+        for r in classes:
+            r.update(db.classes.lucky({"id": r["class_id"]}, projection=["class_number"]))
             if not r["preferences"]:
                 r["preferences"] = self.preferences
                 r["strengths"] = self.strengths
