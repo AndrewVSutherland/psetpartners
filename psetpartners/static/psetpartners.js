@@ -49,7 +49,7 @@ function makeMultiSelect(id, available, config) {
   const se = document.getElementById('select-'+id);
   if ( ! se || se.tagName != "SPAN"  ) throw "No span element with id " + 'select-' + id;
   function onChange(v) { if ( e.value != v ) { e.value = v; e.dispatchEvent(new Event('change')); }}
-  var customIcon = document.createElement('i');
+  let customIcon = document.createElement('i');
   customIcon.textContent = '×'; // &times;
   let v = e.value ? e.value.trim().replace(/'/g,'"') : '';
   v = v ? JSON.parse(v) : [];

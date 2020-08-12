@@ -1,8 +1,4 @@
 from psetpartners import db
-from psetpartners.utils import (
-    current_term,
-    current_year,
-    )
 
 def generate_group_name():
     while True:

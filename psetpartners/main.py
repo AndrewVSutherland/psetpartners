@@ -22,6 +22,7 @@ from psetpartners.student import (
     AnonymousStudent,
     student_options,
     student_preferences,
+    student_class_properties,
     strength_options,
     current_classes,
     )
@@ -33,7 +34,6 @@ from psetpartners.utils import (
     process_user_input,
     maxlength,
     short_weekdays,
-    term_options,
     list_of_strings,
 )
 
@@ -50,11 +50,7 @@ login_manager.anonymous_user = AnonymousStudent
 
 # Don't include options in static/options.js used only in javascript
 def template_options():
-    return {'term' : term_options,
-            'strength' : strength_options,
-            'weekday' : short_weekdays,
-            'classes' : current_classes(),
-            }
+    return { 'weekday' : short_weekdays, 'strength': strength_options, 'classes' : current_classes(), }
 
 # globally define user properties and username
 @app.context_processor
@@ -120,7 +116,8 @@ def student():
         maxlength=maxlength,
     )
 
-PREF_RE = re.compile(r"^s?pref-([a-z_]*)-(\d+)$")
+PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
+PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 
 @app.route("/save/student", methods=["POST"])
 @login_required
@@ -140,6 +137,7 @@ def save_student():
     num_classes = len(data["classes"])
     prefs = [ {} for i in range(num_classes+1) ]
     sprefs = [ {} for i in range(num_classes+1) ]
+    props = [ {} for i in range(num_classes+1) ]
     data["hours"] = [[False for j in range(24)] for i in range(7)]
     for i in range(7):
         for j in range(24):
@@ -161,16 +159,27 @@ def save_student():
             p, n = t[1], int(t[2])
             if p in student_preferences and n <= num_classes:
                 v = prefs[n] if col[0] == 'p' else sprefs[n]
+                typ = student_preferences[p]["type"] if col[0] == 'p' else "posint"
                 try:
-                    typ = student_preferences[p]["type"] if col[0] == 'p' else "posint"
                     v[p] = process_user_input(val, p, typ)
                     if col[0] == 'p':
                         if v[p] and not [True for r in student_preferences[p]["options"] if r[0] == v[p]]:
-                            print("v[%s]=%s, opts=%s"%(p,v[p],[r[0] for r in student_preferences[p]["options"]]))
                             raise ValueError("Invalid option")
                     else:
                         if v[p] > len(strength_options):
                             raise ValueError("Invalid strength")
+                except Exception as err:
+                    errmsgs.append(format_input_errmsg(err, val, col))
+        elif PROP_RE.match(col) and val.strip():
+            t = col.split('-')
+            p, n = t[0], int(t[1])
+            if p in student_class_properties and n > 0 and n <= num_classes:
+                v = props[n]
+                typ = student_class_properties[p]["type"]
+                try:
+                    v[p] = process_user_input(val, p, "posint")
+                    if v[p] and not [True for r in student_class_properties[p]["options"] if r[0] == v[p]]:
+                        raise ValueError("Invalid option")
                 except Exception as err:
                     errmsgs.append(format_input_errmsg(err, val, col))
         elif col.startswith("hours-"):
@@ -187,7 +196,7 @@ def save_student():
     print("new data: %s" % data)
     for k, v in data.items():
         setattr(current_user, k, v)
-    current_user.class_data = { data["classes"][i]: {"preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
+    current_user.class_data = { data["classes"][i]: { "properties": props[i+1], "preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
     print("new class data: %s" % current_user.class_data)
     current_user.save()
     try:

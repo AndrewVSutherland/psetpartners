@@ -548,22 +548,68 @@ const gender_affinityOptions = [
   { label: 'a diversity of gender identities', value: '3', },
 ];
 
-const studentAffinityOptions = [ 'departments', 'year', 'gender' ];
-const studentPreferenceOptions = {
+const commitmentOptions = [
+  { label: '', value: '' },
+  { label: 'still shopping and/or not taking for credit', value: '1' },
+  { label: 'other courses might be a higher priority for me', value: '2' },
+  { label: 'This course is a top priority', value: '3' },
+];
+const confidenceOptions = [
+  { label: '', value: '' },
+  { label: 'This will be all new for me', value: '1' },
+  { label: 'I have seen some of this material before', value: '2' },
+  { label: 'I am quite comfortable with this material', value: '3' },
+];
+const commitment_affinityOptions = [
+  { label: '', value: '' },
+  { label: 'someone else with my level of commitment', value: '1', },
+  { label: 'only students with my level of commitment', value: '2', },
+];
+const confidence_affinityOptions = [
+  { label: '', value: '' },
+  { label: 'someone else at my comfort level', value: '1', },
+  { label: 'only students at my comfort level', value: '2', },
+  { label: 'a diversity of comfort levels', value: '3', },
+];
+
+const studentPreferences = [ "start", "together", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
+const studentAffinities = [ 'departments', 'year', 'gender' ];
+const studentClassPreferences = ["commitment_affinity", "confidence_affinity" ];
+const studentClassAffinities = ['commitment', 'confidence' ];
+
+const studentOptions = {
+  departments: departmentsOptions,
+  year: yearOptions,
+  gender: genderOptions,
+  location: locationOptions,
+  timezone: timezoneOptions,
   start: startOptions,
   together: togetherOptions,
   forum: forumOptions,
   size: sizeOptions,
+  commitment: commitmentOptions,
+  confidence: confidenceOptions,
   departments_affinity: departments_affinityOptions,
   year_affinity: year_affinityOptions,
   gender_affinity: gender_affinityOptions,
+  commitment_affinity: commitment_affinityOptions,
+  confidence_affinity: confidence_affinityOptions,
 };
-const studentPreferencePlaceholders = {
+
+const studentPlaceholders = {
+  departments: 'select department(s) to enable affinity preference',
+  year: 'select year to enable affinity preference',
+  gender: 'select gender to enable affinity preference',
+  classes: 'select your classes',
   start: 'how long before the due date',
   together: 'collaboration style',
   forum: 'communication medium',
   size: 'size range',
+  commitment: 'commitment level',
+  confidence: 'comfort level',
   departments_affinity: 'department affinity',
   year_affinity: 'year affinity',
   gender_affinity: 'gender affinity',
+  commitment_affinity: 'commitment affinity',
+  confidence_affinity: 'knowledge affinity',
 };
