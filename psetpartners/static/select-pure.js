@@ -70,7 +70,7 @@ class SelectPure {
     this._config = { ...config, classNames: { ...CLASSES, ...config.classNames }, disabledOptions: [] };
     this._state = { opened: false };
     this._icons = [];
-    if ( this._autocomplete ) this._boundNarrowOptions = this._narrowOptions.bind(this);
+    if ( this._config.autocomplete ) this._boundNarrowOptions = this._narrowOptions.bind(this);
     if ( this._config.multiple ) {
       this._boundHandleClick = this._handleClickMultiple.bind(this);
       this._boundUnselectOption = this._unselectOption.bind(this);
@@ -123,6 +123,7 @@ class SelectPure {
     if ( this._config.autocomplete ) {
       this._autocomplete = new Element("input", { class: this._config.classNames.autocompleteInput, type: "text" });
       this._autocomplete.addEventListener("input", this._boundNarrowOptions);
+      this._autocomplete.spellcheck = false; // this doesn't work for some reason...
       this._optionsWrapper.append(this._autocomplete.get());
     }
     return this._config.options.map(_option => {
@@ -261,7 +262,6 @@ class SelectPure {
       this._label.append(tag.get());
       return icon.get();
     });
-    // this._optionsWrapper.setTop(Number(this._select.getHeight().split("px")[0]) + 5);
     if ( this._config.value != values ) {
       this._config.value = values;
       if ( ! init && this._config.onChange ) this._config.onChange(values);
