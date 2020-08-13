@@ -32,16 +32,11 @@ def setup_logging():
     logger = logging.getLogger("psetpartners")
     logger.setLevel(logging.INFO)
     logfile = Configuration().get_logging()["logfile"]
-    print("Opening logfile %s" % logfile)
     ch = logging.FileHandler(logfile)
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    # app.logger.debug("debug message logging on")
     app.logger.info("info message logging on")
-    # app.logger.warning("warning message logging on")
-    # app.logger.error("error message logging on")
-    # app.logger.critical("critical message logging on")
 
 ############################
 # App attribute functions  #

@@ -5,9 +5,6 @@ __version__ = "0.0"
 from psycodict.database import PostgresDatabase
 from .config import Configuration
 config = Configuration()
-print(config.options["postgresql"])
-print(config.options["web"])
-print(config.options["logging"])
 db = PostgresDatabase(config)
 assert db
 
