@@ -5,6 +5,7 @@ from flask import (
     redirect,
     request,
     flash,
+    session,
 )
 from flask_login import (
     login_required,
@@ -34,6 +35,7 @@ from psetpartners.utils import (
     process_user_input,
     maxlength,
     short_weekdays,
+    timezones,
     list_of_strings,
 )
 
@@ -41,21 +43,19 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(kerb):
-    print("*** load_user called with kerb %s ***" % kerb)
     return Student(kerb=kerb)
 
-login_manager.login_view = "user.info"
+login_manager.login_view = "student"
 
 login_manager.anonymous_user = AnonymousStudent
 
 # Don't include options in static/options.js used only in javascript
 def template_options():
-    return { 'weekday' : short_weekdays, 'strength': strength_options, 'classes' : current_classes(), }
+    return { 'weekday' : short_weekdays, 'strength': strength_options, 'classes' : current_classes(), 'timezones': timezones }
 
 # globally define user properties and username
 @app.context_processor
 def ctx_proc_userdata():
-    print("*** ctx_proc_userdata ***")
     userdata = {
         "user": current_user,
         "usertime": datetime.now(tz=current_user.tz),
@@ -64,9 +64,7 @@ def ctx_proc_userdata():
 
 @app.route("/login", methods=["POST"])
 def login():
-    print("*** login ***")
     raw_data = request.form
-    print("\nlogin raw_data: %s" % dict(raw_data))
     if raw_data.get("submit") == "register":
         new = True
     elif raw_data.get("submit") == "login":
@@ -74,16 +72,24 @@ def login():
     else:
         return render_template("404.html", title="page not found", messages=["Unknown submit data in post"]), 404
     kerb = raw_data["kerb"]
-    print ("login kerb = " + kerb)
-    user = Student(kerb=kerb,new=new)
+    try:
+        user = Student(kerb=kerb,new=new)
+    except Exception:
+        if new:
+            flash_error("An unexpected error occurred, unable to create student record for kerberos id <b>%s</b>." % kerb)
+            return redirect(url_for(".student"), 301)
+        else:
+            flash_error("No existing record found for kerberos id <b>%s</b>.  Please register if you are a new user." % kerb)
+            return redirect(url_for(".student"), 301)
 
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)
-    return redirect(request.form.get("next") or url_for(".student"), 301)
+    return redirect(url_for(".student"), 301)
 
 @app.route("/")
 def index():
+    session.pop('_flashes', None)
     return redirect(url_for(".student"), 301)
 
 @app.route("/test404")
@@ -106,7 +112,6 @@ def test503():
 
 @app.route("/student")
 def student():
-    print("*** student ***")
     title = "" if current_user.is_authenticated else "login"
     return render_template(
         "student.html",
@@ -122,9 +127,7 @@ PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 @app.route("/save/student", methods=["POST"])
 @login_required
 def save_student():
-    print("*** save_student ***")
     raw_data = request.form
-    print("\nraw_data: %s" % dict(raw_data))
     if raw_data.get("submit") == "cancel":
         return redirect(url_for(".student"), 301)
     errmsgs = []
@@ -133,7 +136,6 @@ def save_student():
         data["classes"] = [x for x in list_of_strings(raw_data.get("classes","[]")) if x]
     except Exception as err:
         return show_input_errors([format_input_errmsg(err, raw_data.get("classes","[]"), "classes")])
-    print("new classes: %s" % data["classes"])
     num_classes = len(data["classes"])
     prefs = [ {} for i in range(num_classes+1) ]
     sprefs = [ {} for i in range(num_classes+1) ]
@@ -193,11 +195,9 @@ def save_student():
         return show_input_errors(errmsgs)
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
-    print("new data: %s" % data)
     for k, v in data.items():
         setattr(current_user, k, v)
     current_user.class_data = { data["classes"][i]: { "properties": props[i+1], "preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
-    print("new class data: %s" % current_user.class_data)
     current_user.save()
     try:
        #current_user.save()
