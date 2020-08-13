@@ -37,6 +37,19 @@
     background: var(--select-fill);
 }
 
+#userinfo {
+  float: right;
+  color: var(--mit-white);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#logout {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
 #javascript-explanation {
   padding: 20px;
   text-align: center;
@@ -51,39 +64,43 @@
   min-width: 1024px;
 }
 header.inner {
-  margin: 0px auto;
+  margin: 0 auto;
   padding: 4px 20px;
+  width: 100%;
   max-width: 1024px;
+  height: 60px;
 }
 
 #header #logo {
-  display: inline-block;
+  float: left;
   margin: 0px;
   padding-top: 16px;
 }
+
 #header #logo img {
   max-height: 70px;
 }
-#header .right {
-  margin-top: 0px;
-  display: inline-block;
-  padding-left: 48px;
-  vertical-align: top;
-  width: calc(100% - 350px);
-  height: 60px;
-  position: relative;
+#header #userinfo {
+  float: right;
+  font-size: 90%;
+  color: var(--mit-white);
+  padding-top: 14px;
 }
 #header #title {
+  color: var(--mit-white);
+  margin 0 auto;
   font-size: 180%;
-  color: #FFFFFF;
-  min-height: 32px;
-  min-width: 300px;
   text-align: center;
-  padding-top: 12px;
+  padding-top: 14px;
 }
 #header #title a {
-  color: white;
+  color: var(--mit-white);
   text-decoration: none;
+  cursor: pointer;
+}
+#header #userinfo a {
+  text-decoration: none;
+  color: var(--mit-white);
   cursor: pointer;
 }
 
@@ -348,7 +365,7 @@ p.flash-error::before {
 
 /* BEGIN pref-toggler */
 div.pref-toggler {
-  margin: -10px 30px 25px -10px;
+  margin: -10px 30px 0px -10px;
 }
 
 div.pref-toggler-inner {

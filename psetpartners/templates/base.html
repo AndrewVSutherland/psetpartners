@@ -2,44 +2,29 @@
 <html lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="description" content="{{meta_description|striptags}}"/>
-    {% if titletag %}
-      <title>{{ titletag|striptags }}</title>
-    {% else %}
-      <title>{% if title %} {{ title|striptags }}{% endif %}</title>
-    {% endif %}
-  <script>
-  if ( navigator.cookieEnabled ) {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if ( ! document.cookie.includes('browser_timezone') ) {
-      document.cookie = "browser_timezone=" + tz + ";path=/";
-      location.reload();
-    }
-  } else {
-    console.log("cookies disabled");
-  }
-  </script>
-  <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />
+    <title>pset partners</title>
+  
+    <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />
+
+    <!-- static html content we are happy to let the browser cache (e.g. captions and dropdown options) -->
+    <script defer src="{{ url_for('static', filename='options.js') }}"></script>
 
     <!-- jQuery -->
     <script defer
-            type="text/javascript"
             src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"
             integrity="sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f"
             crossorigin="anonymous"></script>
 
-    <script defer type="text/javascript" src="{{ url_for('static', filename='options.js') }}"></script>
-
     <!-- requires jquery -->
-    <script defer type="text/javascript" src="{{ url_for('static', filename='psetpartners.js') }}"></script>
-
-    <!-- handling knowls, vanilla JS -->
-    {# <script async type="text/javascript" src="{{ url_for('static', filename='knowl.js') }}"></script> #}
+    <script defer src="{{ url_for('static', filename='psetpartners.js') }}"></script>
 
     <!-- multi select https://github.com/dudyn5ky1/select-pure, vanilla JS-->
-    <script defer type="text/javascript" src="{{ url_for('static', filename='select-pure.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='select-pure.js') }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='select-pure.css') }}" />
+
+    <!--knowls, not currently used -->
+    {# <script async src="{{ url_for('static', filename='knowl.js') }}"></script> #}
 
     {% block extra_head -%}{%- endblock extra_head %}
   </head>

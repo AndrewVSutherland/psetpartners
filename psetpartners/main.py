@@ -1,5 +1,6 @@
 import re
 from flask import (
+    make_response,
     render_template,
     url_for,
     redirect,
@@ -43,7 +44,11 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(kerb):
-    return Student(kerb=kerb)
+    try:
+        return Student(kerb=kerb)
+    except:
+        app.logger.warning("load_user failed on kerb=%s" % kerb)
+        return None
 
 login_manager.login_view = "student"
 
@@ -75,16 +80,19 @@ def login():
     try:
         user = Student(kerb=kerb,new=new)
     except Exception:
+        resp = make_response(redirect(url_for(".student"), 301))
+        resp.set_cookie('sessionID', '', expires=0)
         if new:
             flash_error("An unexpected error occurred, unable to create student record for kerberos id <b>%s</b>." % kerb)
-            return redirect(url_for(".student"), 301)
+            return resp
         else:
             flash_error("No existing record found for kerberos id <b>%s</b>.  Please register if you are a new user." % kerb)
-            return redirect(url_for(".student"), 301)
+            return resp
 
     # For now, no password check
     # The following sets current_user = user
     login_user(user, remember=True)
+    app.logger.info("user %s logged in" % kerb)
     return redirect(url_for(".student"), 301)
 
 @app.route("/")
@@ -102,12 +110,12 @@ def test404s():
 
 @app.route("/test500")
 def test500():
-    app.logger.error("test500 log message")
+    app.logger.error("test500")
     return render_template("500.html",title="test 500 page",)
 
 @app.route("/test503")
 def test503():
-    app.logger.error("test503 log message")
+    app.logger.error("test503")
     return render_template("503.html",title="test 503 page",message="Thie is a test message")
 
 @app.route("/student")
@@ -206,9 +214,8 @@ def save_student():
         flash_error("Error saving changes: %s" % err)
     return redirect(url_for(".student"), 301)
 
-@app.route("/logout", methods=["POST"])
+@app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    flash(Markup("You are now logged out.  Have a nice day!"))
     return redirect(url_for(".student"), 301)

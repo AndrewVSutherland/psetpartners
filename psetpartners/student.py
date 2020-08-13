@@ -208,7 +208,7 @@ class Student(UserMixin):
         data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         if data is None and new:
             app.logger.info("creating new student "+kerb)
-            db.students.insert_many([{"kerb": kerb, "preferred_name": kerb, "timezone": DEFAULT_TIMEZONE_NAME, "location": "near"}])
+            db.students.insert_many([{"kerb": kerb }])
             data = db.students.lucky({"kerb": kerb}, projection=Student.properties)
         if data is None:
             if not new:
@@ -217,12 +217,6 @@ class Student(UserMixin):
         self._active = True # TODO: add active/inactive flag to student database
         cleanse_student_data(data)
         self.__dict__.update(data)
-        if self.timezone is None:
-            self.timezone = request.cookies.get("browser_timezone", DEFAULT_TIMEZONE)
-        if self.timezone == DEFAULT_TIMEZONE:
-            self.timezone = DEFAULT_TIMEZONE_NAME
-        if self.location is None:
-            self.location = ("near" if self.timezone == DEFAULT_TIMEZONE_NAME else "far")
         if self.hours is None:
             self.hours = [[False for j in range(24)] for i in range(7)]
         for col, typ in db.students.col_type.items():

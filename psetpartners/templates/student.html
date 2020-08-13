@@ -21,10 +21,11 @@
 
 {% else %}
 
+  {#
   <form action="{{ url_for('.logout') }}" method="POST" name="logout">
   <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 10px"><button name="logout" type="submit" tabindex="-1">Logout</button></div></h2>
   </form>
-
+  #}
   <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
   <h3>Personal profile</h3>
@@ -54,7 +55,6 @@
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
       <td class="forminfo" id="departments_info">optional</td>
-      <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
@@ -105,9 +105,8 @@
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
       <td class="forminfo">optional</td>
-      <td class="alertinfo" id="classes_alert" style="display:none;">at most {{maxlength["classes"]}} classes permitted</td>
     </tr>
-    <tr><td class="caption" colspan="2" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</td></tr>
+    <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
   </table>
   <br>
   <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;">
@@ -115,6 +114,7 @@
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
       {% endfor %}
+      <td></td>
     </tr>
     {% for i in range(7) %}
     <tr class="checkboxgrid">
@@ -148,23 +148,17 @@
 {% macro PREF(caption,pref,start) -%}
 {% set start = start|default(0) %}
 {% set n = user.classes|length + 1 %}
-{% if start == 0 %}
-  <tr>
-    <td class="caption"><label class="{{pref}}">{{caption}}</label></td>
-{% endif %}
 {% for i in range(start,maxlength["classes"]+1) %}
   {% set pval = user.class_data[user.classes[i-1]].preferences[pref] if i and i < n else user.preferences[pref] %}
   {% set sval = 3 if not pval else (user.class_data[user.classes[i-1]].strengths[pref] if i and i < n else user.strengths[pref]) %}
-  {% if start != 0 %}
     <tr class="pref-{{i}} pref-{{pref}}" style="display:none;">
     <td class="caption"><label class="{{pref}}">{{caption}}</label></td>
-  {% endif %}
   <td class="value pref-{{i}} pref-{{pref}}" style="display:none;">
     <span class="select" id="select-pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
     <input class="pref-{{i}}" type="hidden" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
   </td>
   <td class="pref-{{i}} pref-{{pref}}" style="padding-left:10px; display:none;">
-    <input class="slider pref-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" steps="1" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
+    <input class="slider pref-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
     <label class="strength" id="lspref-{{pref}}-{{i}}">{{options.strength[sval if pval else 0]}}</label>
   {%if start != 0 %}
     </tr>
@@ -193,7 +187,7 @@
   {% set tabindex = tabindex + 1 %}
 {%- endmacro %}
 
-  <table class="input" class="pref">
+  <table class="input">
 
     {{PREF("When you like to start working", "start")}}
     {{PREF("How you like to collaborate", "together")}}
@@ -202,7 +196,7 @@
     {{CPROP("Commitment to this course", "commitment")}}
     {{CPROP("Knowledge of the material", "confidence")}}
 
-    <tr style="display:none; height:5px;" id="affinity-separator"></tr>
+    <tr style="display:none; height:5px;" id="affinity-separator"><td colspan="3"></td></tr>
 
     {{PREF("", "departments_affinity")}}
     {{PREF("", "year_affinity")}}
@@ -213,15 +207,16 @@
   </table>
 
   <table class="submit">
-    <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
-        <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Reset</button></td>
-        <td colspan="2"><label class="alertinfo" id="submit_alert"></td>
+    <tr>
+      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
+      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Reset</button></td>
+      <td><label class="alertinfo" id="submit_alert"></label></td>
     </tr>
   </table>
   </form>
 
 <!-- jshint ignore:end -->
-<script type="text/javascript">
+<script>
 
 // jshint ignore:start
 const classesOptions = [
@@ -232,7 +227,7 @@ const classesOptions = [
 
 const timezoneOptions = [
 {% for val, option in options.timezones %}
-  { value: '{{val}}', label: '{{option}}'.replace(' -','-').replace(' +','+') },
+  { value: '{{val}}', label: '{{option}}' },
 {% endfor %}
 ];
 
@@ -397,9 +392,14 @@ function submitStudentForm (value) {
   return true;
 }
 
+function alertInfo(q,msg) {
+  const content = $(q).html();
+  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(2000, function() { $(q).html(content).show() });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  function classesLimit (n) { const q = $('#classes_alert'); q.show(); q.fadeOut(1500); }
-  function departmentsLimit (n) { const q = $('#departments_alert'); q.show(); q.fadeOut(1500); }
+  function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }
+  function departmentsLimit (n) { alertInfo('#departments_info', 'At most ' + maxlength.departments + ' departments permitted!'); }
 
   makeMultiSelect('departments',
     studentOptions.departments,
@@ -409,6 +409,10 @@ document.addEventListener('DOMContentLoaded', function() {
     classesOptions,
     { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
   );
+  let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if ( tz == "America/New_York" || tz == "US/Eastern" ) tz = "MIT";
+  $('#timezone').val(tz);
+  if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
   makeSingleSelect('location', studentOptions.location, {});
   makeSingleSelect('timezone', timezoneOptions, {});
   makeSingleSelect('year', studentOptions.year, { placeholder: studentPlaceholders.year });
@@ -450,6 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
   togglePrefs('pref-0');
   showAffinityPreferences();
   console.log('student page ready');
+  console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
 });
 </script>
 
