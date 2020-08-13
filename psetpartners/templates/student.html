@@ -12,7 +12,7 @@
     <table>
       <tr>
         <td class="caption" style="width:100px" tabindex="1">Kerberos ID:</td>
-        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" /></td>
+        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" maxlength="{{maxlength['kerb']}}" /></td>
         <td><button class="save" name="submit" type="submit" value="login" disabled>Login</button></td>
         <td><button class="save" name="submit" type="submit" value="register" disabled>Register</button></td>
       </tr>

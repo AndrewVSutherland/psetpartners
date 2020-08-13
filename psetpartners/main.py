@@ -5,7 +5,6 @@ from flask import (
     url_for,
     redirect,
     request,
-    flash,
     session,
 )
 from flask_login import (
@@ -16,7 +15,6 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from markupsafe import Markup
 from psetpartners import db
 from psetpartners.app import app
 from psetpartners.student import (

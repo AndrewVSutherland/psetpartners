@@ -1,6 +1,5 @@
 import re
 from psetpartners import app
-from flask import request
 from psetpartners import db
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
@@ -149,19 +148,15 @@ student_class_properties = {
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
-def class_number_key(s):
-    r = CLASS_NUMBER_RE.match(s)
-    return 26*260000*int(r.group(1)) + (260000*(ord(r.group(2)[0])-ord('A')) if r.group(2) else 0) + 26*int(r.group(3)) + ((ord(r.group(4)[0])-ord('A')) if r.group(4) else 0)
-
 def course_number_key(s):
     r = COURSE_NUMBER_RE.match(s)
     if r.group(1) == '':
-        return 25*26*26 + 26*26*(ord(r.group(2)[0])-ord('A')) + 26*(ord(r.group(2)[1])-ord('A')) + ord(r.group(2)[2])-ord('A')
-    return 26*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')) if r.group(2) != '' else 0)
+        return 27*27*27 + 27*27*(ord(r.group(2)[0])-ord('A')+1) + 27*(ord(r.group(2)[1])-ord('A')+1) + ord(r.group(2)[2])-ord('A')+1
+    return 27*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')+1) if r.group(2) != '' else 0)
 
 def current_classes(year=current_year(), term=current_term()):
     classes = [(r["class_number"], r["class_name"]) for r in db.classes.search({"year": year, "term": term}, projection=["class_number", "class_name"])]
-    return sorted(classes, key = lambda x: class_number_key(x[0]))
+    return sorted(classes)
 
 def departments():
     departments = [(r["course_number"], r["course_name"]) for r  in db.departments.search({}, projection=["course_number", "course_name"])]
@@ -228,7 +223,7 @@ class Student(UserMixin):
                 if typ.endswith("[]"):
                     setattr(self, col, [])
         self.class_data = self.student_class_data()
-        self.classes = sorted(list(self.class_data), key=class_number_key)
+        self.classes = sorted(list(self.class_data))
 
     @property
     def tz(self):
