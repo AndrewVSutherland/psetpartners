@@ -1,4 +1,5 @@
 import re
+from psetpartners import app
 from flask import request
 from psetpartners import db
 from flask_login import UserMixin, AnonymousUserMixin
@@ -8,7 +9,6 @@ from psetpartners.utils import (
     DEFAULT_TIMEZONE,
     current_year,
     current_term,
-    flash_error,
     )
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
@@ -174,7 +174,7 @@ def cleanse_student_data(data):
     for col in student_options:
         if data.get(col):
             if not data[col] in [r[0] for r in student_options[col]]:
-                print("Ignoring unknown %s %s for student %s"%(col,data[col],data,kerb))
+                app.logger.warning("Ignoring unknown %s %s for student %s"%(col,data[col],data,kerb))
                 data.col = None # None will get set later
     if data["preferences"] is None:
         data["preferences"] = {}
@@ -182,13 +182,13 @@ def cleanse_student_data(data):
         data["strengths"] = {}
     for pref in list(data["preferences"]):
         if not pref in student_preferences:
-            print("Ignoring unknown preference %s for student %s"%(pref,kerb))
+            app.logger.warning("Ignoring unknown preference %s for student %s"%(pref,kerb))
             data["preferences"].pop(pref)
         else:
             if not data["preferences"][pref]:
                 data["preferences"].pop(pref)
             elif not data["preferences"][pref] in [r[0] for r in student_preferences[pref]["options"]]:
-                print("Ignoring invalid preference %s = %s for student %s"%(pref,data["preferences"][pref],kerb))
+                app.logger.warning("Ignoring invalid preference %s = %s for student %s"%(pref,data["preferences"][pref],kerb))
                 data["preferences"].pop(pref)
     for pref in list(data["strengths"]):
         if not pref in data["preferences"]:
@@ -204,19 +204,15 @@ class Student(UserMixin):
     properties = sorted(db.students.col_type) + ["id"]
     def __init__(self, kerb=None, new=False):
         if not kerb:
-            return None
-        print("creating student object for "+kerb)
+            raise ValueError("kerb required to create new student")
         data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
         if data is None and new:
-            print("creating new student "+kerb)
+            app.logger.info("creating new student "+kerb)
             db.students.insert_many([{"kerb": kerb, "preferred_name": kerb, "timezone": DEFAULT_TIMEZONE_NAME, "location": "near"}])
             data = db.students.lucky({"kerb": kerb}, projection=Student.properties)
-        elif data:
-            print("loaded student "+kerb)
-        else:
-            flash_error("No record for user \"%s\" found, please press register if you are a new user." % kerb)
-            return None
-        print("automatically authenticated user "+kerb)
+        if data is None:
+            if not new:
+                raise ValueError("Student record not found")
         self._authenticated = True # for now auto authenticate, eventually use Touchstone
         self._active = True # TODO: add active/inactive flag to student database
         cleanse_student_data(data)
@@ -239,7 +235,6 @@ class Student(UserMixin):
                     setattr(self, col, [])
         self.class_data = self.student_class_data()
         self.classes = sorted(list(self.class_data), key=class_number_key)
-        print('\nstudent data ' + str(self.__dict__))
 
     @property
     def tz(self):
@@ -264,7 +259,6 @@ class Student(UserMixin):
 
     @property
     def get_id(self):
-        print("get_id called")
         return lambda: getattr(self, "kerb", None)
 
     def save(self):
@@ -295,9 +289,7 @@ class Student(UserMixin):
         if S != T:
             db.classlist.delete(q)
             if S:
-                print("Updating classlist with %s" % S)
                 db.classlist.insert_many(S)
-            print("Updated classlist")
 
     def student_class_data(self, year=current_year(), term=current_term()):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)

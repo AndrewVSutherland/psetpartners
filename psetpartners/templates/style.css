@@ -5,8 +5,8 @@
   --mit-white: #fefefe;
   --shadow-color: var(--mit-maroon);
   --shadow-width: 4px;
-  --caption-width: 270px;
-  --value-width: 400px;
+  --caption-width: 300px;
+  --value-width: 420px;
   --light-gray: #c6c7c8;
   --lighter-gray: #eaebec;
   --alert-color: #e32f54;
@@ -185,7 +185,7 @@ header.inner {
 }
 
 #content td.forminfo, span.forminfo {
-   padding-left: 8px;
+   padding-left: 13px;
    font-size: 80%;
    font-weight: normal;
    font-style: italic;

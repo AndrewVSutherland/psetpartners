@@ -34,16 +34,18 @@
       <td class="caption">Preferred name</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" required maxlength="{{maxlength['preferred_name']}}" 
        oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
+      <td class="forminfo">required</td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
+    <td class="forminfo">optional</td>
     </tr>
     <tr>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
-      <td class="forminfo" id="homepage_info"></td>
+      <td class="forminfo" id="homepage_info">optional</td>
     </tr>
     <tr>
       <td class="caption">Department(s)</td>
@@ -51,6 +53,7 @@
         <span class="select" id="select-departments" tabindex="4"></span>
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
+      <td class="forminfo" id="departments_info">optional</td>
       <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
     </tr>
     <tr>
@@ -59,6 +62,7 @@
         <span class="select" id="select-year" tabindex="5"></span>
         <input type="hidden" name="year" id="year" value="{{user.year|blanknone}}"/>
       </td>
+    <td class="forminfo">optional</td>
     </tr>
     <tr>
       <td class="caption">Gender identity</td>
@@ -66,6 +70,7 @@
         <span class="select" id="select-gender" tabindex="6"></span>
         <input type="hidden" name="gender" id="gender" value="{{user.gender|blanknone}}"/>
       </td>
+    <td class="forminfo">optional</td>
     </tr>
     {#
     <tr>
@@ -83,6 +88,7 @@
         <span class="select" id="select-location" tabindex="8"></span>
         <input type="hidden" name="location" id="location" value="{{user.location}}"/>
       </td>
+      <td class="forminfo">required</td>
     </tr>
     <tr>
       <td class="caption">Time zone</td>
@@ -90,19 +96,21 @@
         <span class="select" id="select-timezone" tabindex="9"></span>
         <input type="hidden" name="timezone" id="timezone" value="{{user.timezone}}" onchange="showTimezoneOffset()"/>
       </td>
+      <td class="forminfo">required</td>
     </tr>
     <tr>
       <td class="caption">Classes</td>
       <td class="value">
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
-        <td class="alertinfo" id="classes_alert" style="display:none;">at most {{maxlength["classes"]}} classes permitted</td>
       </td>
+      <td class="forminfo">optional</td>
+      <td class="alertinfo" id="classes_alert" style="display:none;">at most {{maxlength["classes"]}} classes permitted</td>
     </tr>
-    <tr><td class="caption" colspan="2" style="padding-top:10px;">Times available for collaboration</td></tr>
+    <tr><td class="caption" colspan="2" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</td></tr>
   </table>
   <br>
-  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px;">
+  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;">
     <tr class="cbg">
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
@@ -120,8 +128,6 @@
     </tr>
     {% endfor %}
   </table>
-  <label if="tzoffset" style="margin-left:410px; width:80px; text-align:center; font-size:80%"></label>
-  <br>
   <h3 id="prefheader">Preferences</h3>
 
    <div class="pref-toggler" id="pref-toggler">
@@ -181,6 +187,7 @@
         <span class="select" id="select-{{prop}}-{{i}}" tabindex="{{tabindex}}"></span>
         <input class="prop-{{i}}" type="hidden" name="{{prop}}-{{i}}" id="{{prop}}-{{i}}" value="{{pval|blanknone}}"/>
       </td>
+      <td class="forminfo">optional</td>
     </tr>
   {% endfor %}
   {% set tabindex = tabindex + 1 %}
@@ -219,7 +226,13 @@
 // jshint ignore:start
 const classesOptions = [
 {% for val, option in options.classes %}
-  { label: '{{val}} {{option}}', value: '{{val}}', },
+  { value: '{{val}}', label: '{{val}} {{option}}' },
+{% endfor %}
+];
+
+const timezoneOptions = [
+{% for val, option in options.timezones %}
+  { value: '{{val}}', label: '{{option}}'.replace(' -','-').replace(' +','+') },
 {% endfor %}
 ];
 
@@ -239,8 +252,11 @@ let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}"
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
-  const tzopt = studentOptions.timezone.find(x => x.value==tz);
-  $('#tzoffset').text( (tzopt && tzopt.label.includes(')')) ? tzopt.label.split(')')[0] + ')' : '');
+  const tzopt = timezoneOptions.find(x => x.value==tz);
+  const caption = ( tzopt && tzopt.label.includes(')') ) ?
+    "Times available for collaboration (in your time zone, which is currently " + tzopt.label.split(')')[0].substr(1) +')' :
+    "Times available for collaboration (MIT time)";
+  $('#tzcaption').text(caption);
 }
 
 function showPS(id, val) {
@@ -394,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
   );
   makeSingleSelect('location', studentOptions.location, {});
-  makeSingleSelect('timezone', studentOptions.timezone, {});
+  makeSingleSelect('timezone', timezoneOptions, {});
   makeSingleSelect('year', studentOptions.year, { placeholder: studentPlaceholders.year });
   makeSingleSelect('gender', studentOptions.gender, { placeholder: studentPlaceholders.gender });
   for (const pref of studentPreferences) {
