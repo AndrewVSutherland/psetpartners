@@ -175,7 +175,7 @@ def pretty_timezone(tz, dest="selecter", base_name='UTC', base_timezone='UTC'):
             diff = "-{:02d}:{:02d}".format(hours, minutes)
         else:
             diff = "+{:02d}:{:02d}".format(hours, minutes)
-        return "({} {}) {}".format(base_name, diff, tz)
+        return "({}{}) {}".format(base_name, diff, tz)
     else:
         tz = str(tz).replace("_", " ")
         if minutes == 0:

@@ -4,11 +4,10 @@
 
 <div id="header">
   <header class="inner">
+  <div style="width:100%; color:white;">
     <div id="logo">
       <a tabindex="-1" href="https://mit.edu">
-        <?xml version="1.0" encoding="utf-8"?>
         <!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-        <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
         <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
         	 width="135.088px" height="30.164px" viewBox="0 0 135.088 30.164" enable-background="new 0 0 135.088 30.164"
         	 xml:space="preserve" style="cursor: pointer;">
@@ -128,44 +127,38 @@
         </svg>
       </a>
     </div>
-    <div class="right">
-      <div class="upper">
-        <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners</a> {{ title|safe }}</div>
-      </div>
-    </div>
+    {% if user.is_authenticated %}
+      <div id="userinfo">User: {{ user.kerb }}<br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
+    {% else %}
+      <div id="userinfo" style="font-weight:normal; padding-top:24px;">logged out</a></div>
+    {% endif %}
+    <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners</a></div>
+  </div>
   </header>
 </div>
 
 <div id="main">
   <noscript>
     <div id="javascript-explanation">
-      <h3>Sorry, but you are going to have to enable javascript if you want to use this site.</h3>
-      <p>We know this is a drag, but we are too lazy to implement a functional interface using straight html.&nbsp;&#9785;</p>
+      <h3>Sorry, but you are going to have to enable javascript if you want to use this site. &nbsp;&#9785;</h3>
     </div>
   </noscript>
 
   <div id="content" style="display:none;">
-    {% with msgs = get_flashed_messages(category_filter=["error"]) -%}
+    {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
       <div id="flash-error">
         {% for msg in msgs -%}
-          <p class="flash-error">{{msg|safe}}</p>
+          <p class="flash-{{category}}">{{msg|safe}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}
     {% block content -%}
-      There is nothing here. This is just a template.
+      This is a template with no content.
     {%- endblock content %}
-    {% with msgs = get_flashed_messages(category_filter=["warning"]) -%}
+    {% with msgs = get_flashed_messages(category_filter=["warning","info","confirm"],with_categories=true) -%}
       <div id="flash-warning">
-        {% for msg in msgs -%}
-          <p class="flash-warning">{{msg|safe}}</p>
-        {%- endfor %}
-      </div>
-    {%- endwith %}
-    {% with msgs = get_flashed_messages(category_filter=["info"]) -%}
-      <div id="flash-info">
-        {% for msg in msgs -%}
-          <p class="flash-info">{{msg|safe}}</p>
+        {% for category, msg in msgs -%}
+          <p class="flash-{{category}}">{{msg|safe}}</p>
         {%- endfor %}
       </div>
     {%- endwith %}
@@ -193,7 +186,7 @@
   </div>
 </div>
 
-<script type="text/javascript">
+<script>
 document.addEventListener('DOMContentLoaded', function() {
   $("#content").fadeIn(0);
   $("#footer").fadeIn(0);
