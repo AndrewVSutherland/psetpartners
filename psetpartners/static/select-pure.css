@@ -43,7 +43,7 @@
   margin: 0;
   position: relative;
   transition: 0.1s;
-  width: 427px; /* should be calc(var(--value-width)+7px); */
+  width: calc(var(--value-width) + 7px); */
   font-family: Verdona, Geneva, sans;
 }
 
