@@ -98,23 +98,27 @@ def index():
     session.pop('_flashes', None)
     return redirect(url_for(".student"), 301)
 
+@app.route("/blank")
+def blank():
+    return render_template("blank.html", title="blank")
+
 @app.route("/test404")
 def test404():
-    return render_template("404.html",title="test 404 page",message="Thie is a test 404 message.")
+    return render_template("404.html", title="test 404 page",message="Thie is a test 404 message.")
 
 @app.route("/test404s")
 def test404s():
-    return render_template("404.html",title="test 404 page",messages=["Thie is a test 404 message.", "This is another test 404 message."])
+    return render_template("404.html", title="test 404 page",messages=["Thie is a test 404 message.", "This is another test 404 message."])
 
 @app.route("/test500")
 def test500():
     app.logger.error("test500")
-    return render_template("500.html",title="test 500 page",)
+    return render_template("500.html", title="test 500 page",)
 
 @app.route("/test503")
 def test503():
     app.logger.error("test503")
-    return render_template("503.html",title="test 503 page",message="Thie is a test message")
+    return render_template("503.html", title="test 503 page",message="Thie is a test message")
 
 @app.route("/student")
 def student():

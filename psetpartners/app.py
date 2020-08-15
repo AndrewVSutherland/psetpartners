@@ -89,14 +89,13 @@ def blanknone(x):
 
 # the following context processor inserts
 #  * empty info={} dict variable
-#  * body_class = ''
 @app.context_processor
 def ctx_proc_userdata():
     # insert an empty info={} as default
     # set the body class to some default, blueprints should
     # overwrite it with their name, using @<blueprint_object>.context_processor
     # see http://flask.pocoo.org/docs/api/?highlight=context_processor#flask.Blueprint.context_processor
-    data = {"info": {}, "body_class": ""}
+    data = {"info": {} }
     data["meta_description"] = r"Welcome to psetpartners, a tool for finding others to help work on problem sets!"
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
     data["static_knowl"] = static_knowl

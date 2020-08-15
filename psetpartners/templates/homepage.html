@@ -2,9 +2,8 @@
 
 {% block body -%}
 
-<div id="header">
-  <header class="inner">
-  <div style="width:100%; color:white;">
+<header>
+<div class="header">
     <div id="logo">
       <a tabindex="-1" href="https://mit.edu">
         <!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
@@ -130,14 +129,13 @@
     {% if user.is_authenticated %}
       <div id="userinfo">User: {{ user.kerb }}<br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
     {% else %}
-      <div id="userinfo" style="font-weight:normal; padding-top:24px;">logged out</a></div>
+      <div id="userinfo" style="font-weight:normal; padding-top:10px;">logged out</a></div>
     {% endif %}
     <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners</a></div>
-  </div>
-  </header>
 </div>
+</header>
 
-<div id="main">
+<div class="main-page">
   <noscript>
     <div id="javascript-explanation">
       <h3>Sorry, but you are going to have to enable javascript if you want to use this site. &nbsp;&#9785;</h3>
@@ -147,7 +145,7 @@
   <div id="content" style="display:none;">
     {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
       <div id="flash-error">
-        {% for msg in msgs -%}
+        {% for category, msg in msgs -%}
           <p class="flash-{{category}}">{{msg|safe}}</p>
         {%- endfor %}
       </div>
@@ -176,15 +174,15 @@
 {% endif %}
 #}
 
-<div id="footer" style="display:none;">
-  <div>
+<footer>
+<div class="footer">
     <a href="{{url_for('.acknowledgment')}}" tabindex="-1">acknowledgments</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AndrewVSutherland/psetpartners" target="_blank" tabindex="-1">source code</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="{{url_for('.contact')}}" tabindex="-1">contact information</a>
-  </div>
 </div>
+</footer>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

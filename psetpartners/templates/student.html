@@ -206,6 +206,7 @@
  
   </table>
 
+  <div style="display:inline-block;">
   <table class="submit">
     <tr>
       <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
@@ -213,6 +214,13 @@
       <td><label class="alertinfo" id="submit_alert"></label></td>
     </tr>
   </table>
+</div>
+<div style="display:inline-block; float:right;">
+<table class="submit">
+  <tr><td>
+  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">Apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied!</label>
+</td></tr>
+</table></div>
   </form>
 
 <!-- jshint ignore:end -->
@@ -234,7 +242,7 @@ const timezoneOptions = [
 const maxlength = {{ maxlength|tojson|safe }};
 // jshint ignore:end
 
-/* global classesOptions, maxlength */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, maxlength */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -264,6 +272,44 @@ function showPSL(id, val) {
   document.getElementById('l'+id).innerHTML = strengthOptions[val];
 }
 
+function getPrefs(prefs,i) {
+  let res = {};
+  for ( const pref of prefs ) {
+    const id = 'pref-' + pref + '-' + i;
+    res[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
+  }
+  return res;
+}
+
+function getProps(props,i) {
+  let res = {};
+  for ( const prop of props ) {
+    const id = prop + '-' + i;
+    res[prop] = document.getElementById(id).value;
+  }
+  return res;
+}
+
+function setPrefs(prefs,i) {
+  for ( const p in prefs ) {
+    const id = 'pref-' + p + '-' + i;
+    const e = document.getElementById(id), s = jQuery(e).data('select');
+    e.value = prefs[p].value;
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+    document.getElementById('s'+id).value = prefs[p].strength;
+    showPS(id, e.value);
+  }
+}
+
+function setProps(props,i) {
+  for ( const p in props ) {
+    const id = p + '-' + i;
+    const e = document.getElementById(id), s = jQuery(e).data('select');
+    e.value = props[p];
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+  }
+}
+
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
@@ -273,73 +319,74 @@ function changeClasses(val) {
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( v.includes(c) ) {
-      let classPrefs = {};
-      for ( const pref of allPreferences ) {
-        const id = 'pref-' + pref + '-' + (i+1);
-        classPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
-      }
-      classesPrefs[c] = classPrefs;
-      let classProps = {};
-      for ( const prop of studentClassAffinities ) {
-        const id = prop + '-' + (i+1);
-        classProps[prop] = { value: document.getElementById(id).value };
-      }
-      classesProps[c] = classProps;
+      classesPrefs[c] = getPrefs(allPreferences, i+1);
+      classesProps[c] = getProps(studentClassAffinities, i+1);
     }
   }
-  let generalPrefs = {};
-  for ( const pref of studentPreferences ) {
-    const id = 'pref-' + pref + '-0';
-    generalPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
-  }
-  for ( const pref of studentClassPreferences ) generalPrefs[pref] = { value: '', strength: 3 };
-  for ( const c of v ) if ( ! classesPrefs[c] ) classesPrefs[c] = generalPrefs;
+  let defaultPrefs = getPrefs(studentPreferences, 0);
+  for ( const pref of studentClassPreferences ) defaultPrefs[pref] = { value: '', strength: 3 };
+  for ( const c of v ) if ( ! (c in classesPrefs) ) classesPrefs[c] = defaultPrefs;
+  console.log(classesPrefs);
   let defaultProps = {};
   for ( const prop of studentClassAffinities ) defaultProps[prop] = '';
-  for ( const c of v ) if ( ! classesProps[c] ) classesProps[c] = defaultProps;
+  for ( const c of v ) if ( ! (c in classesProps) ) classesProps[c] = defaultProps;
+  console.log(classesProps);
   for ( let i = 0 ; i < v.length ; i++ ) {
     const c = v[i];
     if ( c != studentClasses[i] ) {
-      for ( const pref of allPreferences ) {
-        const id = 'pref-' + pref + '-' + (i+1);
-        const e = document.getElementById(id);
-        const s = jQuery(e).data('select');
-        e.value = classesPrefs[c][pref].value;
-        if ( ! s ) makeSingleSelect(id, studentOptions[pref], { placeholder: studentPlaceholders[pref] }); else updateSingleSelect(id);
-        document.getElementById('s'+id).value = classesPrefs[c][pref].strength;
-        showPS(id, e.value);
-      }
-      for ( const prop of studentClassAffinities ) {
-        const id = prop + '-' + (i+1);
-        const e = document.getElementById(id);
-        const s = jQuery(e).data('select');
-        e.value = classesProps[c][prop].value;
-        if ( ! s ) makeSingleSelect(id, studentOptions[prop], { placeholder: studentPlaceholders[prop] }); else updateSingleSelect(id);
-      }
+      setPrefs(classesPrefs[c], i+1);
+      setProps(classesProps[c], i+1);
       const q = $('#pref-'+(i+1)); q.html(c); q.show();
     }
   }
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#pref-'+(i+1)); q.html(''); q.hide(); }
+  const i = togglerIndex();
+  const c = i ? studentClasses[i-1] : '';
   studentClasses = [...v];
-  togglePrefs('pref-'+v.length);
+  if ( c ) {
+    const j = studentClasses.indexOf(c);
+    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex( i <= studentClasses.length ? i : i-1);
+  } else {
+    togglerIndex(0);
+  }
 }
 
-function indexToggler() {
-  const id = $('.toggler-nav.toggler-active').attr('id');
-  return id ? parseInt(id.split('-')[1]) : null;
+function showApplyPreferences() {
+  if ( typeof (showApplyPreferences.snapshot) == 'undefined' ) {
+    showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
+    $('#apply-prefs').hide();
+  }
+  if ( togglerIndex() == 0 && JSON.stringify(getPrefs(studentPreferences,0)) != showApplyPreferences.snapshot ) {
+    $('#apply-prefs').show();
+  } else { 
+    $('#apply-prefs').hide();
+  }    
 }
 
-function togglePrefs(id,focus=false) {
-  const oldid = $('.toggler-nav.toggler-active').attr('id');
-  const i = parseInt(id.split('-')[1]);
-  $('#prefheader').text('Preferences' + (i ? ' for ' + classLabel(studentClasses[i-1]) : ''));
-  $('tr.' + oldid).hide();  $('tr.'+id).show();
-  $('td.' + oldid).hide();  $('td.'+id).show();
-  $('#'+oldid).toggleClass('toggler-active');
-  const e = $('#'+id);
-  e.toggleClass('toggler-active');
-  showAffinityPreferences();
-  if ( focus ) e.focus();
+function applyPreferences() {
+  const prefs = getPrefs(studentPreferences,0);
+  for ( let i = 0 ; i < studentClasses.length ; i++ ) setPrefs(prefs, i+1);
+  showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
+  $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(2000);
+}
+
+function togglerIndex(i, focus=false) {
+  if ( typeof i === 'undefined'  ) {
+    const id = $('.toggler-nav.toggler-active').attr('id');
+    return id ? parseInt(id.split('-')[1]) : null;
+  } else {
+    const id = 'pref-' + i;
+    const oldid = $('.toggler-nav.toggler-active').attr('id');
+    $('#prefheader').text('Preferences' + (i > 0 ? ' for ' + classLabel(studentClasses[i-1]) : ''));
+    $('tr.' + oldid).hide();  $('tr.'+id).show();
+    $('td.' + oldid).hide();  $('td.'+id).show();
+    $('#'+oldid).toggleClass('toggler-active');
+    const e = $('#'+id);
+    e.toggleClass('toggler-active');
+    showAffinityPreferences();
+    showApplyPreferences();
+    if ( focus ) e.focus();
+  }
 }
 
 function saveErrorMessage() {
@@ -360,7 +407,7 @@ function showSaveErrorMessage() {
 
 function showAffinityPreferences() {
   let caption = false;
-  const i = indexToggler();
+  const i = togglerIndex();
   const affinities = i ? [...studentAffinities, ...studentClassAffinities] : studentAffinities;
   for ( let x of affinities ) {
     const val = document.getElementById(x + (studentClassAffinities.includes(x) ? '-' + i : '')).value;
@@ -375,6 +422,7 @@ function showAffinityPreferences() {
   document.getElementById('affinity-separator').style.display = caption ? 'inline-block' : 'none';
 }
 
+
 function checkChanges (e) {
   if ( ! e.target.name ) return;
   console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
@@ -382,19 +430,19 @@ function checkChanges (e) {
   $('#student :submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
+  if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
 }
 
 function submitStudentForm (value) {
   if ( value === "cancel" ) { $('input').attr('name',''); return true; }
   console.log("Submitting form");
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
-  console.log(document.getElementById('commitment-1').value);
   return true;
 }
 
 function alertInfo(q,msg) {
   const content = $(q).html();
-  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(2000, function() { $(q).html(content).show() });
+  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(2000, function() { $(q).html(content).show(); });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -435,8 +483,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.toggler-nav').click(function(e) { e.preventDefault(); togglePrefs(e.target.id); return false; });
-  togglePrefs('pref-0');
+  $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
+  togglerIndex(0);
 
   $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
   $('#student').data('initial',$('#student').serialize());
@@ -447,14 +495,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
       const id =  $('.toggler-nav.toggler-active').attr('id');
-      togglePrefs('pref-' + ((parseInt(id.split('-')[1]) + e.which - 38 + n) % n), true);
+      togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n, true);
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
-  togglePrefs('pref-0');
+  togglerIndex(0);
   showAffinityPreferences();
+  showApplyPreferences();
   console.log('student page ready');
-  console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
 });
 </script>
 
