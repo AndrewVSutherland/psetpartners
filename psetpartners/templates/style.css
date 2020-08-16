@@ -257,8 +257,12 @@ input.value, select.value, textarea.value {
   height: 25px;
 }
 
-input:focus, select:focus, textarea:focus {
-  outline: 1.5px solid var(--mit-maroon);
+input.value:focus, select.value:focus, textarea.value:focus {
+  outline: none;
+}
+
+span.select {
+  outline: none;
 }
 
 input.value {
