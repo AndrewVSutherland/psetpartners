@@ -121,14 +121,16 @@ def test503():
     return render_template("503.html", title="test 503 page",message="Thie is a test message")
 
 @app.route("/student")
-def student():
+def student(context={}):
     title = "" if current_user.is_authenticated else "login"
+    print(session.get("ctx",""))
     return render_template(
         "student.html",
         next=request.args.get("next", ""),
         title=title,
         options=template_options(),
         maxlength=maxlength,
+        ctx=session.pop("ctx",""),
     )
 
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
@@ -138,7 +140,9 @@ PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 @login_required
 def save_student():
     raw_data = request.form
+    session["ctx"] = { x[4:] : raw_data[x] for x in raw_data if x.startswith("ctx-") } # return ctx-XXX values to
     if raw_data.get("submit") == "cancel":
+        flash_info ("Changes discarded.") 
         return redirect(url_for(".student"), 301)
     errmsgs = []
     data = {}
@@ -208,12 +212,12 @@ def save_student():
     for k, v in data.items():
         setattr(current_user, k, v)
     current_user.class_data = { data["classes"][i]: { "properties": props[i+1], "preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
-    current_user.save()
     try:
-       #current_user.save()
+       current_user.save()
        flash_info ("Changes saved.") 
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
+    context = {}
     return redirect(url_for(".student"), 301)
 
 @app.route("/logout")

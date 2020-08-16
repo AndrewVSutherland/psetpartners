@@ -39,7 +39,7 @@
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
     <tr>
@@ -206,6 +206,9 @@
  
   </table>
 
+  <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
+  <input class="ctx" type="hidden" name="ctx-togglerIndex" value="" />
+
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
@@ -218,7 +221,7 @@
 <div style="display:inline-block; float:right;">
 <table class="submit">
   <tr><td>
-  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">Apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied!</label>
+  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">Apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
 </td></tr>
 </table></div>
   </form>
@@ -240,9 +243,11 @@ const timezoneOptions = [
 ];
 
 const maxlength = {{ maxlength|tojson|safe }};
+const ctx = {{ ctx|tojson|safe }};
+
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, maxlength */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, maxlength, ctx */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -356,7 +361,7 @@ function showApplyPreferences() {
     showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
     $('#apply-prefs').hide();
   }
-  if ( togglerIndex() == 0 && JSON.stringify(getPrefs(studentPreferences,0)) != showApplyPreferences.snapshot ) {
+  if ( togglerIndex() === 0 && JSON.stringify(getPrefs(studentPreferences,0)) != showApplyPreferences.snapshot ) {
     $('#apply-prefs').show();
   } else { 
     $('#apply-prefs').hide();
@@ -367,7 +372,7 @@ function applyPreferences() {
   const prefs = getPrefs(studentPreferences,0);
   for ( let i = 0 ; i < studentClasses.length ; i++ ) setPrefs(prefs, i+1);
   showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
-  $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(2000);
+  $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
 }
 
 function togglerIndex(i, focus=false) {
@@ -434,15 +439,16 @@ function checkChanges (e) {
 }
 
 function submitStudentForm (value) {
-  if ( value === "cancel" ) { $('input').attr('name',''); return true; }
-  console.log("Submitting form");
+  $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
+  $('input[name="ctx-togglerIndex"]').val(togglerIndex());
+  if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
   return true;
 }
 
 function alertInfo(q,msg) {
   const content = $(q).html();
-  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(2000, function() { $(q).html(content).show(); });
+  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(3000, function() { $(q).html(content).show(); });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -499,7 +505,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
-  togglerIndex(0);
+  if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);
+  console.log(ctx.scrollTop);
+  if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
+
   showAffinityPreferences();
   showApplyPreferences();
   console.log('student page ready');

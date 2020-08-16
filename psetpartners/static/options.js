@@ -6,13 +6,13 @@ const departmentsOptions = [
   { label: '3 Materials Science and Engineering', value: '3', },
   { label: '4 Architecture', value: '4', },
   { label: '5 Chemistry', value: '5', },
-  { label: '6 Electrical Engineering and Computer Science', value: '6', },
+  { label: '6 EECS', value: '6', },
   { label: '7 Biology', value: '7', },
   { label: '8 Physics', value: '8', },
   { label: '9 Brain and Cognitive Sciences', value: '9', },
   { label: '10 Chemical Engineering', value: '10', },
   { label: '11 Urban Studies and Planning', value: '11', },
-  { label: '12 Earth, Atmospheric, and Planetary Sciences', value: '12', },
+  { label: '12 EAPS', value: '12', },
   { label: '14 Economics', value: '14', },
   { label: '15 Management', value: '15', },
   { label: '16 Aeronautics and Astronautics', value: '16', },
@@ -28,7 +28,7 @@ const departmentsOptions = [
   { label: '21M Music and Theater Arts', value: '21M', },
   { label: '22 Nuclear Science and Engineering', value: '22', },
   { label: '24 Linguistics and Philosophy', value: '24', },
-  { label: 'CMS/21W Comparative Media Studies/Writing', value: 'CMS/21W', },
+  { label: 'CMS/21W Comp. Media Studies/Writing', value: 'CMS/21W', },
   { label: 'IDS Data, Systems, and Society', value: 'IDS', },
   { label: 'IMES Medical Engineering and Science', value: 'IMES', },
   { label: 'MAS Media Arts and Sciences', value: 'MAS', },
@@ -132,7 +132,7 @@ const gender_affinityOptions = [
 const commitmentOptions = [
   { label: '', value: '' },
   { label: 'still shopping and/or not taking for credit', value: '1' },
-  { label: 'other courses might be a higher priority for me', value: '2' },
+  { label: 'other courses might be a higher priority', value: '2' },
   { label: 'This course is a top priority', value: '3' },
 ];
 const confidenceOptions = [

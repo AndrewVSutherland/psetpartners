@@ -30,6 +30,8 @@
 :not(input):not(textarea)::after,
 :not(input):not(textarea)::before {
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
     cursor: default;
 }
@@ -40,12 +42,9 @@
     background: var(--select-fill);
 }
 
-* {
+html, body {
   margin: 0;
   padding: 0;
-}
-
-html, body {
   width: 100%;
   height: 100%;
 }
@@ -200,13 +199,13 @@ div.footer > a {
 #content table.submit {
   border-collapse: collapse;
   margin-top: 10px;
-  margin-left: 0px;
+  margin-left: 0;
 }
 
 #content td.caption {
   width: var(--caption-width);
   white-space: nowrap;
-  margin-right:0px;
+  margin-right: 0;
   vertical-align:middle;
 }
 
@@ -260,7 +259,7 @@ div.footer > a {
 
 #content input.value {
   padding-left: 4px;
-  padding-right: 0px;
+  padding-right: 0;
 }
 
 #content input.value::placeholder {
@@ -286,7 +285,7 @@ div.footer > a {
 
 #content textarea.value {
   padding-left: 4px;
-  padding-right: 0px;
+  padding-right: 0;
   height: 80px;
 }
 
@@ -303,7 +302,7 @@ button {
   color: var(--mit-maroon);
   font-weight: bold;
   font-size: 14px;
-  margin: 0px 6px;
+  margin: 0 6px;
   padding: 3px 6px;
   border-radius: 4px;
   height: 26px;
@@ -355,7 +354,7 @@ label.confirm::before {
 }
 
 p.flash-info, p.flash-warning {
-  margin-left: 0px;
+  margin-left: 0;
   margin-top: 8px;
   font-size: 90%;
   padding-bottom: 6px;
@@ -372,7 +371,7 @@ p.flash-warning::before {
   margin-bottom: -5px;
 }
 p.flash-error {
-  margin-left: 0px;
+  margin-left: 0;
 }
 p.flash-error::before {
   font-size: 130%;
@@ -398,7 +397,7 @@ div.toggler-nav {
   padding: 8px;
   min-width: 50px;
   color: var(--mit-maroon);
-  margin: 0px 12px;
+  margin: 0 12px;
 }
 
 div.toggler-active {
@@ -421,13 +420,13 @@ input[type="range"] {
   -webkit-appearance: none;
   overflow: hidden;
   margin-top: 6px;
-  padding-top: 0px ! important;
-  padding-bottom: 0px ! important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   height: 10px;
   width: 100px;
   cursor: pointer;
   border: var(--input-border-width) solid var(--input-border-color);
-  border-radius: 1px ! important;
+  border-radius: 1px !important;
 }
 
 ::-webkit-slider-runnable-track {
@@ -590,275 +589,6 @@ label.cbg input:checked ~ span.cbg:hover {
   background-color: var(--cbg-hover-checked-color);
 }
 /* END styling for cbg selector (intended to be used in grid of checkboxes) */
-
-/* knowl styling */
-#content > h2 a[knowl], #content > h3 a[knowl] {
-    color: black;
-}
-body.knowl {
-  background: none;
-}
-body.knowl #header {
-  background: var(--knowl_l);
-  box-shadow: 0px 5px 5px var(--knowl_shadow);
-}
-body.knowl form button,
-body.knowl form select {
-  border: 2px solid var(--knowl_thin_border);
-  background: var(--knowl_border);
-}
-body.knowl form textarea,
-body.knowl form input {
-    border: 2px solid var(--knowl_thin_border);
-}
-body.knowl form button:hover,
-body.knowl form select:hover {
-    background:    var(--knowl_hover);
-    border: 2px solid var(--knowl_thin_border);
-}
-
-/* start cut-and-paste from seminars line 1518 */
-table a.knowl-link,
-table a[knowl] {
-  display: inline;
-  padding: 0;
-}
-table .knowl-link {
-  display: inline;
-  border-bottom: 1px dotted var(--knowl_hyper_text);
-  border-radius: 0px;
-  padding: 1px;
-}
-.knowl-bar {
-  white-space: nowrap;
-  background: var(--knowl_background);
-  padding: 5px 10px;
-  margin-bottom: 5px;
-  border-bottom: 1px solid var(--knowl_thin_border);
-  border-top-left-radius: 10px;
-}
-.knowl-bar button,
-.knowl-bar input,
-.knowl-bar form {
-  font-size: small;
-  display: inline;
-  margin: 0px 2px;
-}
-#knowl-search input {
-  font-size: small;
-  background: var(--knowl_background);
-}
-.knowl-bar a {
-  padding: 2px 5px;
-}
-.knowl-editmode-sep {
-  padding: 5px;
-  margin: 30px 0;
-  border-bottom: 1px solid var(--knowl_thin_border);
-  background: var(--knowl_background);
-  color: var(--knowl_hyper_text);
-  font-weight: bold;
-}
-.knowl-inc-edit {
-  margin-bottom: 10px;
-  border-bottom: 2px solid var(--knowl_border);
-  font-size: x-small;
-  text-align: right;
-  line-height: 100%;
-}
-.knowl-inc-edit a {
-  padding: 3px 5px 0px 5px;
-  background: var(--knowl_l_1);
-  border-top-left-radius: 5px;
-}
-.knowl {
-  padding: 0;
-}
-/* knowl-index is the big table on the main knowledge page */
-#knowl-index td div > a {
-  display: block;
-  padding: 0px;
-  position: absolute;
-  top: 12px;
-}
-#knowl-index td div > span {
-  font-size: xx-small;
-  color: var(--grey);
-  position: absolute;
-  top: 2px;
-  line-height: 1em;
-}
-#knowl-index td div {
-  position: relative;
-  display: inline;
-  width: 170px;
-  height: 70px;
-  float: left;
-  min-height: 4em;
-  overflow: hidden;
-  padding: 2px;
-  margin: 1px;
-  border-radius: 2px;
-}
-#knowl-index td div:hover {
-  background: var(--knowl_hover);
-  cursor: pointer;
-}
-#knowl-index td {
-  padding: 0;
-}
-#knowl-index tr td:first-child {
-  width: 50px;
-  vertical-align: top;
-  text-align: center;
-  font-size: x-large;
-  color: var(--knowl_hyper_text);
-  padding-top: 12px;
-}
-body.knowl table.ntdata thead tr {
-  background: var(--knowl_background);
-  border-bottom: 2px solid var(--knowl_underline);
-}
-body.knowl table.ntdata tr:nth-of-type(odd) {
- background: var(--knowl_background);
-}
-body.knowl table.ntdata tr:nth-of-type(even) {
-    background: var(--white);
-}
-.knowl-content {
-  padding: 0 10px;
-}
-.knowl-content h1 {
-  margin: 0px 0px 10px 0px;
-}
-.knowl-content h2 {
-  margin: 0px 0px 5px 0px;
-}
-*[knowl] {
-  border-bottom: 1px dotted var(--knowl_underline);
-  cursor: pointer;
-  border-radius: 0;
-  margin: 3px 0 0 0;
-}
-*[knowl]:hover,
-*[knowl].active {
-  border-bottom: 2px solid var(--knowl_underline);
-  background: var(--knowl_hover);
-  color: var(--knowl_hyper_text);
-  margin: 0;
-  padding: 3px 0 0 0;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-}
-
-body.knowl #header {
-    background: var(--knowl_header_background);
-}
-body.knowl #header #title {
-    color: var(--knowl_title_text);
-}
-body.knowl #content h1,
-body.knowl #content h2,
-body.knowl #content a {
-  color: var(--knowl_hyper_text);
-}
-body.knowl a:hover {
-  background: var(--knowl_hover);
-}
-
-div > *[knowl], p > *[knowl] {
-  position: relative;
-}
-
-table .knowl a {
-    padding: 0;
-}
-
-.knowl-error {
-   color: var(--knowl_error);
-   border-bottom: 0;
-   text-decoration: underline;
-}
-
-.knowl-error a {
-   font-size:60%;
-   color: var(--knowl_error);
-}
-
-.knowl-output {
-  background: var(--knowl_background);
-  border: 5px solid var(--knowl_border);
-  border-radius: 10px;
-  padding: 0px;
-  margin-top: 10px;
-  margin-bottom: 15px;
-  margin-right: 10px;
-  text-align: left;
-  overflow-y: hidden;
-  max-height: 1000px;
-  transition: max-height 0.1s ease, border-width 0.1s step-start;
-}
-
-.knowl-output:not(.open) {
-  transition: max-height 0.1s ease, border-width 0.1s step-end;
-  max-height: 0px;
-  border-width: 0px;
-  margin: 0px;
-}
-
-
-.knowl-output .knowl-output,
-.knowl-output .knowl-output.loading {
- margin-left: 0;
- margin-right: 0;
-}
-.knowl-output.loading {
- color: var(--grey);
- font-style: italic;
- font-size: small;
-}
-
-.knowl-output h1, .knowl-output h2 {
-  margin: 5px 0;
-}
-.knowl-output h1 {
-  color: var(--knowl_hyper_text);
-}
-.knowl-output h2 {
-  color: var(--knowl_hyper_text);
-}
-.knowl-output a { display: inline; }
-
-.knowl-footer {
-  position: relative;
-  bottom: -10px;
-  font-size: x-small;
-  line-height: 100%;
-  background: var(--knowl_border);
-  color: var(--knowl_border_text);
-  padding: 1px 0 1px 10px;
-  margin:  0 0 0 0;
-}
-.knowl-header {
-  position: relative;
-  top: -10px;
-  font-size: x-small;
-  line-height: 100%;
-  background: var(--knowl_border);
-  color: var(--grey);
-  padding: 1px 0 1px 10px;
-  margin:  0 0 0 0;
-}
-.knowl-header a,
-.knowl-footer a {
-    color: var(--knowl_border_links);
-}
-.knowl-header a:hover,
-.knowl-footer a:hover {
-  background: none;
-  color: var(--knowl_border_hover);
-}
-
 
 .debug {
   background: #FF9;

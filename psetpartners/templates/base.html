@@ -3,8 +3,10 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="description" content="{{meta_description|striptags}}"/>
+    
     <title>pset partners</title>
   
+    <!-- main style sheet -->
     <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />
 
     <!-- static html content we are happy to let the browser cache (e.g. captions and dropdown options) -->
@@ -19,24 +21,13 @@
     <!-- requires jquery -->
     <script defer src="{{ url_for('static', filename='psetpartners.js') }}"></script>
 
-    <!-- multi select https://github.com/dudyn5ky1/select-pure, vanilla JS-->
+    <!-- multi select derivded from select-pure -->
     <script defer src="{{ url_for('static', filename='select-pure.js') }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='select-pure.css') }}" />
-
-    <!--knowls, not currently used -->
-    {# <script async src="{{ url_for('static', filename='knowl.js') }}"></script> #}
 
     {% block extra_head -%}{%- endblock extra_head %}
   </head>
   <body>
-{#
-{% macro KNOWL(kid, title=none) -%}
-{{ static_knowl(kid, title) | safe }}
-{%- endmacro %}
-{% macro ASTKNOWL(kid, title=none) -%}
-{{ static_knowl(kid, title) | safe }}<span style="color:red; font-weight:normal">*</span>
-{%- endmacro %}
-#}
-   {% block body -%}{%- endblock body %}
+  {% block body -%}{%- endblock body %}
   </body>
 </html>
