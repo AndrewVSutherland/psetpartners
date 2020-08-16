@@ -21,7 +21,7 @@ const departmentsOptions = [
   { label: '20 Biological Engineering', value: '20', },
   { label: '21 Humanities', value: '21', },
   { label: '21A Anthropology', value: '21A', },
-  { label: '21E/21S Humanities + Engineering/Science', value: '21E/21S', },
+  { label: '21E/21S Humanities + Eng./Science', value: '21E/21S', },
   { label: '21G Global Studies and Languages', value: '21G', },
   { label: '21H History', value: '21H', },
   { label: '21L Literature', value: '21L', },
