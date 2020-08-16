@@ -175,7 +175,7 @@
 #}
 
 <footer>
-<div class="footer">
+<div class="footer" id="footer">
     <a href="{{url_for('.acknowledgment')}}" tabindex="-1">acknowledgments</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AndrewVSutherland/psetpartners" target="_blank" tabindex="-1">source code</a>
@@ -188,8 +188,8 @@
 document.addEventListener('DOMContentLoaded', function() {
   $("#content").fadeIn(0);
   $("#footer").fadeIn(0);
-	$("#flash-info p").fadeOut(3000);
-	$("#flash-warning p").fadeOut(10000);
+	$("p.flash-info").fadeOut(2000);
+	$("p.flash-warning").fadeOut(5000);
 });
 </script>
 
