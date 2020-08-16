@@ -144,6 +144,9 @@ class SelectPure {
     this._select.addClass(this._config.classNames.selectOpen);
     this._body.addEventListener("click", this._boundHandleClick);
     this._select.removeEventListener("click", this._boundHandleClick);
+    // manually implement overflow-y:auto (css won't work in firefox)
+    this._optionsWrapper._node.style.overflowY =
+      this._optionsWrapper._node.scrollHeight <= this._optionsWrapper._node.clientHeight+2 ? 'hidden' : 'scroll';
     this._state.opened = true;
     if ( this._autocomplete ) this._autocomplete.focus();
   }

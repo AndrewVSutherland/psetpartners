@@ -2,14 +2,6 @@
   --min-height: 32px;
   --max-height: 408px;
   --row-height: 20px;
-  --mit-maroon: #a31f34;
-  --mit-pink: #fdf5f3;
-  --mit-gray: #babbbc;
-  --mit-white: #fefefe;
-  --shadow-color: var(--mit-maroon);
-  --shadow-width: 3px;
-  --light-gray: #c6c7c8;
-  --lighter-gray: #eaebec;
 }
 
 .sp-placeholder {
@@ -91,7 +83,7 @@
 
 .sp-dropdown { /* only for firefox */
   scrollbar-width: thin;
-  scrollbar-color: var(--mit-maroon) #dadbdc;
+  scrollbar-color: var(--mit-maroon) var(--mit-pink);
 }
 
 
