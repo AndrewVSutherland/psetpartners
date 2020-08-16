@@ -1,9 +1,9 @@
 :root {
   --header-height: 52px;
   --footer-height: 52px;
-  --min-width: 960px;
-  --caption-width: 300px;
-  --value-width: 380px;
+  --min-width: 940px;
+  --caption-width: 260px;
+  --value-width: 390px;
   --mit-maroon: #a31f34;
   --mit-pink: #fdf5f3;
   --mit-gray: #babbbc;
