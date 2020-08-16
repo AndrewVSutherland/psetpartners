@@ -63,7 +63,7 @@
   top: 100%;
   max-height: var(--max-height);
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: auto; /* this does not work in firefox, handled in .js instead */
   position: absolute;
   width: calc(100% + 3px); /*var(--value-width);*/
   z-index: 5;
@@ -170,7 +170,7 @@
   border-top: none;
   box-sizing: border-box;
   font-size: 95%;
-  outline: none;
+  outline: 1.5px solid var(--mit-maroon);
   padding: 5px;
   width: 100%;
 }

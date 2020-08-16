@@ -2,7 +2,7 @@
   --header-height: 52px;
   --footer-height: 52px;
   --min-width: 940px;
-  --caption-width: 260px;
+  --caption-width: 270px;
   --value-width: 390px;
   --mit-maroon: #a31f34;
   --mit-pink: #fdf5f3;
@@ -20,7 +20,7 @@
   --input-border-color: var(--mit-maroon);
   --input-border-width: 1.5px;
   --input-focus-border-color: var(--mit-maroon);
-  --input-focus-border-width: 2px;
+  --input-focus-border-width: 3px;
   --knowl_background: #f9f5f1;
   font-family: Verdona, Geneva, sans-serif;
 }
@@ -160,56 +160,62 @@ div.footer > a {
   padding: 10px;
 }
 
-#content h1 {
+h1 {
   font-size: 150%;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
-#content h2 {
+h1:first-of-type {
+  margin-top: 10px;
+}
+
+h2 {
   font-size: 130%;
   margin-top: 20px;
   margin-bottom: 10px;
 }
 
-#content h2:first-of-type {
+h2:first-of-type {
   margin-top: 10px;
 }
 
-#content h3 {
+h3 {
   font-size: 110%;
   margin-top: 20px;
   margin-bottom: 10px;
 }
 
-#content h3:first-of-type {
+h3:first-of-type {
   margin-top: 10px;
 }
 
-#content a, a:visited {
+a, a:visited {
   color: var(--mit-maroon);
   font-family: sans-serif;
   text-decoration: none;
   cursor: pointer;
 }
 
-#content table.input, table.output {
+table.input, table.output {
   border-collapse: collapse;
   margin-left: 20px;
 }
 
-#content table.submit {
+table.submit {
   border-collapse: collapse;
   margin-top: 10px;
   margin-left: 0;
 }
 
-#content td.caption {
+td.caption {
   width: var(--caption-width);
   white-space: nowrap;
   margin-right: 0;
   vertical-align:middle;
 }
 
-#content td.forminfo, span.forminfo {
+td.forminfo, span.forminfo {
    padding-left: 13px;
    font-size: 80%;
    font-weight: normal;
@@ -218,21 +224,21 @@ div.footer > a {
    vertical-align: middle;
 }
 
-#content span.forminfo {
+span.forminfo {
    padding-left: 2px;
 }
 
-#content span.forminfo::before {
+span.forminfo::before {
   content: "(";
   font-style: normal;
 }
 
-#content span.forminfo::after {
+span.forminfo::after {
   content: ")";
   font-style: normal;
 }
 
-#content input, select, textarea {
+input, select, textarea {
   border: var(--input-border-width) solid var(--input-border-color);
   background: var(--mit-white);
   padding-top: 3px;
@@ -246,50 +252,48 @@ div.footer > a {
   -webkit-box-sizing:content-box;
 }
 
-#content input.value, select.value, textarea.value {
+input.value, select.value, textarea.value {
   width: var(--value-width);
   height: 25px;
 }
 
-#content input:focus, select:focus, textarea:focus {
-  outline: none !important
-  border: var(--input-focus-border-width) solid var(--input-focus-border-color);
-  box-shadow: 0 0 var(--shadow-width) var(--shadow-color);
+input:focus, select:focus, textarea:focus {
+  outline: 1.5px solid var(--mit-maroon);
 }
 
-#content input.value {
+input.value {
   padding-left: 4px;
   padding-right: 0;
 }
 
-#content input.value::placeholder {
+input.value::placeholder {
   font-size: 90%;
   font-style:italic;
 }
 
-#content select.value option {
+select.value option {
   background: var(--lighter-gray);
   font-size: 95%;
 }
 
-#content select.value {
+select.value {
   cursor: pointer;
   padding-left: 1px;
   padding-right: 3px;
 }
 
-#content select.value:hover {
+select.value:hover {
   cursor: pointer;
   background: var(--select-fill);
 }
 
-#content textarea.value {
+textarea.value {
   padding-left: 4px;
   padding-right: 0;
   height: 80px;
 }
 
-#content label.strength {
+label.strength {
   font-size: 75%;
   font-style: italic;
   vertical-align: text-top;
