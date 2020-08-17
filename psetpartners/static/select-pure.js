@@ -99,10 +99,10 @@ class SelectPure {
   // Public API
   value(v) { if (v !== undefined) { this._setValue(v); } return this._config.value; }
   reset() { this._setValue(null); }
-  open() { this._open(); }
-  close() { this._close(); }
-  next() { this._next(); }
-  prev() { this._prev(); }
+  open() { return this._open(); }
+  close() { return this._close(); }
+  next() { return this._next(); }
+  prev() { return this._prev(); }
 
   // Private methods
   _create(_element) {
@@ -148,7 +148,7 @@ class SelectPure {
   _focusOut() { this._select.removeClass(this._config.classNames.focus); }
 
   _open() {
-    if ( this._state.opened ) return;
+    if ( this._state.opened ) return false;
     this._select.addClass(this._config.classNames.selectOpen);
     this._body.addEventListener("click", this._boundHandleClick);
     this._select.removeEventListener("click", this._boundHandleClick);
@@ -157,14 +157,16 @@ class SelectPure {
       this._optionsWrapper._node.scrollHeight <= this._optionsWrapper._node.clientHeight+2 ? 'hidden' : 'scroll';
     this._state.opened = true;
     if ( this._autocomplete ) this._autocomplete.focus();
+    return true;
   }
 
   _close() {
-      if ( ! this._state.opened ) return;
+      if ( ! this._state.opened ) return false;
       this._select.removeClass(this._config.classNames.selectOpen);
       this._body.removeEventListener("click", this._boundHandleClick);
       this._select.addEventListener("click", this._boundHandleClick);
       this._state.opened = false;
+      return true;
   }
 
   _next() {
