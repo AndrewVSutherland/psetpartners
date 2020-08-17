@@ -21,9 +21,9 @@ function makeSingleSelect(id, available, config) {
     placeholder: config.placeholder,
   });
   se.addEventListener('keydown', function(evt) {
-    if ( evt.which === 40 ) s.next();
-    if ( evt.which === 38 ) s.prev();
-    if ( evt.which === 27 ) s.close();
+    if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); }
+    else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); }
+    else if ( evt.which === 27 ) s.close();
   });
   se.addEventListener('focusout', function(evt) { s.close(); });
   e.value = s.value();
@@ -71,8 +71,8 @@ function makeMultiSelect(id, available, config) {
     });
   } else {
     se.addEventListener('keydown', function(evt) {
-      if ( evt.which === 40 ) s.open();
-      if ( evt.which === 38 || evt.which === 27 ) s.close();
+      if ( evt.which === 39 || evt.which === 40 ) s.open();
+      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 ) s.close();
     });
     se.addEventListener('focusout', function(evt) { s.close(); });
   }

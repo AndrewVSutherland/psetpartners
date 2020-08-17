@@ -130,16 +130,12 @@
   </table>
   <h3 id="prefheader">Preferences</h3>
 
-   <div class="pref-toggler" id="pref-toggler">
-    <header class="inner">
-      <div class="pref-toggler-inner">
-        {% for i in  range(maxlength["classes"]+1) %}
-        <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" tabindex="{{'-1' if i else '11'}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
-          {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
-        </div>
-        {% endfor %}
+   <div class="toggler" id="pref-toggler" tabindex="11">
+    {% for i in  range(maxlength["classes"]+1) %}
+      <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
+        {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
       </div>
-    </header>
+    {% endfor %}
   </div>
 
 {% set smax = options["strength"]|length -1 %}
@@ -347,7 +343,7 @@ function changeClasses(val) {
   studentClasses = [...v];
   if ( c ) {
     const j = studentClasses.indexOf(c);
-    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex( i <= studentClasses.length ? i : i-1);
+    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
   } else {
     togglerIndex(0);
   }
@@ -372,7 +368,7 @@ function applyPreferences() {
   $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
 }
 
-function togglerIndex(i, focus=false) {
+function togglerIndex(i) {
   if ( typeof i === 'undefined'  ) {
     const id = $('.toggler-nav.toggler-active').attr('id');
     return id ? parseInt(id.split('-')[1]) : null;
@@ -387,7 +383,6 @@ function togglerIndex(i, focus=false) {
     e.toggleClass('toggler-active');
     showAffinityPreferences();
     showApplyPreferences();
-    if ( focus ) e.focus();
   }
 }
 
@@ -494,13 +489,12 @@ document.addEventListener('DOMContentLoaded', function() {
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
-  $('.toggler-nav').keydown(function(e){
+  $('.toggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
       const id =  $('.toggler-nav.toggler-active').attr('id');
-      togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n, true);
+      togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n);
     }
-    if ( e.which == 9 && e.shiftKey ) {console.log('hi'); e.preventDefault(); $('#select-classes').focus();}// hack
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
   if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);

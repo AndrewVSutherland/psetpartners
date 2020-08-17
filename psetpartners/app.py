@@ -36,7 +36,7 @@ def setup_logging():
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("info message logging on")
+    app.logger.info("pset partners restarted")
 
 ############################
 # App attribute functions  #

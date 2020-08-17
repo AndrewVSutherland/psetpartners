@@ -217,7 +217,7 @@ td.forminfo, span.forminfo {
    padding-left: 13px;
    font-size: 80%;
    font-weight: normal;
-   font-style: italic;
+   font-style: oblique;
    color: #333;
    vertical-align: middle;
 }
@@ -386,15 +386,15 @@ p.flash-error::before {
   padding-right: 3px;
 }
 
-/* BEGIN pref-toggler */
-div.pref-toggler {
+/* BEGIN toggler */
+div.toggler {
   margin: 0 0 18px 0;
+  border-bottom: 1.5px solid var(--mit-maroon);
 }
 
-div.pref-toggler-inner {
-  margin-left: -10px;
-  margin-right: -10px;
-  border-bottom: 1.5px solid var(--mit-maroon);
+div.toggler:focus {
+  outline: none;
+  border-bottom: 2px solid var(--mit-maroon);
 }
 
 div.toggler-nav {
@@ -409,19 +409,14 @@ div.toggler-nav {
 
 div.toggler-active {
   font-weight: bold;
-  border-bottom: 2px solid var(--mit-maroon);
+  color: black;
 }
 
-div.toggler-active:focus {
-  outline: none;
-  background-color: var(--select-fill);
-}
-
-div.toggler-nav:hover {
+div.toggler-nav:not(.toggle-active):hover {
   background: var(--select-fill);
   cursor: pointer;
 }
-/* END pref-toggler */
+/* END toggler */
 
 /* BEGIN styling to get a reasonable looking cross-platform slider */
 input[type="range"] {
