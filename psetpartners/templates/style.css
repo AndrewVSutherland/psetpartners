@@ -460,7 +460,7 @@ input[type="range"]:focus {
 }
 
 ::-moz-range-thumb {
-  background: #fff;
+  background-color: var(--mit-gray);
   height: 10px;
   width: 10px;
   border: var(--input-border-width) solid var(--input-border-color);
@@ -474,7 +474,7 @@ input[type="range"]:focus {
 }
 
 ::-ms-thumb { 
-  background: #fff;
+  background-color: var(--mit-gray);
   border: : var(--input-border-width) solid var(--input-border-color);
   height: 10px;
   width: 10px;
