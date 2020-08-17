@@ -19,8 +19,6 @@
   --slider-fill: var(--mit-maroon);
   --input-border-color: var(--mit-maroon);
   --input-border-width: 1.5px;
-  --input-focus-border-color: var(--mit-maroon);
-  --input-focus-border-width: 3px;
   --knowl_background: #f9f5f1;
   font-family: Verdona, Geneva, sans-serif;
 }
@@ -258,7 +256,7 @@ input.value, select.value, textarea.value {
 }
 
 input.value:focus, select.value:focus, textarea.value:focus {
-  outline: none;
+  outline: 1px solid var(--mit-maroon);
 }
 
 span.select {
@@ -406,15 +404,17 @@ div.toggler-nav {
   min-width: 50px;
   color: var(--mit-maroon);
   margin: 0 12px;
+  outline: none;
 }
 
 div.toggler-active {
+  font-weight: bold;
   border-bottom: 2px solid var(--mit-maroon);
 }
 
-div.toggler-nav:focus {
-  text-shadow: 0 0 0.5px var(--shadow-color);
-  outline: none !important;
+div.toggler-active:focus {
+  outline: none;
+  background-color: var(--select-fill);
 }
 
 div.toggler-nav:hover {
@@ -428,13 +428,17 @@ input[type="range"] {
   -webkit-appearance: none;
   overflow: hidden;
   margin-top: 6px;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
   height: 10px;
   width: 100px;
   cursor: pointer;
   border: var(--input-border-width) solid var(--input-border-color);
-  border-radius: 1px !important;
+  border-radius: 1px;
+}
+
+input[type="range"]:focus {
+  outline: 1px solid var(--mit-maroon);
 }
 
 ::-webkit-slider-runnable-track {
@@ -445,7 +449,7 @@ input[type="range"] {
   -webkit-appearance: none;
   height: 12px;
   width: 8px;
-  background: var(--select-fill);
+  background: var(--mit-gray);
   box-shadow: -100vw 0 0 100vw var(--slider-fill);
   border: var(--input-border-width) solid var(--input-border-color);
 }
@@ -460,13 +464,13 @@ input[type="range"] {
   height: 10px;
   width: 10px;
   border: var(--input-border-width) solid var(--input-border-color);
-  border-radius: 0 !important;
+  border-radius: 0;
   box-shadow: -100vw 0 0 100vw var(--slider-fill);
   box-sizing: border-box;
 }
 
 ::-ms-fill-lower { 
-  background: dodgerblue;
+  background: var(--slider-fill);
 }
 
 ::-ms-thumb { 

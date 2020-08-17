@@ -29,6 +29,7 @@ class Element {
 
 const CLASSES = {
   select: "sp-select",                          // container div for select
+  focus: "sp-focus",                            // class added to select when parent has the focus
   multiselect: "sp-multiselect",                // added to container div for multiselect
   selectOpen: "sp-select-open",                 // class added to container div when dropdown is open
   dropdown: "sp-dropdown",                      // container div for dropdown list
@@ -77,6 +78,8 @@ class SelectPure {
     } else {
       this._boundHandleClick = this._handleClickSingle.bind(this);
     }
+    this._boundFocusIn = this._focusIn.bind(this);
+    this._boundFocusOut = this._focusOut.bind(this);
     if ( ! this._options ) this._options = [];
     this._body = new Element(document.body);
     this._create(element);
@@ -117,6 +120,8 @@ class SelectPure {
     if ( this._config.multiple ) this._select.addClass(this._config.classNames.multiselect);
     this._placeholder = new Element("span", { class: this._config.classNames.placeholder, textContent: this._config.placeholder });
     this._select.append(this._placeholder.get());
+    element.addEventListener('focusin', this._boundFocusIn);
+    element.addEventListener('focusout', this._boundFocusOut);
   }
 
   _generateOptions() {
@@ -138,6 +143,9 @@ class SelectPure {
       return option;
     });
   }
+
+  _focusIn() { this._select.addClass(this._config.classNames.focus); }
+  _focusOut() { this._select.removeClass(this._config.classNames.focus); }
 
   _open() {
     if ( this._state.opened ) return;

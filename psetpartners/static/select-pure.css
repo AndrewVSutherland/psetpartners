@@ -51,6 +51,10 @@
   background-color: var(--select-fill);
 }
 
+.sp-focus {
+  outline: 1px solid var(--mit-maroon);
+}
+
 .sp-dropdown {
   border-radius: 3px;
   border: var(--input-border-width) solid var(--input-border-color);
@@ -85,8 +89,6 @@
   scrollbar-width: thin;
   scrollbar-color: var(--mit-maroon) var(--mit-pink);
 }
-
-
 
 .sp-select-open .sp-dropdown {
   display: block;

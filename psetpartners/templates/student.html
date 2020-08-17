@@ -142,10 +142,9 @@
     </header>
   </div>
 
-{% set tabindex = 12 %}
 {% set smax = options["strength"]|length -1 %}
 
-{% macro PREF(caption,pref,start) -%}
+{% macro PREF(caption, pref, tabindex, start) -%}
 {% set start = start|default(0) %}
 {% set n = user.classes|length + 1 %}
 {% for i in range(start,maxlength["classes"]+1) %}
@@ -168,10 +167,9 @@
     </td>
   </tr>
 {% endif %}
-  {% set tabindex = tabindex + 2 %}
 {%- endmacro %}
 
-{% macro CPROP(caption,prop) -%}
+{% macro CPROP(caption, prop, tabindex) -%}
 {% set n = user.classes|length + 1 %}
   {% for i in range(1,maxlength["classes"]+1) %}
     {% set pval = user.class_data[user.classes[i-1]].properties[prop] if i < n else "" %}
@@ -184,25 +182,24 @@
       <td class="forminfo">optional</td>
     </tr>
   {% endfor %}
-  {% set tabindex = tabindex + 1 %}
 {%- endmacro %}
 
   <table class="input">
 
-    {{PREF("When you like to start working", "start")}}
-    {{PREF("How you like to collaborate", "together")}}
-    {{PREF("How you like to communicate", "forum")}}
-    {{PREF("Your ideal group size", "size")}}
-    {{CPROP("Commitment to this course", "commitment")}}
-    {{CPROP("Knowledge of the material", "confidence")}}
+    {{PREF("When you like to start working", "start", 12)}}
+    {{PREF("How you like to collaborate", "together", 14)}}
+    {{PREF("How you like to communicate", "forum", 16)}}
+    {{PREF("Your ideal group size", "size", 18)}}
+    {{CPROP("Commitment to this course", "commitment", 20)}}
+    {{CPROP("Knowledge of the material", "confidence", 21)}}
 
     <tr style="display:none; height:5px;" id="affinity-separator"><td colspan="3"></td></tr>
 
-    {{PREF("", "departments_affinity")}}
-    {{PREF("", "year_affinity")}}
-    {{PREF("", "gender_affinity")}}
-    {{PREF("", "commitment_affinity", 1)}}
-    {{PREF("", "confidence_affinity", 1)}}
+    {{PREF("", "departments_affinity", 22)}}
+    {{PREF("", "year_affinity", 24)}}
+    {{PREF("", "gender_affinity", 26)}}
+    {{PREF("", "commitment_affinity", 28, 1)}}
+    {{PREF("", "confidence_affinity", 30, 1)}}
  
   </table>
 
@@ -503,6 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const id =  $('.toggler-nav.toggler-active').attr('id');
       togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n, true);
     }
+    if ( e.which == 9 && e.shiftKey ) {console.log('hi'); e.preventDefault(); $('#select-classes').focus();}// hack
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
   if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);
