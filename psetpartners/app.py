@@ -42,7 +42,7 @@ def setup():
 ############################
 
 def is_livesite():
-    return ( domain() == "psetpartners.mit.du" )
+    return ( domain() == "psetpartners.mit.edu" )
 
 def is_debug_mode():
     from flask import current_app
