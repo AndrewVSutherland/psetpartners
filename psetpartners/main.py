@@ -66,8 +66,6 @@ def ctx_proc_userdata():
 
 @app.route("/login", methods=["POST"])
 def login():
-    for key in request.environ:
-        print((key,request.environ[key]))
     raw_data = request.form
     if raw_data.get("submit") == "register":
         new = True
@@ -93,6 +91,11 @@ def login():
     login_user(user) #, remember=True)
     app.logger.info("user %s logged in" % kerb)
     return redirect(url_for(".student"))
+
+@app.route("/foobar")
+def foobar():
+    for key in request.environ:
+        print((key,request.environ[key]))
 
 @app.route("/")
 def index():
