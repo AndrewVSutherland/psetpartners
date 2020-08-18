@@ -10,12 +10,11 @@ from flask import (
     make_response,
     url_for,
     current_app,
-    abort,
 )
-from .knowls import static_knowl
 from psetpartners.utils import (
     current_upcoming,
     current_term_pretty,
+    domain,
     )
 
 ############################
@@ -25,7 +24,7 @@ from psetpartners.utils import (
 app = Flask(__name__, static_url_path="", static_folder="static",)
 
 @app.before_first_request
-def setup_logging():
+def setup():
     from .config import Configuration
     formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
 
@@ -36,7 +35,8 @@ def setup_logging():
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("info message logging on")
+    app.logger.info("pset partners restarted")
+    app.livesite = ( domain() == "psetpartners.mit.edu" )
 
 ############################
 # App attribute functions  #
@@ -54,6 +54,9 @@ def set_running():
 
 def is_running():
     return app.is_running
+
+def under_construction():
+    return True #app.lilvesite # TODO: change this line when we go live
 
 ############################
 # Global app configuration #
@@ -89,21 +92,21 @@ def blanknone(x):
 
 # the following context processor inserts
 #  * empty info={} dict variable
-#  * body_class = ''
 @app.context_processor
 def ctx_proc_userdata():
     # insert an empty info={} as default
     # set the body class to some default, blueprints should
     # overwrite it with their name, using @<blueprint_object>.context_processor
     # see http://flask.pocoo.org/docs/api/?highlight=context_processor#flask.Blueprint.context_processor
-    data = {"info": {}, "body_class": ""}
+    data = {"info": {} }
     data["meta_description"] = r"Welcome to psetpartners, a tool for finding others to help work on problem sets!"
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
-    data["static_knowl"] = static_knowl
     data["DEBUG"] = is_debug_mode()
-
-    data["current_upcoming"] = current_upcoming
-    data["current_term_pretty"] = current_term_pretty
+    data["domain"] = domain()
+    data["current_upcoming"] = current_upcoming()
+    data["current_term_pretty"] = current_term_pretty()
+    data["livesite"] = app.livesite
+    data["under_construction"] = under_construction()
     return data
 
 ##############################
@@ -138,13 +141,9 @@ def not_found_503(error):
 @app.route("/health")
 @app.route("/alive")
 def alive():
-    from . import db
-
-    app.logger.info("psetpartners is alive")
-    if db.is_alive():
-        return "Psetpartners!"
-    else:
-        abort(503)
+    msg = "psetpartners is alive and well at %s" % domain()
+    app.logger.info(msg)
+    return msg
 
 @app.route("/acknowledgments")
 def acknowledgment():

@@ -6,9 +6,10 @@ from collections.abc import Iterable
 from datetime import time as maketime
 from datetime import datetime, timedelta
 from markupsafe import Markup, escape
-from flask import flash, render_template
+from flask import flash, render_template, request
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
+from urllib.parse import urlparse
 
 DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
@@ -47,6 +48,10 @@ posint_range_re = re.compile(posint_range_re_string)
 daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
+
+
+def domain():
+    return urlparse(request.url).netloc
 
 def current_year():
     return datetime.now().year
@@ -175,7 +180,7 @@ def pretty_timezone(tz, dest="selecter", base_name='UTC', base_timezone='UTC'):
             diff = "-{:02d}:{:02d}".format(hours, minutes)
         else:
             diff = "+{:02d}:{:02d}".format(hours, minutes)
-        return "({} {}) {}".format(base_name, diff, tz)
+        return "({}{}) {}".format(base_name, diff, tz)
     else:
         tz = str(tz).replace("_", " ")
         if minutes == 0:
@@ -193,20 +198,10 @@ timezones = [(DEFAULT_TIMEZONE_NAME, DEFAULT_TIMEZONE_PRETTY)] + [
 ]
 
 def format_errmsg(errmsg, *args):
-    return Markup(
-        "Error: "
-        + (
-            errmsg
-            % tuple("<span style='color:black'>%s</span>" % escape(x) for x in args)
-        )
-    )
+    return Markup((errmsg % tuple("<i><b>%s</b></i>" % escape(x) for x in args)))
 
 def format_input_errmsg(err, inp, col):
-    return format_errmsg(
-        "Unable to process input %s for property %s: {0}".format(err),
-        '"' + str(inp) + '"',
-        col,
-    )
+    return format_errmsg('Unable to process input "%s" for property %s because %s', inp, col, err)
 
 def flash_info(msg):
     flash(msg, "info")

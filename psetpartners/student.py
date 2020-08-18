@@ -1,7 +1,6 @@
 import re
 from psetpartners import app
-from flask import request
-from psetpartners import db
+from psetpartners.getdb import getdb
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import (
@@ -149,21 +148,19 @@ student_class_properties = {
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
-def class_number_key(s):
-    r = CLASS_NUMBER_RE.match(s)
-    return 26*260000*int(r.group(1)) + (260000*(ord(r.group(2)[0])-ord('A')) if r.group(2) else 0) + 26*int(r.group(3)) + ((ord(r.group(4)[0])-ord('A')) if r.group(4) else 0)
-
 def course_number_key(s):
     r = COURSE_NUMBER_RE.match(s)
     if r.group(1) == '':
-        return 25*26*26 + 26*26*(ord(r.group(2)[0])-ord('A')) + 26*(ord(r.group(2)[1])-ord('A')) + ord(r.group(2)[2])-ord('A')
-    return 26*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')) if r.group(2) != '' else 0)
+        return 27*27*27 + 27*27*(ord(r.group(2)[0])-ord('A')+1) + 27*(ord(r.group(2)[1])-ord('A')+1) + ord(r.group(2)[2])-ord('A')+1
+    return 27*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')+1) if r.group(2) != '' else 0)
 
 def current_classes(year=current_year(), term=current_term()):
+    db = getdb()
     classes = [(r["class_number"], r["class_name"]) for r in db.classes.search({"year": year, "term": term}, projection=["class_number", "class_name"])]
-    return sorted(classes, key = lambda x: class_number_key(x[0]))
+    return sorted(classes)
 
 def departments():
+    db = getdb()
     departments = [(r["course_number"], r["course_name"]) for r  in db.departments.search({}, projection=["course_number", "course_name"])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
 
@@ -201,15 +198,15 @@ def cleanse_student_data(data):
             data["strengths"][pref] = default_strength
 
 class Student(UserMixin):
-    properties = sorted(db.students.col_type) + ["id"]
     def __init__(self, kerb=None, new=False):
+        self._db = getdb()
         if not kerb:
             raise ValueError("kerb required to create new student")
-        data = db.students.lucky({"kerb":kerb}, projection=Student.properties)
+        data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None and new:
             app.logger.info("creating new student "+kerb)
-            db.students.insert_many([{"kerb": kerb, "preferred_name": kerb, "timezone": DEFAULT_TIMEZONE_NAME, "location": "near"}])
-            data = db.students.lucky({"kerb": kerb}, projection=Student.properties)
+            self._db.students.insert_many([{"kerb": kerb }])
+            data = self._db.students.lucky({"kerb": kerb}, projection=3)
         if data is None:
             if not new:
                 raise ValueError("Student record not found")
@@ -217,15 +214,9 @@ class Student(UserMixin):
         self._active = True # TODO: add active/inactive flag to student database
         cleanse_student_data(data)
         self.__dict__.update(data)
-        if self.timezone is None:
-            self.timezone = request.cookies.get("browser_timezone", DEFAULT_TIMEZONE)
-        if self.timezone == DEFAULT_TIMEZONE:
-            self.timezone = DEFAULT_TIMEZONE_NAME
-        if self.location is None:
-            self.location = ("near" if self.timezone == DEFAULT_TIMEZONE_NAME else "far")
         if self.hours is None:
             self.hours = [[False for j in range(24)] for i in range(7)]
-        for col, typ in db.students.col_type.items():
+        for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
                 if typ == "text":
                     setattr(self, col, "")
@@ -234,7 +225,11 @@ class Student(UserMixin):
                 if typ.endswith("[]"):
                     setattr(self, col, [])
         self.class_data = self.student_class_data()
-        self.classes = sorted(list(self.class_data), key=class_number_key)
+        self.classes = sorted(list(self.class_data))
+
+    @property
+    def col_type(self):
+        return self._db.students.col_type
 
     @property
     def tz(self):
@@ -262,7 +257,7 @@ class Student(UserMixin):
         return lambda: getattr(self, "kerb", None)
 
     def save(self):
-        db.students.update({"kerb": self.kerb}, {col: getattr(self, col, None) for col in db.students.search_cols})
+        self._db.students.update({"kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols})
         if len(set(self.classes)) < len(self.classes):
             raise ValueError("Duplicates in class list %s" % self.classes)
         # TODO: put all of this in a transaction
@@ -270,7 +265,7 @@ class Student(UserMixin):
         S = []
         for class_number in self.classes:
             query = {"class_number": class_number, "year": current_year(), "term": current_term()}
-            class_id = db.classes.lucky(query, projection="id")
+            class_id = self._db.classes.lucky(query, projection="id")
             if class_id is None:
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
             r = q.copy()
@@ -285,22 +280,22 @@ class Student(UserMixin):
                 r["strengths"] = None
             S.append(r)
         S = sorted(S, key=lambda x: x["class_id"])
-        T = sorted(db.classlist.search(q), key=lambda x: x["class_id"])
+        T = sorted(self._db.classlist.search(q), key=lambda x: x["class_id"])
         if S != T:
-            db.classlist.delete(q)
+            self._db.classlist.delete(q)
             if S:
-                db.classlist.insert_many(S)
+                self._db.classlist.insert_many(S)
 
     def student_class_data(self, year=current_year(), term=current_term()):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
         id = self.id
         class_data = {}
-        classes = db.classlist.search(
+        classes = self._db.classlist.search(
             {"student_id":id, "year": year, "term": term},
             projection=["class_id", "properties", "preferences", "strengths"],
             )
         for r in classes:
-            r.update(db.classes.lucky({"id": r["class_id"]}, projection=["class_number"]))
+            r.update(self._db.classes.lucky({"id": r["class_id"]}, projection=["class_number"]))
             if not r["preferences"]:
                 r["preferences"] = self.preferences
                 r["strengths"] = self.strengths
@@ -328,3 +323,39 @@ class AnonymousStudent(AnonymousUserMixin):
     @property
     def get_id(self):
         return None
+
+# def reset_test_population(num_students=300,num_max_classes=6):
+#     """ generates a random student population for testing (destorys existing test data) """
+#     from random import randint
+
+#     print("Are you sure? This will destroy the existing test database? [y/n] ")
+#     choice = raw_input().lower()
+#     if choice[0] != 'y':
+#         sys.stdout.write("No changes made.")
+#         return
+#     db.test_students.delete({})
+#     db.test_classlist.delete({})
+#     print("Deleted all records in test_students and test_classlist.")
+#     for n in range(num_students):
+#         kerb = "test" + str(n)
+#         name = db.names.random()
+#         name = db.math_adjectives.random({'firstletter': name[0]}).capitalize() + " " + name.capitalize()
+#         departments = [db.departments.random()]
+#         if random.randint(0,2) == 2:
+#             departments[1] = db.departments.random({'course_number':{'$ne':departments[0]}})
+#         year = year_options[randint(0,len(year_options))][0]
+#         gender = gender_options[randint(0,len(gender_options))][0]
+#         location = location_options[0][0]
+#         timezone = DEFAULT_TIMEZONE
+#         hours = [False for i in range(7*24)]
+#         for i in range(7):
+#             start = randint(0,23)
+#             end = randint(start+1,24)
+#             for j in range(start,end):
+#                 hours[24*i+j] = True
+
+
+
+
+
+

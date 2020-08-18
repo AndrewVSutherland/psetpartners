@@ -12,7 +12,7 @@
     <table>
       <tr>
         <td class="caption" style="width:100px" tabindex="1">Kerberos ID:</td>
-        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" /></td>
+        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" maxlength="{{maxlength['kerb']}}" /></td>
         <td><button class="save" name="submit" type="submit" value="login" disabled>Login</button></td>
         <td><button class="save" name="submit" type="submit" value="register" disabled>Register</button></td>
       </tr>
@@ -21,10 +21,11 @@
 
 {% else %}
 
+  {#
   <form action="{{ url_for('.logout') }}" method="POST" name="logout">
   <h2>You are logged in as {{ user.preferred_name }}<div style="float: right; margin-right: 10px"><button name="logout" type="submit" tabindex="-1">Logout</button></div></h2>
   </form>
-
+  #}
   <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
   <h3>Personal profile</h3>
@@ -38,7 +39,7 @@
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
+      <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
     <tr>
@@ -54,7 +55,6 @@
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
       <td class="forminfo" id="departments_info">optional</td>
-      <td class="alertinfo" id="departments_alert" style="display:none;">at most {{maxlength["departments"]}} permitted</td>
     </tr>
     <tr>
       <td class="caption">Current year</td>
@@ -105,9 +105,8 @@
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
       <td class="forminfo">optional</td>
-      <td class="alertinfo" id="classes_alert" style="display:none;">at most {{maxlength["classes"]}} classes permitted</td>
     </tr>
-    <tr><td class="caption" colspan="2" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</td></tr>
+    <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
   </table>
   <br>
   <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;">
@@ -115,6 +114,7 @@
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
       {% endfor %}
+      <td></td>
     </tr>
     {% for i in range(7) %}
     <tr class="checkboxgrid">
@@ -130,41 +130,30 @@
   </table>
   <h3 id="prefheader">Preferences</h3>
 
-   <div class="pref-toggler" id="pref-toggler">
-    <header class="inner">
-      <div class="pref-toggler-inner">
-        {% for i in  range(maxlength["classes"]+1) %}
-        <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" tabindex="{{'-1' if i else '11'}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
-          {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
-        </div>
-        {% endfor %}
+   <div class="toggler" id="pref-toggler" tabindex="11">
+    {% for i in  range(maxlength["classes"]+1) %}
+      <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
+        {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
       </div>
-    </header>
+    {% endfor %}
   </div>
 
-{% set tabindex = 12 %}
 {% set smax = options["strength"]|length -1 %}
 
-{% macro PREF(caption,pref,start) -%}
+{% macro PREF(caption, pref, tabindex, start) -%}
 {% set start = start|default(0) %}
 {% set n = user.classes|length + 1 %}
-{% if start == 0 %}
-  <tr>
-    <td class="caption"><label class="{{pref}}">{{caption}}</label></td>
-{% endif %}
 {% for i in range(start,maxlength["classes"]+1) %}
   {% set pval = user.class_data[user.classes[i-1]].preferences[pref] if i and i < n else user.preferences[pref] %}
   {% set sval = 3 if not pval else (user.class_data[user.classes[i-1]].strengths[pref] if i and i < n else user.strengths[pref]) %}
-  {% if start != 0 %}
     <tr class="pref-{{i}} pref-{{pref}}" style="display:none;">
     <td class="caption"><label class="{{pref}}">{{caption}}</label></td>
-  {% endif %}
   <td class="value pref-{{i}} pref-{{pref}}" style="display:none;">
     <span class="select" id="select-pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
     <input class="pref-{{i}}" type="hidden" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
   </td>
   <td class="pref-{{i}} pref-{{pref}}" style="padding-left:10px; display:none;">
-    <input class="slider pref-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" steps="1" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
+    <input class="slider pref-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
     <label class="strength" id="lspref-{{pref}}-{{i}}">{{options.strength[sval if pval else 0]}}</label>
   {%if start != 0 %}
     </tr>
@@ -174,10 +163,9 @@
     </td>
   </tr>
 {% endif %}
-  {% set tabindex = tabindex + 2 %}
 {%- endmacro %}
 
-{% macro CPROP(caption,prop) -%}
+{% macro CPROP(caption, prop, tabindex) -%}
 {% set n = user.classes|length + 1 %}
   {% for i in range(1,maxlength["classes"]+1) %}
     {% set pval = user.class_data[user.classes[i-1]].properties[prop] if i < n else "" %}
@@ -190,38 +178,49 @@
       <td class="forminfo">optional</td>
     </tr>
   {% endfor %}
-  {% set tabindex = tabindex + 1 %}
 {%- endmacro %}
 
-  <table class="input" class="pref">
+  <table class="input">
 
-    {{PREF("When you like to start working", "start")}}
-    {{PREF("How you like to collaborate", "together")}}
-    {{PREF("How you like to communicate", "forum")}}
-    {{PREF("Your ideal group size", "size")}}
-    {{CPROP("Commitment to this course", "commitment")}}
-    {{CPROP("Knowledge of the material", "confidence")}}
+    {{PREF("When you like to start working", "start", 12)}}
+    {{PREF("How you like to collaborate", "together", 14)}}
+    {{PREF("How you like to communicate", "forum", 16)}}
+    {{PREF("Your ideal group size", "size", 18)}}
+    {{CPROP("Commitment to this course", "commitment", 20)}}
+    {{CPROP("Knowledge of the material", "confidence", 21)}}
 
-    <tr style="display:none; height:5px;" id="affinity-separator"></tr>
+    <tr style="display:none; height:5px;" id="affinity-separator"><td colspan="3"></td></tr>
 
-    {{PREF("", "departments_affinity")}}
-    {{PREF("", "year_affinity")}}
-    {{PREF("", "gender_affinity")}}
-    {{PREF("", "commitment_affinity", 1)}}
-    {{PREF("", "confidence_affinity", 1)}}
+    {{PREF("", "departments_affinity", 22)}}
+    {{PREF("", "year_affinity", 24)}}
+    {{PREF("", "gender_affinity", 26)}}
+    {{PREF("", "commitment_affinity", 28, 1)}}
+    {{PREF("", "confidence_affinity", 30, 1)}}
  
   </table>
 
+  <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
+  <input class="ctx" type="hidden" name="ctx-togglerIndex" value="" />
+
+  <div style="display:inline-block;">
   <table class="submit">
-    <tr><td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
-        <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Reset</button></td>
-        <td colspan="2"><label class="alertinfo" id="submit_alert"></td>
+    <tr>
+      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
+      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Reset</button></td>
+      <td><label class="alertinfo" id="submit_alert"></label></td>
     </tr>
   </table>
+</div>
+<div style="display:inline-block; float:right;">
+<table class="submit">
+  <tr><td>
+  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">Apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
+</td></tr>
+</table></div>
   </form>
 
 <!-- jshint ignore:end -->
-<script type="text/javascript">
+<script>
 
 // jshint ignore:start
 const classesOptions = [
@@ -232,14 +231,16 @@ const classesOptions = [
 
 const timezoneOptions = [
 {% for val, option in options.timezones %}
-  { value: '{{val}}', label: '{{option}}'.replace(' -','-').replace(' +','+') },
+  { value: '{{val}}', label: '{{option}}' },
 {% endfor %}
 ];
 
 const maxlength = {{ maxlength|tojson|safe }};
+const ctx = {{ ctx|tojson|safe }};
+
 // jshint ignore:end
 
-/* global classesOptions, maxlength */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, maxlength, ctx */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -269,6 +270,44 @@ function showPSL(id, val) {
   document.getElementById('l'+id).innerHTML = strengthOptions[val];
 }
 
+function getPrefs(prefs,i) {
+  let res = {};
+  for ( const pref of prefs ) {
+    const id = 'pref-' + pref + '-' + i;
+    res[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
+  }
+  return res;
+}
+
+function getProps(props,i) {
+  let res = {};
+  for ( const prop of props ) {
+    const id = prop + '-' + i;
+    res[prop] = document.getElementById(id).value;
+  }
+  return res;
+}
+
+function setPrefs(prefs,i) {
+  for ( const p in prefs ) {
+    const id = 'pref-' + p + '-' + i;
+    const e = document.getElementById(id), s = jQuery(e).data('select');
+    e.value = prefs[p].value;
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+    document.getElementById('s'+id).value = prefs[p].strength;
+    showPS(id, e.value);
+  }
+}
+
+function setProps(props,i) {
+  for ( const p in props ) {
+    const id = p + '-' + i;
+    const e = document.getElementById(id), s = jQuery(e).data('select');
+    e.value = props[p];
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+  }
+}
+
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
@@ -278,73 +317,73 @@ function changeClasses(val) {
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( v.includes(c) ) {
-      let classPrefs = {};
-      for ( const pref of allPreferences ) {
-        const id = 'pref-' + pref + '-' + (i+1);
-        classPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
-      }
-      classesPrefs[c] = classPrefs;
-      let classProps = {};
-      for ( const prop of studentClassAffinities ) {
-        const id = prop + '-' + (i+1);
-        classProps[prop] = { value: document.getElementById(id).value };
-      }
-      classesProps[c] = classProps;
+      classesPrefs[c] = getPrefs(allPreferences, i+1);
+      classesProps[c] = getProps(studentClassAffinities, i+1);
     }
   }
-  let generalPrefs = {};
-  for ( const pref of studentPreferences ) {
-    const id = 'pref-' + pref + '-0';
-    generalPrefs[pref] = { value: document.getElementById(id).value, strength: document.getElementById('s'+id).value };
-  }
-  for ( const pref of studentClassPreferences ) generalPrefs[pref] = { value: '', strength: 3 };
-  for ( const c of v ) if ( ! classesPrefs[c] ) classesPrefs[c] = generalPrefs;
+  let defaultPrefs = getPrefs(studentPreferences, 0);
+  for ( const pref of studentClassPreferences ) defaultPrefs[pref] = { value: '', strength: 3 };
+  for ( const c of v ) if ( ! (c in classesPrefs) ) classesPrefs[c] = defaultPrefs;
+  console.log(classesPrefs);
   let defaultProps = {};
   for ( const prop of studentClassAffinities ) defaultProps[prop] = '';
-  for ( const c of v ) if ( ! classesProps[c] ) classesProps[c] = defaultProps;
+  for ( const c of v ) if ( ! (c in classesProps) ) classesProps[c] = defaultProps;
+  console.log(classesProps);
   for ( let i = 0 ; i < v.length ; i++ ) {
     const c = v[i];
     if ( c != studentClasses[i] ) {
-      for ( const pref of allPreferences ) {
-        const id = 'pref-' + pref + '-' + (i+1);
-        const e = document.getElementById(id);
-        const s = jQuery(e).data('select');
-        e.value = classesPrefs[c][pref].value;
-        if ( ! s ) makeSingleSelect(id, studentOptions[pref], { placeholder: studentPlaceholders[pref] }); else updateSingleSelect(id);
-        document.getElementById('s'+id).value = classesPrefs[c][pref].strength;
-        showPS(id, e.value);
-      }
-      for ( const prop of studentClassAffinities ) {
-        const id = prop + '-' + (i+1);
-        const e = document.getElementById(id);
-        const s = jQuery(e).data('select');
-        e.value = classesProps[c][prop].value;
-        if ( ! s ) makeSingleSelect(id, studentOptions[prop], { placeholder: studentPlaceholders[prop] }); else updateSingleSelect(id);
-      }
+      setPrefs(classesPrefs[c], i+1);
+      setProps(classesProps[c], i+1);
       const q = $('#pref-'+(i+1)); q.html(c); q.show();
     }
   }
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#pref-'+(i+1)); q.html(''); q.hide(); }
+  const i = togglerIndex();
+  const c = i ? studentClasses[i-1] : '';
   studentClasses = [...v];
-  togglePrefs('pref-'+v.length);
+  if ( c ) {
+    const j = studentClasses.indexOf(c);
+    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
+  } else {
+    togglerIndex(0);
+  }
 }
 
-function indexToggler() {
-  const id = $('.toggler-nav.toggler-active').attr('id');
-  return id ? parseInt(id.split('-')[1]) : null;
+function showApplyPreferences() {
+  if ( typeof (showApplyPreferences.snapshot) == 'undefined' ) {
+    showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
+    $('#apply-prefs').hide();
+  }
+  if ( togglerIndex() === 0 && JSON.stringify(getPrefs(studentPreferences,0)) != showApplyPreferences.snapshot ) {
+    $('#apply-prefs').show();
+  } else { 
+    $('#apply-prefs').hide();
+  }    
 }
 
-function togglePrefs(id,focus=false) {
-  const oldid = $('.toggler-nav.toggler-active').attr('id');
-  const i = parseInt(id.split('-')[1]);
-  $('#prefheader').text('Preferences' + (i ? ' for ' + classLabel(studentClasses[i-1]) : ''));
-  $('tr.' + oldid).hide();  $('tr.'+id).show();
-  $('td.' + oldid).hide();  $('td.'+id).show();
-  $('#'+oldid).toggleClass('toggler-active');
-  const e = $('#'+id);
-  e.toggleClass('toggler-active');
-  showAffinityPreferences();
-  if ( focus ) e.focus();
+function applyPreferences() {
+  const prefs = getPrefs(studentPreferences,0);
+  for ( let i = 0 ; i < studentClasses.length ; i++ ) setPrefs(prefs, i+1);
+  showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
+  $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
+}
+
+function togglerIndex(i) {
+  if ( typeof i === 'undefined'  ) {
+    const id = $('.toggler-nav.toggler-active').attr('id');
+    return id ? parseInt(id.split('-')[1]) : null;
+  } else {
+    const id = 'pref-' + i;
+    const oldid = $('.toggler-nav.toggler-active').attr('id');
+    $('#prefheader').text('Preferences' + (i > 0 ? ' for ' + classLabel(studentClasses[i-1]) : ''));
+    $('tr.' + oldid).hide();  $('tr.'+id).show();
+    $('td.' + oldid).hide();  $('td.'+id).show();
+    $('#'+oldid).toggleClass('toggler-active');
+    const e = $('#'+id);
+    e.toggleClass('toggler-active');
+    showAffinityPreferences();
+    showApplyPreferences();
+  }
 }
 
 function saveErrorMessage() {
@@ -365,7 +404,7 @@ function showSaveErrorMessage() {
 
 function showAffinityPreferences() {
   let caption = false;
-  const i = indexToggler();
+  const i = togglerIndex();
   const affinities = i ? [...studentAffinities, ...studentClassAffinities] : studentAffinities;
   for ( let x of affinities ) {
     const val = document.getElementById(x + (studentClassAffinities.includes(x) ? '-' + i : '')).value;
@@ -380,6 +419,7 @@ function showAffinityPreferences() {
   document.getElementById('affinity-separator').style.display = caption ? 'inline-block' : 'none';
 }
 
+
 function checkChanges (e) {
   if ( ! e.target.name ) return;
   console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
@@ -387,19 +427,25 @@ function checkChanges (e) {
   $('#student :submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
+  if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
 }
 
 function submitStudentForm (value) {
-  if ( value === "cancel" ) { $('input').attr('name',''); return true; }
-  console.log("Submitting form");
+  $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
+  $('input[name="ctx-togglerIndex"]').val(togglerIndex());
+  if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
-  console.log(document.getElementById('commitment-1').value);
   return true;
 }
 
+function alertInfo(q,msg) {
+  const content = $(q).html();
+  $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(3000, function() { $(q).html(content).show(); });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  function classesLimit (n) { const q = $('#classes_alert'); q.show(); q.fadeOut(1500); }
-  function departmentsLimit (n) { const q = $('#departments_alert'); q.show(); q.fadeOut(1500); }
+  function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }
+  function departmentsLimit (n) { alertInfo('#departments_info', 'At most ' + maxlength.departments + ' departments permitted!'); }
 
   makeMultiSelect('departments',
     studentOptions.departments,
@@ -409,6 +455,10 @@ document.addEventListener('DOMContentLoaded', function() {
     classesOptions,
     { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
   );
+  let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if ( tz == "America/New_York" || tz == "US/Eastern" ) tz = "MIT";
+  $('#timezone').val(tz);
+  if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
   makeSingleSelect('location', studentOptions.location, {});
   makeSingleSelect('timezone', timezoneOptions, {});
   makeSingleSelect('year', studentOptions.year, { placeholder: studentPlaceholders.year });
@@ -431,24 +481,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.toggler-nav').click(function(e) { e.preventDefault(); togglePrefs(e.target.id); return false; });
-  togglePrefs('pref-0');
+  $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
+  togglerIndex(0);
 
   $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
   $('#student').data('initial',$('#student').serialize());
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
-  $('.toggler-nav').keydown(function(e){
+  $('.toggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
       const id =  $('.toggler-nav.toggler-active').attr('id');
-      togglePrefs('pref-' + ((parseInt(id.split('-')[1]) + e.which - 38 + n) % n), true);
+      togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n);
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
-  togglePrefs('pref-0');
+  if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);
+  console.log(ctx.scrollTop);
+  if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
+
   showAffinityPreferences();
+  showApplyPreferences();
   console.log('student page ready');
 });
 </script>

@@ -29,6 +29,7 @@ class Element {
 
 const CLASSES = {
   select: "sp-select",                          // container div for select
+  focus: "sp-focus",                            // class added to select when parent has the focus
   multiselect: "sp-multiselect",                // added to container div for multiselect
   selectOpen: "sp-select-open",                 // class added to container div when dropdown is open
   dropdown: "sp-dropdown",                      // container div for dropdown list
@@ -77,6 +78,8 @@ class SelectPure {
     } else {
       this._boundHandleClick = this._handleClickSingle.bind(this);
     }
+    this._boundFocusIn = this._focusIn.bind(this);
+    this._boundFocusOut = this._focusOut.bind(this);
     if ( ! this._options ) this._options = [];
     this._body = new Element(document.body);
     this._create(element);
@@ -96,10 +99,10 @@ class SelectPure {
   // Public API
   value(v) { if (v !== undefined) { this._setValue(v); } return this._config.value; }
   reset() { this._setValue(null); }
-  open() { this._open(); }
-  close() { this._close(); }
-  next() { this._next(); }
-  prev() { this._prev(); }
+  open() { return this._open(); }
+  close() { return this._close(); }
+  next() { return this._next(); }
+  prev() { return this._prev(); }
 
   // Private methods
   _create(_element) {
@@ -117,6 +120,8 @@ class SelectPure {
     if ( this._config.multiple ) this._select.addClass(this._config.classNames.multiselect);
     this._placeholder = new Element("span", { class: this._config.classNames.placeholder, textContent: this._config.placeholder });
     this._select.append(this._placeholder.get());
+    element.addEventListener('focusin', this._boundFocusIn);
+    element.addEventListener('focusout', this._boundFocusOut);
   }
 
   _generateOptions() {
@@ -139,21 +144,29 @@ class SelectPure {
     });
   }
 
+  _focusIn() { this._select.addClass(this._config.classNames.focus); }
+  _focusOut() { this._select.removeClass(this._config.classNames.focus); }
+
   _open() {
-    if ( this._state.opened ) return;
+    if ( this._state.opened ) return false;
     this._select.addClass(this._config.classNames.selectOpen);
     this._body.addEventListener("click", this._boundHandleClick);
     this._select.removeEventListener("click", this._boundHandleClick);
+    // manually implement overflow-y:auto (css won't work in firefox)
+    this._optionsWrapper._node.style.overflowY =
+      this._optionsWrapper._node.scrollHeight <= this._optionsWrapper._node.clientHeight+2 ? 'hidden' : 'scroll';
     this._state.opened = true;
     if ( this._autocomplete ) this._autocomplete.focus();
+    return true;
   }
 
   _close() {
-      if ( ! this._state.opened ) return;
+      if ( ! this._state.opened ) return false;
       this._select.removeClass(this._config.classNames.selectOpen);
       this._body.removeEventListener("click", this._boundHandleClick);
       this._select.addEventListener("click", this._boundHandleClick);
       this._state.opened = false;
+      return true;
   }
 
   _next() {
