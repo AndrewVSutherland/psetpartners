@@ -15,7 +15,6 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from psetpartners import db
 from psetpartners.app import app
 from psetpartners.student import (
     Student,
@@ -67,6 +66,8 @@ def ctx_proc_userdata():
 
 @app.route("/login", methods=["POST"])
 def login():
+    for key in request.environ:
+        print((key,request.environ[key]))
     raw_data = request.form
     if raw_data.get("submit") == "register":
         new = True
@@ -78,29 +79,25 @@ def login():
     try:
         user = Student(kerb=kerb,new=new)
     except Exception:
-        resp = make_response(redirect(url_for(".student"), 301))
+        resp = make_response(redirect(url_for(".student")))
         resp.set_cookie('sessionID', '', expires=0)
         if new:
-            flash_error("An unexpected error occurred, unable to create student record for kerberos id <b>%s</b>." % kerb)
+            flash_error("An unexpected error occurred, unable to create record for kerberos id <b>%s</b>." % kerb)
             return resp
         else:
-            flash_error("No existing record found for kerberos id <b>%s</b>.  Please register if you are a new user." % kerb)
+            flash_error("No database entry found for kerberos id <b>%s</b>.  Please register if you are a new user." % kerb)
             return resp
 
     # For now, no password check
     # The following sets current_user = user
-    login_user(user, remember=True)
+    login_user(user) #, remember=True)
     app.logger.info("user %s logged in" % kerb)
-    return redirect(url_for(".student"), 301)
+    return redirect(url_for(".student"))
 
 @app.route("/")
 def index():
     session.pop('_flashes', None)
-    return redirect(url_for(".student"), 301)
-
-@app.route("/blank")
-def blank():
-    return render_template("blank.html", title="blank")
+    return redirect(url_for(".student"))
 
 @app.route("/test404")
 def test404():
@@ -143,7 +140,7 @@ def save_student():
     session["ctx"] = { x[4:] : raw_data[x] for x in raw_data if x.startswith("ctx-") } # return ctx-XXX values to
     if raw_data.get("submit") == "cancel":
         flash_info ("Changes discarded.") 
-        return redirect(url_for(".student"), 301)
+        return redirect(url_for(".student"))
     errmsgs = []
     data = {}
     try:
@@ -162,9 +159,9 @@ def save_student():
 
     # TODO: validate data values, not just type (data from form should be fine)
     for col, val in raw_data.items():
-        if col in db.students.col_type:
+        if col in current_user.col_type:
             try:
-                typ = db.students.col_type[col]
+                typ = current_user.col_type[col]
                 data[col] = process_user_input(val, col, typ)
                 if col in student_options and data[col] and not [True for r in student_options[col] if r[0] == data[col]]:
                     raise ValueError("Invalid option")
@@ -217,11 +214,13 @@ def save_student():
        flash_info ("Changes saved.") 
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
-    context = {}
-    return redirect(url_for(".student"), 301)
+    return redirect(url_for(".student"))
 
-@app.route("/logout")
+@app.route("/logout", methods=["GET","POST"])
 @login_required
 def logout():
+    print('logout')
     logout_user()
-    return redirect(url_for(".student"), 301)
+    resp = make_response(redirect(url_for(".student")))
+    resp.set_cookie('sessionID','',expires=0)
+    return resp

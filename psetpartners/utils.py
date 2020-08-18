@@ -6,9 +6,10 @@ from collections.abc import Iterable
 from datetime import time as maketime
 from datetime import datetime, timedelta
 from markupsafe import Markup, escape
-from flask import flash, render_template
+from flask import flash, render_template, request
 from dateutil.parser import parse as parse_time
 from flask_login import current_user
+from urllib.parse import urlparse
 
 DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
@@ -47,6 +48,10 @@ posint_range_re = re.compile(posint_range_re_string)
 daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
+
+
+def domain():
+    return urlparse(request.url).netloc
 
 def current_year():
     return datetime.now().year
