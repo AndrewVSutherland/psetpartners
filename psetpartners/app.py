@@ -36,11 +36,13 @@ def setup():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     app.logger.info("pset partners restarted")
-    app.livesite = ( domain() == "psetpartners.mit.edu" )
 
 ############################
 # App attribute functions  #
 ############################
+
+def is_livesite():
+    return ( domain() == "psetpartners.mit.du" )
 
 def is_debug_mode():
     from flask import current_app
@@ -56,7 +58,7 @@ def is_running():
     return app.is_running
 
 def under_construction():
-    return True #app.lilvesite # TODO: change this line when we go live
+    return is_livesite # TODO: change this line when we go live
 
 ############################
 # Global app configuration #
@@ -105,7 +107,7 @@ def ctx_proc_userdata():
     data["domain"] = domain()
     data["current_upcoming"] = current_upcoming()
     data["current_term_pretty"] = current_term_pretty()
-    data["livesite"] = app.livesite
+    data["livesite"] = is_livesite()
     data["under_construction"] = under_construction()
     return data
 
