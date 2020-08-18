@@ -131,48 +131,43 @@
     {% else %}
       <div id="userinfo" style="font-weight:normal; padding-top:10px;">logged out</a></div>
     {% endif %}
-    <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners</a></div>
+    <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners{{" sandbox" if not live}}</a></div>
 </div>
 </header>
 
 <div class="main-page">
-  <noscript>
-    <div id="javascript-explanation">
-      <h3>Sorry, but you are going to have to enable javascript if you want to use this site. &nbsp;&#9785;</h3>
+
+  {% if under_construction %}
+    <img src="{{ url_for('static', filename='under-construction.png') }}" style="display:block; margin:auto; width:50%; margin-top:100px;">
+  {% else %}
+    <noscript>
+      <div id="javascript-explanation">
+        <h3>Sorry, but you are going to have to enable javascript if you want to use this site. &nbsp;&#9785;</h3>
+      </div>
+    </noscript>
+
+    <div id="content" style="display:none;">
+      {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
+        <div id="flash-error">
+          {% for category, msg in msgs -%}
+            <p class="flash-{{category}}">{{msg|safe}}</p>
+          {%- endfor %}
+        </div>
+      {%- endwith %}
+      {% block content -%}
+        This is a template with no content.
+      {%- endblock content %}
+      {% with msgs = get_flashed_messages(category_filter=["warning","info","confirm"],with_categories=true) -%}
+        <div id="flash-warning">
+          {% for category, msg in msgs -%}
+            <p class="flash-{{category}}">{{msg|safe}}</p>
+          {%- endfor %}
+        </div>
+      {%- endwith %}
     </div>
-  </noscript>
-
-  <div id="content" style="display:none;">
-    {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
-      <div id="flash-error">
-        {% for category, msg in msgs -%}
-          <p class="flash-{{category}}">{{msg|safe}}</p>
-        {%- endfor %}
-      </div>
-    {%- endwith %}
-    {% block content -%}
-      This is a template with no content.
-    {%- endblock content %}
-    {% with msgs = get_flashed_messages(category_filter=["warning","info","confirm"],with_categories=true) -%}
-      <div id="flash-warning">
-        {% for category, msg in msgs -%}
-          <p class="flash-{{category}}">{{msg|safe}}</p>
-        {%- endfor %}
-      </div>
-    {%- endwith %}
-  </div>
-</div>
-
-{#
-{% if DEBUG %}
-<div class="debug">
-  <p>The template for this page is: {{ self._TemplateReference__context.name }}</p>
-  {% if calling_function %}
-    <p>The function which was called for this page is: {{calling_function}}</p>
   {% endif %}
 </div>
-{% endif %}
-#}
+
 
 <footer>
 <div class="footer" id="footer">
