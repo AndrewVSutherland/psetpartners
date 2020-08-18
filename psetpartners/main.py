@@ -94,19 +94,17 @@ def login():
 
 @app.route("/foobar")
 def foobar():
-    msg = ["%s: %s" % (key,request.environ[key]) for key in request.environ]
+    msg = ["foobar environ %s = %s" % (key,request.environ[key]) for key in request.environ]
     app.logger.info("\n".join(msg))
     return "barfoo"
 
-@app.route("/Shibboleth.sso/Login", methods=["GET","POST"])
+@app.route("/Shibboleth.sso/Login")
 def touchstone_login():
-    msg = ["%s: %s" % (key,request.environ[key]) for key in request.environ]
-    app.logger.info("Shibboleth login environ")
+    msg = ["Shib environ %s = %s" % (key,request.environ[key]) for key in request.environ]
     app.logger.info("\n".join(msg))
-    msg = ["%s: %s" % (key,request.args[key]) for key in request.args]
-    app.logger.info("Shibboleth login args")
+    msg = ["Shib args %s = %s" % (key,request.args[key]) for key in request.args]
     app.logger.info("\n".join(msg))
-    return "barfoo"
+    return "touchstone_login"
 
 @app.route("/")
 def index():
