@@ -98,6 +98,16 @@ def foobar():
     app.logger.info("\n".join(msg))
     return "barfoo"
 
+@app.route("/Shibboleth.sso/Login", methods=["GET","POST"])
+def touchstone_login():
+    msg = ["%s: %s" % (key,request.environ[key]) for key in request.environ]
+    app.logger.info("Shibboleth login environ")
+    app.logger.info("\n".join(msg))
+    msg = ["%s: %s" % (key,request.args[key]) for key in request.args]
+    app.logger.info("Shibboleth login args")
+    app.logger.info("\n".join(msg))
+    return "barfoo"
+
 @app.route("/")
 def index():
     session.pop('_flashes', None)
