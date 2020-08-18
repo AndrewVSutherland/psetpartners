@@ -58,7 +58,7 @@ def is_running():
     return app.is_running
 
 def under_construction():
-    return is_livesite # TODO: change this line when we go live
+    return is_livesite() # TODO: change this line when we go live
 
 ############################
 # Global app configuration #
