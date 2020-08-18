@@ -98,13 +98,13 @@ def foobar():
     app.logger.info("\n".join(msg))
     return "barfoo"
 
-@app.route("/Shibboleth.sso/Login")
-def touchstone_login():
-    msg = ["Shib environ %s = %s" % (key,request.environ[key]) for key in request.environ]
-    app.logger.info("\n".join(msg))
-    msg = ["Shib args %s = %s" % (key,request.args[key]) for key in request.args]
-    app.logger.info("\n".join(msg))
-    return "touchstone_login"
+# @app.route("/Shibboleth.sso/Login")
+# def touchstone_login():
+#     msg = ["Shib environ %s = %s" % (key,request.environ[key]) for key in request.environ]
+#     app.logger.info("\n".join(msg))
+#     msg = ["Shib args %s = %s" % (key,request.args[key]) for key in request.args]
+#     app.logger.info("\n".join(msg))
+#     return "touchstone_login"
 
 @app.route("/")
 def index():
