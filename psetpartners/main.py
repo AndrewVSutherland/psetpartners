@@ -94,8 +94,9 @@ def login():
 
 @app.route("/foobar")
 def foobar():
-    for key in request.environ:
-        print((key,request.environ[key]))
+    msg = ["%s: %s" % (key,request.environ[key]) for key in request.environ]
+    app.logger.info("\n".join(msg))
+    return "barfoo"
 
 @app.route("/")
 def index():
