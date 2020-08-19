@@ -143,7 +143,7 @@ def not_found_503(error):
 @app.route("/health")
 @app.route("/alive")
 def alive():
-    msg = "psetpartners is alive and well at %s" % domain()
+    msg = 'psetpartners is alive and well at "%s", which %s the live site' % (domain(), "is" if is_livesite() else "is not")
     app.logger.info(msg)
     return msg
 
@@ -154,6 +154,10 @@ def acknowledgment():
 @app.route("/contact")
 def contact():
     return render_template("contact.html", title="contact")
+
+@app.route("/faq")
+def faq():
+    return render_template("faq.html", title="FAQ")
 
 @app.route("/robots.txt")
 def robots_txt():

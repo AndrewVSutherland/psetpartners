@@ -66,8 +66,6 @@ def ctx_proc_userdata():
 
 @app.route("/login", methods=["POST"])
 def login():
-    for key in request.environ:
-        print((key,request.environ[key]))
     raw_data = request.form
     if raw_data.get("submit") == "register":
         new = True
@@ -93,6 +91,20 @@ def login():
     login_user(user) #, remember=True)
     app.logger.info("user %s logged in" % kerb)
     return redirect(url_for(".student"))
+
+@app.route("/foobar")
+def foobar():
+    msg = ["foobar environ %s = %s" % (key,request.environ[key]) for key in request.environ]
+    app.logger.info("\n".join(msg))
+    return "barfoo"
+
+# @app.route("/Shibboleth.sso/Login")
+# def touchstone_login():
+#     msg = ["Shib environ %s = %s" % (key,request.environ[key]) for key in request.environ]
+#     app.logger.info("\n".join(msg))
+#     msg = ["Shib args %s = %s" % (key,request.args[key]) for key in request.args]
+#     app.logger.info("\n".join(msg))
+#     return "touchstone_login"
 
 @app.route("/")
 def index():
