@@ -46,6 +46,18 @@ html, body {
   height: 100%;
 }
 
+a {
+  outline: none;
+}
+
+a:hover {
+  cursor: pointer;
+}
+
+a:focus {
+  border-bottom: 1.5px solid var(--mit-maroon);
+}
+
 #javascript-explanation {
   padding: 20px;
   text-align: center;
