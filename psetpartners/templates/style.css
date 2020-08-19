@@ -52,8 +52,6 @@ html, body {
 }
 
 .header, .footer {
-  margin: 0 auto:
-  width: 100%;
   background: var(--mit-maroon);
   color: var(--mit-white);
   text-align: center;
@@ -68,6 +66,7 @@ html, body {
 }
 
 .footer {
+  width: 100%;
   clear: both;
   height: var(--footer-height);
   line-height: var(--footer-height);
