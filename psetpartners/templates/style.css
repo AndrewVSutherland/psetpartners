@@ -52,7 +52,7 @@ html, body {
 }
 
 .header, .footer {
-  margin: 0 auto:
+  margin: 0 auto;
   width: 100%;
   background: var(--mit-maroon);
   color: var(--mit-white);
