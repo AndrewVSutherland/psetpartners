@@ -138,7 +138,9 @@
 <div class="main-page">
 
   {% if under_construction %}
-    <img src="{{ url_for('static', filename='under-construction.png') }}" style="display:block; margin:auto; width:50%; margin-top:100px;">
+    <div style="padding-top:10%;">
+    <img src="{{ url_for('static', filename='under-construction.png') }}" style="display:block; margin:auto; height:25%; width:40%;">
+  </div>
   {% else %}
     <noscript>
       <div id="javascript-explanation">
