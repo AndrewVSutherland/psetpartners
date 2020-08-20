@@ -233,6 +233,6 @@ def logout():
     if not is_livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
-        resp = render_template("goodbye.html")
+        resp = make_response(render_template("goodbye.html"))
     resp.set_cookie('sessionID','',expires=0)
     return resp
