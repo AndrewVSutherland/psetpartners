@@ -155,6 +155,10 @@ def acknowledgment():
 def contact():
     return render_template("contact.html", title="contact")
 
+@app.route("/faq")
+def faq():
+    return render_template("faq.html", title="FAQ")
+
 @app.route("/robots.txt")
 def robots_txt():
     if "psetpartners" in request.url_root.lower():
