@@ -18,12 +18,15 @@ from datetime import datetime
 from psetpartners.app import app, is_livesite
 from psetpartners.student import (
     Student,
-    AnonymousStudent,
+    Instructor,
+    AnonymousUser,
     student_options,
     student_preferences,
     student_class_properties,
     strength_options,
     current_classes,
+    is_instructor,
+    is_admin,
     )
 from psetpartners.utils import (
     format_input_errmsg,
@@ -42,11 +45,10 @@ login_manager = LoginManager()
 @login_manager.user_loader
 def load_user(kerb):
     if not kerb:
-        print("anonymous")
-        return AnonymousStudent()
+        app.logger.info("loading anonymous user")
+        return AnonymousUser()
     try:
-        print("loading %s" % kerb)
-        s = Student(kerb=kerb)
+        s = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
         assert s.is_authenticated
         return s
     except:
@@ -55,7 +57,7 @@ def load_user(kerb):
 
 login_manager.login_view = "student"
 
-login_manager.anonymous_user = AnonymousStudent
+login_manager.anonymous_user = AnonymousUser
 
 # Don't include options in static/options.js used only in javascript
 def template_options():
@@ -73,10 +75,22 @@ def ctx_proc_userdata():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if is_livesite():
-        kerb = request.environ.get("HTTP_EPPN", "")
-        if not kerb or request.method != "GET":
-            return render_template("500.html", message="Touchstone authentication failed.")
-        login_user(Student(kerb=kerb))
+        if request.method != "GET":
+            return render_template("500.html", message="Invalid login method"), 500
+        eppn = request.environ.get("HTTP_EPPN", "")
+        affiliation = request.environ.get("HTTP_AFFILIATION", "")
+        if not eppn.endswith("@mit.edu") or not affiliation.endswith("@mit.edu"):
+            if eppn or affiliation:
+                app.logger.error("Failed login with eppn=%s and affiliation=%s" % (eppn, affiliation))
+            return render_template("500.html", message="Touchstone authentication invalid."), 500
+        kerb = eppn.split("@")[0]
+        affiliation = affiliation.split("@")[0]
+        if affiliation == "student":
+            login_user(Student(kerb))
+        elif affiliation == "staff":
+            login_user(Instructor(kerb))
+        else:
+            return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
         app.logger.info("user %s logged in to live site" % kerb)
     else:
         if request.method != "POST":
@@ -84,57 +98,75 @@ def login():
         kerb = request.form.get("kerb", "")
         if request.form.get("submit") != "login" or not kerb:
             return render_template("500.html", message="Invalid data in login"), 500
-        user = Student(kerb=kerb)
+        user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
         login_user(user)
-        assert user.kerb
-        app.logger.info("user %s logged in to the sandbox" % user.kerb)
-    assert current_user.is_authenticated
-    return redirect(url_for(".student"))
+        app.logger.info("user %s logged in as %s to the sandbox" % (user.kerb, "instructor" if user.is_instructor else "student"))
+    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
+
+@app.route("/loginas/<kerb>")
+@login_required
+def loginas(kerb):
+    if not is_admin(current_user.kerb):
+        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    logout_user()
+    user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
+    login_user(user)
+    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/environ")
 def environ():
     return "<br>".join(["%s = %s" % (key,request.environ[key]) for key in request.environ])
 
-# @app.route("/Shibboleth.sso/Login")
-# def touchstone_login():
-#     msg = ["Shib environ %s = %s" % (key,request.environ[key]) for key in request.environ]
-#     app.logger.info("\n".join(msg))
-#     msg = ["Shib args %s = %s" % (key,request.args[key]) for key in request.args]
-#     app.logger.info("\n".join(msg))
-#     return "touchstone_login"
-
 @app.route("/")
 def index():
     session.pop('_flashes', None)
     if current_user.is_authenticated:
-        return redirect(url_for(".student"))
+        if current_user.is_student:
+            return redirect(url_for(".student"))
+        elif current_user.is_instructor:
+            return redirect(url_for(".instructor"))
+        else:
+            return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
         return render_template("login.html", maxlength=maxlength)
+    assert false
 
 @app.route("/test404")
 def test404():
-    return render_template("404.html", message="Thie is a test 404 message.")
+    return render_template("404.html", message="Thie is a test 404 message."), 404
 
 @app.route("/test404s")
 def test404s():
-    return render_template("404.html", messages=["Thie is a test 404 message.", "This is another test 404 message."])
+    return render_template("404.html", messages=["Thie is a test 404 message.", "This is another test 404 message."]), 404
 
 @app.route("/test500")
 def test500():
     app.logger.error("test500")
-    return render_template("500.html", message="This is a test 500 message",)
+    return render_template("500.html", message="This is a test 500 message",), 500
 
 @app.route("/test503")
 def test503():
     app.logger.error("test503")
-    return render_template("503.html", message="Thie is a test 503 message")
+    return render_template("503.html", message="Thie is a test 503 message"), 503
 
 @app.route("/student")
 def student(context={}):
-    if not current_user.is_authenticated:
+    if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
     return render_template(
         "student.html",
+        options=template_options(),
+        maxlength=maxlength,
+        ctx=session.pop("ctx",""),
+    )
+
+@app.route("/instructor")
+def instructor(context={}):
+    if not current_user.is_authenticated or not current_user.is_instructor:
+        return redirect(url_for("index"))
+    return render_template(
+        "instructor.html",
         options=template_options(),
         maxlength=maxlength,
         ctx=session.pop("ctx",""),

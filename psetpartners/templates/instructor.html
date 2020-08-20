@@ -1,0 +1,18 @@
+<!-- jshint ignore:start -->
+{% extends 'homepage.html' %}
+
+{% block content %}
+
+{% if not user.is_authenticated %}
+
+<h3>User "{{user.kerb}}" not authenticated.</h3>
+
+This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a>.
+
+{% else %}
+
+  <h3>This page intentionally left blank (but will eventually list classes and groups for instructor {{user.kerb}}).</h3>
+
+{% endif %}
+
+{% endblock %}
