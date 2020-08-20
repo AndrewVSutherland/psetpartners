@@ -37,10 +37,22 @@ class PsetPartnersTestDB:
         return self._db.classes
 
     @property
-    def nouns(self):
-        return self._db.nouns
+    def admins(self):
+        return self._db.admins
 
     @property
-    def adjectives(self):
-        return self._db.adjectives
+    def names(self):
+        return self._db.names
+
+    @property
+    def plural_nouns(self):
+        return self._db.plural_nouns
+
+    @property
+    def math_adjectives(self):
+        return self._db.positive_adjectives
+
+    @property
+    def positive_adjectives(self):
+        return self._db.positive_adjectives
 
