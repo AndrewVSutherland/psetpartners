@@ -167,6 +167,14 @@ def departments():
     departments = [(r['course_number'], r['course_name']) for r  in db.departments.search({}, projection=['course_number', 'course_name'])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
 
+def is_instructor(kerb):
+    db = getdb()
+    return db.classes.lucky({'year':current_year(),'term':current_term(),'instructor_kerbs':{'$contains':kerb}},projection="class_number")
+
+def is_admin(kerb):
+    db = getdb()
+    return db.admins.lucky({'kerb': kerb})
+
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
     if not data.get('preferred_name'):
@@ -201,10 +209,10 @@ def cleanse_student_data(data):
             data['strengths'][pref] = default_strength
 
 class Student(UserMixin):
-    def __init__(self, kerb=None):
-        self._db = getdb()
+    def __init__(self, kerb):
         if not kerb:
             raise ValueError("kerb required to create new student")
+        self._db = getdb()
         data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None:
             data = { col: None for col in self._db.students.col_type }
@@ -213,7 +221,6 @@ class Student(UserMixin):
             data["new"] = True
         else:
             data["new"] = False
-        self._authenticated = True
         cleanse_student_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -232,6 +239,14 @@ class Student(UserMixin):
         assert self.kerb
 
     @property
+    def is_student(self):
+        return True
+
+    @property
+    def is_instructor(self):
+        return False
+
+    @property
     def col_type(self):
         return self._db.students.col_type
 
@@ -246,7 +261,7 @@ class Student(UserMixin):
 
     @property
     def is_authenticated(self):
-        return getattr(self, '_authenticated', None)
+        return True if getattr(self, 'kerb', "") else False
 
     @property
     def is_anonymous(self):
@@ -307,8 +322,57 @@ class Student(UserMixin):
             class_data[r["class_number"]] = r
         return class_data
 
-class AnonymousStudent(AnonymousUserMixin):
-    # This mainly exists so that login page works   
+
+class Instructor(UserMixin):
+    def __init__(self, kerb):
+        if not kerb:
+            raise ValueError("kerb required to create new student")
+        self._db = getdb()
+        self.kerb = kerb
+        assert self.kerb
+
+    @property
+    def is_student(self):
+        return False
+
+    @property
+    def is_instructor(self):
+        return True
+
+    @property
+    def col_type(self):
+        return self._db.students.col_type
+
+    @property
+    def tz(self):
+        if not getattr(self,'timezone',"") or self.timezone == DEFAULT_TIMEZONE_NAME:
+            return timezone(DEFAULT_TIMEZONE)
+        try:
+            return timezone(self.timezone)
+        except UnknownTimeZoneError:
+            return timezone(DEFAULT_TIMEZONE)
+
+    @property
+    def is_authenticated(self):
+        return True if getattr(self, 'kerb', "") else False
+
+    @property
+    def is_anonymous(self):
+        return False if getattr(self, 'kerb', "") else True
+
+    @property
+    def get_id(self):
+        return lambda: getattr(self, 'kerb', None)
+
+class AnonymousUser(AnonymousUserMixin):
+    @property
+    def is_student(self):
+        return False
+
+    @property
+    def is_instructor(self):
+        return False
+
     @property
     def tz(self):
         return timezone("UTC")
@@ -328,6 +392,7 @@ class AnonymousStudent(AnonymousUserMixin):
     @property
     def get_id(self):
         return None
+
 
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
@@ -439,7 +504,6 @@ def generate_test_population(num_students=300,max_classes=6):
     S = []
     for class_id in db.classes.search({'year': year, 'term': term}, projection='id'):
         n = len(list(db.test_classlist.search({'class_id':class_id},projection='id')))
-        print(n)
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()

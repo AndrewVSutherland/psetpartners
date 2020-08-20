@@ -127,7 +127,7 @@
       </a>
     </div>
     {% if user.is_authenticated %}
-      <div id="userinfo"><a href="{{url_for('.student')}}">User: {{ user.kerb }}</a><br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
+      <div id="userinfo"><a href="{{url_for('.student')}}">{{'Instructor' if user.is_instructor else ('Student' if user.is_student else 'User')}}: {{ user.kerb }}</a><br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
     {% else %}
       <div id="userinfo" style="font-weight:normal; padding-top:10px;">not logged in</a></div>
     {% endif %}
