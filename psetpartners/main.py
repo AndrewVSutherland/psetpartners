@@ -226,13 +226,13 @@ def save_student():
         flash_error("Error saving changes: %s" % err)
     return redirect(url_for(".student"))
 
-@app.route("/logout", methods=["GET","POST"])
+@app.route("/logout")
 @login_required
 def logout():
     logout_user()
     if not is_livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
-        resp = make_response(redirect(url_for(".goodbye")))
+        resp = render_template("goodbye.html")
     resp.set_cookie('sessionID','',expires=0)
     return resp

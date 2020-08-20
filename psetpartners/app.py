@@ -35,7 +35,7 @@ def setup():
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("pset partners restarted")
+    app.logger.info("psetpartners restarted on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
 # App attribute functions  #
@@ -57,7 +57,7 @@ def set_running():
 def is_running():
     return app.is_running
 
-def under_construction():
+def is_under_construction():
     return is_livesite() # TODO: change this line when we go live
 
 ############################
@@ -108,7 +108,7 @@ def ctx_proc_userdata():
     data["current_upcoming"] = current_upcoming()
     data["current_term_pretty"] = current_term_pretty()
     data["livesite"] = is_livesite()
-    data["under_construction"] = under_construction()
+    data["under_construction"] = is_under_construction()
     return data
 
 ##############################
@@ -158,6 +158,10 @@ def contact():
 @app.route("/faq")
 def faq():
     return render_template("faq.html", title="FAQ")
+
+@app.route("/barf")
+def barf():
+    raise ValueError("You made me barf!")
 
 @app.route("/robots.txt")
 def robots_txt():
