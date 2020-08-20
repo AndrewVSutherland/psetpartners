@@ -15,7 +15,7 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from psetpartners.app import app
+from psetpartners.app import app, is_livesite
 from psetpartners.student import (
     Student,
     AnonymousStudent,
@@ -41,8 +41,14 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(kerb):
+    if not kerb:
+        print("anonymous")
+        return AnonymousStudent()
     try:
-        return Student(kerb=kerb)
+        print("loading %s" % kerb)
+        s = Student(kerb=kerb)
+        assert s.is_authenticated
+        return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
         return None
@@ -64,39 +70,30 @@ def ctx_proc_userdata():
     }
     return userdata
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    raw_data = request.form
-    if raw_data.get("submit") == "register":
-        new = True
-    elif raw_data.get("submit") == "login":
-        new = False
+    if is_livesite():
+        kerb = request.environ.get("HTTP_EPPN", "")
+        if not kerb or request.method != "GET":
+            return render_template("500.html", "Touchstone authentication failed.")
+        login_user(Student(kerb=kerb))
+        app.logger.info("user %s logged in to live site" % kerb)
     else:
-        return render_template("404.html", title="page not found", messages=["Unknown submit data in post"]), 404
-    kerb = raw_data["kerb"]
-    try:
-        user = Student(kerb=kerb,new=new)
-    except Exception:
-        resp = make_response(redirect(url_for(".student")))
-        resp.set_cookie('sessionID', '', expires=0)
-        if new:
-            flash_error("An unexpected error occurred, unable to create record for kerberos id <b>%s</b>." % kerb)
-            return resp
-        else:
-            flash_error("No database entry found for kerberos id <b>%s</b>.  Please register if you are a new user." % kerb)
-            return resp
-
-    # For now, no password check
-    # The following sets current_user = user
-    login_user(user) #, remember=True)
-    app.logger.info("user %s logged in" % kerb)
+        if request.method != "POST":
+            return render_template("500.html", message="Invalid login method"), 500
+        kerb = request.form.get("kerb", "")
+        if request.form.get("submit") != "login" or not kerb:
+            return render_template("500.html", message="Invalid data in login"), 500
+        user = Student(kerb=kerb)
+        login_user(user)
+        assert user.kerb
+        app.logger.info("user %s logged in to the sandbox" % user.kerb)
+    assert current_user.is_authenticated
     return redirect(url_for(".student"))
 
-@app.route("/foobar")
-def foobar():
-    msg = ["foobar environ %s = %s" % (key,request.environ[key]) for key in request.environ]
-    app.logger.info("\n".join(msg))
-    return "barfoo"
+@app.route("/environ")
+def environ():
+    return "<br>".join(["%s = %s" % (key,request.environ[key]) for key in request.environ])
 
 # @app.route("/Shibboleth.sso/Login")
 # def touchstone_login():
@@ -109,34 +106,38 @@ def foobar():
 @app.route("/")
 def index():
     session.pop('_flashes', None)
-    return redirect(url_for(".student"))
+    if current_user.is_authenticated:
+        return redirect(url_for(".student"))
+    else:
+        if is_livesite():
+            return render_template("500.html", "Touchstone authentication failed.")
+        else:            
+            return render_template("login.html", maxlength=maxlength)
 
 @app.route("/test404")
 def test404():
-    return render_template("404.html", title="test 404 page",message="Thie is a test 404 message.")
+    return render_template("404.html", message="Thie is a test 404 message.")
 
 @app.route("/test404s")
 def test404s():
-    return render_template("404.html", title="test 404 page",messages=["Thie is a test 404 message.", "This is another test 404 message."])
+    return render_template("404.html", messages=["Thie is a test 404 message.", "This is another test 404 message."])
 
 @app.route("/test500")
 def test500():
     app.logger.error("test500")
-    return render_template("500.html", title="test 500 page",)
+    return render_template("500.html", message="This is a test 500 message",)
 
 @app.route("/test503")
 def test503():
     app.logger.error("test503")
-    return render_template("503.html", title="test 503 page",message="Thie is a test message")
+    return render_template("503.html", message="Thie is a test 503 message")
 
 @app.route("/student")
 def student(context={}):
-    title = "" if current_user.is_authenticated else "login"
-    print(session.get("ctx",""))
+    if not current_user.is_authenticated:
+        return redirect(url_for("index"))
     return render_template(
         "student.html",
-        next=request.args.get("next", ""),
-        title=title,
         options=template_options(),
         maxlength=maxlength,
         ctx=session.pop("ctx",""),
@@ -231,8 +232,10 @@ def save_student():
 @app.route("/logout", methods=["GET","POST"])
 @login_required
 def logout():
-    print('logout')
     logout_user()
-    resp = make_response(redirect(url_for(".student")))
+    if not is_livesite():
+        resp = make_response(redirect(url_for(".index")))
+    else:
+        resp = make_response(redirect(url_for(".goodbye")))
     resp.set_cookie('sessionID','',expires=0)
     return resp

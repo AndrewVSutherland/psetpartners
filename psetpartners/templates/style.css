@@ -5,6 +5,7 @@
   --caption-width: 270px;
   --value-width: 390px;
   --mit-maroon: #a31f34;
+  --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
@@ -51,11 +52,12 @@ a {
 }
 
 a:hover {
+  background-color: var(--mit-pink);
   cursor: pointer;
 }
 
 a:focus {
-  border-bottom: 1.5px solid var(--mit-maroon);
+  border-bottom: 1.5px solid currentColor;
 }
 
 #javascript-explanation {
@@ -67,6 +69,14 @@ a:focus {
   background: var(--mit-maroon);
   color: var(--mit-white);
   text-align: center;
+}
+
+.header a:hover, .footer a:hover {
+  background-color: var(--mit-maroon-light);
+}
+
+#logo a:hover {
+  background-color: var(--mit-maroon);
 }
 
 .header {

@@ -127,9 +127,9 @@
       </a>
     </div>
     {% if user.is_authenticated %}
-      <div id="userinfo">User: {{ user.kerb }}<br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
+      <div id="userinfo"><a href="{{url_for('.student')}}">User: {{ user.kerb }}</a><br><a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
     {% else %}
-      <div id="userinfo" style="font-weight:normal; padding-top:10px;">logged out</a></div>
+      <div id="userinfo" style="font-weight:normal; padding-top:10px;">not logged in</a></div>
     {% endif %}
     <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners{{" sandbox" if not livesite}}</a></div>
 </div>
@@ -173,13 +173,13 @@
 
 <footer>
 <div class="footer" id="footer">
-    <a href="{{url_for('.acknowledgment')}}" tabindex="-1" style="padding-left:60px;">acknowledgments</a>
+    <a href="{{url_for('.acknowledgment')}}" style="margin-left:60px;">acknowledgments</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="https://github.com/AndrewVSutherland/psetpartners" target="_blank" tabindex="-1">source code</a>
+    <a href="https://github.com/AndrewVSutherland/psetpartners" target="_blank">source code</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.contact')}}" tabindex="-1">contact information</a>
+    <a href="{{url_for('.contact')}}">contact information</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.faq')}}" tabindex="-1">frequently asked questions</a>
+    <a href="{{url_for('.faq')}}">frequently asked questions</a>
 </div>
 </footer>
 

@@ -1,18 +1,20 @@
 {% extends 'homepage.html' %}
 {% block content %}
 
-<div class="announce error">
-<div>
-Whoops, we ran into a problem (our fault, not yours).
-</div>
+<h2>Whoops, we ran into a problem.</h2>
 
+{% if message %}
+<p><b>Error:</b>&nbsp;&nbsp;"{{message}}"</p>
+{% endif %}
+{% for msg in messages %}
+<p><b>Error:</b>&nbsp;&nbsp;{{msg}}</p>
+{% endfor %}
 
-<span style='color:black'>
 <div>
 <p>This error has been logged and will be brought to our attention.</p>
 <p>
 If there are further details you can provide, or if you would like us to let you
-know when the problem has been fixed, please email us at <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a>.
+know when the problem has been fixed, you can email us at <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a>.
 </p>
 <p>We apologize for the inconvenience!</p>
 </div>
