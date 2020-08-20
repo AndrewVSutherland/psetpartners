@@ -109,10 +109,7 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for(".student"))
     else:
-        if is_livesite():
-            return render_template("500.html", "Touchstone authentication failed.")
-        else:            
-            return render_template("login.html", maxlength=maxlength)
+        return render_template("login.html", maxlength=maxlength)
 
 @app.route("/test404")
 def test404():
