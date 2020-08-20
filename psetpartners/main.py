@@ -91,7 +91,7 @@ def login():
             login_user(Instructor(kerb))
         else:
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
-        app.logger.info("user %s logged in to live site" % kerb)
+        app.logger.info("user %s logged in to live site (affiliation=%s,is_student=%s,is_instructor=%s)" % (kerb,affiliation,current_user.is_student,current_user.is_instructor))
     else:
         if request.method != "POST":
             return render_template("500.html", message="Invalid login method"), 500
@@ -130,7 +130,7 @@ def index():
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
         return render_template("login.html", maxlength=maxlength)
-    assert false
+    assert False
 
 @app.route("/test404")
 def test404():
