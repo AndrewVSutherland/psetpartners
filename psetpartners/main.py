@@ -75,7 +75,7 @@ def login():
     if is_livesite():
         kerb = request.environ.get("HTTP_EPPN", "")
         if not kerb or request.method != "GET":
-            return render_template("500.html", "Touchstone authentication failed.")
+            return render_template("500.html", message="Touchstone authentication failed.")
         login_user(Student(kerb=kerb))
         app.logger.info("user %s logged in to live site" % kerb)
     else:
