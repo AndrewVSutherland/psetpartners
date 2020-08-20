@@ -75,7 +75,7 @@ def login():
     if is_livesite():
         kerb = request.environ.get("HTTP_EPPN", "")
         if not kerb or request.method != "GET":
-            return render_template("500.html", "Touchstone authentication failed.")
+            return render_template("500.html", message="Touchstone authentication failed.")
         login_user(Student(kerb=kerb))
         app.logger.info("user %s logged in to live site" % kerb)
     else:
@@ -109,10 +109,7 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for(".student"))
     else:
-        if is_livesite():
-            return render_template("500.html", "Touchstone authentication failed.")
-        else:            
-            return render_template("login.html", maxlength=maxlength)
+        return render_template("login.html", maxlength=maxlength)
 
 @app.route("/test404")
 def test404():
@@ -229,13 +226,13 @@ def save_student():
         flash_error("Error saving changes: %s" % err)
     return redirect(url_for(".student"))
 
-@app.route("/logout", methods=["GET","POST"])
+@app.route("/logout")
 @login_required
 def logout():
     logout_user()
     if not is_livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
-        resp = make_response(redirect(url_for(".goodbye")))
+        resp = render_template("goodbye.html")
     resp.set_cookie('sessionID','',expires=0)
     return resp
