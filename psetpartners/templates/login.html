@@ -1,0 +1,29 @@
+<!-- jshint ignore:start -->
+{% extends 'homepage.html' %}
+
+{% block content %}
+
+{% if not livesite %}
+
+  <h2>Welcome to the sandbox!</h2>
+
+  <p>This is the pset partners test site.  You can login as an existing student using a student id of the form testnnn, where n is a decimal digit, or enter any student id you like; a new student record will be created if the id you enter is not already present.</p>
+  <p>Note that everyone can access everything, just like a real sandbox.  The database is reset every 48-72 hours.</p>
+
+  <form name="login" action="{{ url_for('.login') }}" method="POST">
+    <table>
+      <tr>
+        <td class="caption" style="width:100px" tabindex="1">Student ID:</td>
+        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" maxlength="{{maxlength['kerb']}}" /></td>
+        <td><button class="save" name="submit" type="submit" value="login" disabled>Login</button></td>
+      </tr>
+    </table>
+  </form>
+
+{% else %}
+
+<h3>Touchstone authentication failed.</h3>
+
+{% endif %}
+
+{% endblock %}
