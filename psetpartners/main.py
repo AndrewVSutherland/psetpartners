@@ -64,7 +64,7 @@ def load_user(kerb):
         return None
 
 login_manager.login_view = "student"
-
+login_manager.session_protection = "strong" # Important, this prevents session cookies from being stolen by a rogue
 login_manager.anonymous_user = AnonymousUser
 
 # Don't include options in static/options.js used only in javascript
