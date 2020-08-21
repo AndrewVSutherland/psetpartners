@@ -123,11 +123,13 @@ def login():
 @app.route("/loginas/<kerb>")
 @login_required
 def loginas(kerb):
-    if not is_admin(current_user.kerb):
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
         app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     logout_user()
     user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
+    session["kerb"] = kerb
+    session["affiliation"] = "student" if user.is_student else "staff"
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
@@ -146,7 +148,10 @@ def index():
         else:
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
-        return render_template("login.html", maxlength=maxlength)
+        if is_livesite():
+            return redirect(url_for(".login"))
+        else:
+            return render_template("login.html", maxlength=maxlength)
     assert False
 
 @app.route("/test404")
