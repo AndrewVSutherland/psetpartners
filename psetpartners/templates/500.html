@@ -4,10 +4,10 @@
 <h2>Whoops, we ran into a problem.</h2>
 
 {% if message %}
-<p><b>Error:</b>&nbsp;&nbsp;"{{message}}"</p>
+<p><b>Error:</b>&nbsp;&nbsp;<i>{{message}}</i></p>
 {% endif %}
 {% for msg in messages %}
-<p><b>Error:</b>&nbsp;&nbsp;{{msg}}</p>
+<p><b>Error:</b>&nbsp;&nbsp;<i>{{msg}}</i></p>
 {% endfor %}
 
 <div>
