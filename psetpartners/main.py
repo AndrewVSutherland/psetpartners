@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
     render_template,
@@ -40,16 +41,23 @@ from psetpartners.utils import (
     list_of_strings,
 )
 
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme == "https" and ref_url.netloc == test_url.netloc
+
 login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(kerb):
     if not kerb:
-        app.logger.info("loading anonymous user")
+        return AnonymousUser()
+    if session.get("kerb") != kerb or not session.get("affiliation") in ["student","staff","affiliate"]:
+        return None
+    if session.get("affiliation") == "affiliate":
         return AnonymousUser()
     try:
-        s = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
-        assert s.is_authenticated
+        s = Student(kerb) if session.get("affiliation") == "student" else Instructor(kerb)
         return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
@@ -85,22 +93,31 @@ def login():
             return render_template("500.html", message="Touchstone authentication invalid."), 500
         kerb = eppn.split("@")[0]
         affiliation = affiliation.split("@")[0]
-        if affiliation == "student":
-            login_user(Student(kerb))
-        elif affiliation == "staff":
-            login_user(Instructor(kerb))
-        else:
-            return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
-        app.logger.info("user %s logged in to live site" % kerb)
     else:
-        if request.method != "POST":
+        if request.method != "POST" or request.form.get("submit") != "login":
             return render_template("500.html", message="Invalid login method"), 500
         kerb = request.form.get("kerb", "")
-        if request.form.get("submit") != "login" or not kerb:
-            return render_template("500.html", message="Invalid data in login"), 500
-        user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
-        login_user(user)
-        app.logger.info("user %s logged in as %s to the sandbox" % (user.kerb, "instructor" if user.is_instructor else "student"))
+        affiliation = "staff" if is_instructor(kerb) else "student"
+
+    if not kerb or not affiliation:
+        return render_template("500.html", message="Missing login credentials"), 500
+
+    # We don't currently use next, but we might later, so let's validate now
+    next = request.args.get('next')
+    if next and not is_safe_url(next):
+        return render_template("500.html", message="Unauthorized redirect."), 500
+
+    if affiliation == "student":
+        user = Student(kerb)
+    elif affiliation == "staff":
+        user = Instructor(kerb)
+    else:
+        return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
+    session["kerb"] = kerb
+    session["affiliation"] = affiliation
+    login_user(user, remember=False)
+    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
+        (kerb,"live site" if is_livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/loginas/<kerb>")
@@ -111,7 +128,7 @@ def loginas(kerb):
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     logout_user()
     user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
-    login_user(user)
+    login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/environ")
@@ -130,7 +147,7 @@ def index():
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
         return render_template("login.html", maxlength=maxlength)
-    assert false
+    assert False
 
 @app.route("/test404")
 def test404():
