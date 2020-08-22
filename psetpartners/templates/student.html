@@ -432,8 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
   function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }
   function departmentsLimit (n) { alertInfo('#departments_info', 'At most ' + maxlength.departments + ' departments permitted!'); }
 
-
-  console.log("{{user.hours}}")
   makeMultiSelect('departments',
     studentOptions.departments,
     { placeholder: studentPlaceholders.departments, limit: maxlength.departments, onLimit: departmentsLimit}
@@ -442,10 +440,12 @@ document.addEventListener('DOMContentLoaded', function() {
     classesOptions,
     { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
   );
-  let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if ( tz == "America/New_York" || tz == "US/Eastern" ) tz = "MIT";
-  $('#timezone').val(tz);
-  if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
+  if ( ! $('#timezone').val() ) {
+    let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if ( tz == "America/New_York" || tz == "US/Eastern" ) tz = "MIT";
+    $('#timezone').val(tz);
+    if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
+  }
   makeSingleSelect('location', studentOptions.location, {});
   makeSingleSelect('timezone', timezoneOptions, {});
   makeSingleSelect('year', studentOptions.year, { placeholder: studentPlaceholders.year });
@@ -485,7 +485,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
   if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);
-  console.log(ctx.scrollTop);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
 
   showAffinityPreferences();
