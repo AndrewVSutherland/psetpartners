@@ -69,7 +69,7 @@ class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
 year		      | smallint    | year of class
 term                  | smallint    | term of class
-properties            | jsonb       | class-specific student properties such as commentment/comfort lavel that may have associated affinity preferences
+properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
 			
