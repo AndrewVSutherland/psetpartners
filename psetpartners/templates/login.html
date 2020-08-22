@@ -7,15 +7,17 @@
 
   <h2>Welcome to the sandbox!</h2>
 
-  <p>This is the pset partners test site.  You can login as an existing student using a student id of the form testnnn, where n is a decimal digit, or enter any student id you like; a new student record will be created if the id you enter is not already present.</p>
-  <p>Note that everyone can access everything, just like a real sandbox.  The database is reset every 48-72 hours.</p>
+  <p>This is the pset partners test site.  You can login as an existing student using a user identifier of the form testnnn, where n is a decimal digit, or enter any user identifier you like; a new user record will be created if the identifier is not found in the database.</p>
+  <p>On the live site your user identifier will automatically be set to your kerberos identifier following touchstone authentication.  Only registered MIT students and staff are able to access the live site, but anyone can play in the sandbox.  Note that all information in the sandbox database is accessible to everyone (just like a real sandbox), so please do not enter any private information.</p>
+  <p>The sandbox database is randomly refreshed every few days, so don't get too attached to any of the information you enter.</p>
 
   <form name="login" action="{{ url_for('.login') }}" method="POST">
     <table>
       <tr>
-        <td class="caption" style="width:100px" tabindex="1">Student ID:</td>
-        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="$('.save').prop('disabled',this.value.trim()==='');" maxlength="{{maxlength['kerb']}}" /></td>
-        <td><button class="save" name="submit" type="submit" value="login" disabled>Login</button></td>
+        <td class="caption" style="width:110px" tabindex="1">User identifier:</td>
+        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="validateKerb(this.value)" maxlength="{{maxlength['kerb']}}" /></td>
+        <td><button class="save" id="login" name="submit" type="submit" value="login" disabled>Login</button></td>
+        <td><label class="alertinfo" id="badid" style="display:none;">Identifier must be alphanumeric</label></td>
       </tr>
     </table>
   </form>
@@ -25,5 +27,21 @@
 <h3>Touchstone authentication failed.</h3>
 
 {% endif %}
+
+<script>
+const kerb_re = new RegExp('^([a-z0-9]+)$')
+function validateKerb(kerb) {
+  if ( kerb_re.test(kerb) && kerb.length >= 3 ) {
+    console.log(kerb+" valid");
+    $('#login').prop('disabled',false);
+    $('#badid').hide();
+  } else {
+    console.log(kerb+" invalid");
+    $('#login').prop('disabled',true);
+    if ( kerb_re.test(kerb) ) $('#badid').hide(); else $('#badid').show();
+  }
+}
+
+</script>
 
 {% endblock %}
