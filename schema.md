@@ -51,7 +51,7 @@ rejected_group_ids    | bigint[]    | list of group ids theis student has reject
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 year                  | smallint    | year of class
 term                  | smallint    | term of class
@@ -64,7 +64,7 @@ strengths             | jsonb       | preference strengths
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
 year		      | smallint    | year of class
@@ -77,7 +77,7 @@ strengths             | jsonb       | replaces students preferences if preferenc
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      |	unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id              | bigint      | id in classes_table
 group_id	      | bigint      | id in groups table
 student_id            | bigint      | id in students table
