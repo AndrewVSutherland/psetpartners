@@ -67,6 +67,7 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
+class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class
 term                  | smallint    | term of class
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
