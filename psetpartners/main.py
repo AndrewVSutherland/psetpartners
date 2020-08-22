@@ -80,6 +80,8 @@ def ctx_proc_userdata():
     }
     return userdata
 
+KERB_RE = re.compile(r"^[a-z0-9][a-z0-9][a-z0-9]+$")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if is_livesite():
@@ -96,7 +98,10 @@ def login():
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
             return render_template("500.html", message="Invalid login method"), 500
-        kerb = request.form.get("kerb", "")
+        kerb = request.form.get("kerb", "").lower()
+        if not KERB_RE.match(kerb):
+            flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
+            return render_template("login.html", maxlength=maxlength)
         affiliation = "staff" if is_instructor(kerb) else "student"
 
     if not kerb or not affiliation:

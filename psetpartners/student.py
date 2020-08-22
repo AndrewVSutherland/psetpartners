@@ -148,6 +148,15 @@ student_class_properties = {
     "confidence" : { 'type': "posint", 'options': confidence_options },
 }
 
+def default_value(typ):
+    if typ.endswith('[]'):
+        return []
+    if typ == "text":
+        return ""
+    if typ == "jsonb":
+        return {}
+    return None
+
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
@@ -228,12 +237,7 @@ class Student(UserMixin):
             self.hours = [[False for j in range(24)] for i in range(7)]
         for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
-                if typ == "text":
-                    setattr(self, col, "")
-                if typ == "jsonb":
-                    setattr(self, col, {})
-                if typ.endswith("[]"):
-                    setattr(self, col, [])
+                setattr(self, col, default_value(typ))
         self.class_data = self.student_class_data()
         self.classes = sorted(list(self.class_data))
         assert self.kerb
@@ -404,6 +408,15 @@ def generate_test_population(num_students=300,max_classes=6):
     def rand(x):
         return x[randint(0,len(x)-1)]
 
+    def rand_strength():
+        if randint(0,2):
+            return 3
+        else:
+            if randint(0,2):
+                return randint(2,4)
+            else:
+                return 1 if randint(0,1) else 5
+
     choice = input("Are you sure? This will destroy the existing test database? [y/n] ").lower()
     if not choice or choice[0] != 'y':
         print("No changes made.")
@@ -414,25 +427,36 @@ def generate_test_population(num_students=300,max_classes=6):
     db.test_grouplist.delete({})
     print("Deleted all records in test_students, test_groups, test_classlist, and test_grouplist.")
     year, term = current_year(), current_term()
+    blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
     S = []
     for n in range(num_students):
-        s = { 'kerb': "test%03d" % n }
+        s = blank_student.copy()
+        s['kerb'] = "test%03d" % n
         firstname = db.names.random()
         name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
         s['preferred_name'] = s['full_name'] = name
-        departments = [db.departments.random()]
-        if randint(0,2) == 2:
-            departments.append(db.departments.random({'course_number':{'$ne':departments[0]}}))
-        s['departments'] = departments
-        s['year'] = rand(year_options)[0] if randint(0,4) else None
-        s['gender'] = db.names.lookup(firstname,projection="gender") if randint(0,1) else None
+        s['year'] = rand(year_options)[0] if randint(0,9) else None
+        if ( s['year'] == 1 ):
+            departments = [] if randint(0,4) else ['18']
+        elif ( s['year'] == 5 ):
+            departments = ['18']
+        else:
+            departments = ['18'] if randint(0,7) else [db.departments.random()]
+        if len(departments) and randint(0,2) == 2:
+            departments.append(db.departments.random())
+            if randint(0,4) == 2:
+                departments.append(db.departments.random())
+                if randint(0,4) == 2:
+                    departments.append(db.departments.random())
+        s['departments'] = list(set(departments))
+        s['gender'] = db.names.lookup(firstname,projection="gender") if randint(0,2) == 0 else None
         if s['gender']:
-            if randint(0,1):
+            if randint(0,2) == 0:
                 s['preferred_pronouns'] = pronouns[s['gender']]
-            else:
-                if randint(0,2) == 0:
-                    s['preferred_pronouns'] = "they/them"
-        s['location'] = 'near' if randint(0,3) == 0 else rand(location_options)[0]
+        else:
+            if randint(0,9) == 0:
+                s['preferred_pronouns'] = "they/them"
+        s['location'] = 'near' if randint(0,3) == 0 else rand(location_options[1:])[0]
         s['timezone'] = DEFAULT_TIMEZONE if s['location'] == 'near' else rand(timezones)[0]
         hours = [[False for j in range(24)] for i in range(7)]
         for i in range(7):
@@ -455,19 +479,17 @@ def generate_test_population(num_students=300,max_classes=6):
         s['preferences'] = prefs
         s['strengths'] = strengths
         S.append(s)
-        # TODO: There seems to be a bug in insert_many, if you comment out the line below and uncomment the next line
-        # the student records will be inserted but they will all have preferred_pronouns set to None
-        # and occasionally there will be a key_error inside insert_many on the preferred_pronouns column
-        db.test_students.insert_many([s])
-    # db.test_students.insert_many(S)
+    db.test_students.insert_many(S)
     S = []
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
         classes = [db.classes.random({'year': year, 'term': term}, projection='id')]
-        for m in range(2,max_classes):
-            if randint(0,2) == 2:
-                break;
+        if randint(0,2):
             classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
+            for m in range(2,max_classes):
+                if randint(0,2*m-2):
+                    break;
+                classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -477,7 +499,7 @@ def generate_test_population(num_students=300,max_classes=6):
                     if randint(0,1):
                         pa = p + "_affinity"
                         prefs[pa] = rand(student_preferences[pa]['options'])[0]
-                        strengths[pa] = randint(1,5)
+                        strengths[pa] = rand_strength()
             for p in student_preferences:
                 if not p.endswith("_affinity"):
                     if p in s['preferences']:
@@ -486,10 +508,10 @@ def generate_test_population(num_students=300,max_classes=6):
                             strengths[p] = s['strengths'][p]
                         else:
                             prefs[p] = rand(student_preferences[p]['options'])[0]
-                            strengths[p] = randint(1,5)
+                            strengths[p] = rand_strength()
                     elif randint(0,2) == 0:
                         prefs[p] = rand(student_preferences[p]['options'])[0]
-                        strengths[p] = randint(1,5)
+                        strengths[p] = rand_strength()
             for p in student_affinities:
                 pa = p + "_affinity"
                 if pa in s['preferences'] and randint(0,2):
@@ -507,7 +529,7 @@ def generate_test_population(num_students=300,max_classes=6):
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            g = {"class_id": class_id, "group_name": name, "visibility":2}
+            g = {"class_id": class_id, "group_name": name, "visibility":2, 'strengths': {}, 'preferences': {} }
             if not g in S:
                 S.append(g)
     if ( S ):
