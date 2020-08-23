@@ -229,14 +229,16 @@ def save_student():
     prefs = [ {} for i in range(num_classes+1) ]
     sprefs = [ {} for i in range(num_classes+1) ]
     props = [ {} for i in range(num_classes+1) ]
-    data["hours"] = [[False for j in range(24)] for i in range(7)]
+    data["hours"] = [False for i in range(168)]
     for i in range(7):
         for j in range(24):
-            if raw_data.get("cb-hours-%d-%d"%(i,j),False):
-                data["hours"][i][j] = True
+            if raw_data.get("hours-%d-%d"%(i,j),False):
+                data["hours"][24*i+j] = True
 
     # TODO: validate data values, not just type (data from form should be fine)
     for col, val in raw_data.items():
+        if col.startswith('hours-'):
+            continue;
         if col in current_user.col_type:
             try:
                 typ = current_user.col_type[col]
@@ -281,9 +283,9 @@ def save_student():
                 data["hours"][24*i+j] = True
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-    # There should never be any errors coming from the form
-    if errmsgs:
-        return show_input_errors(errmsgs)
+        # There should never be any errors coming from the form but if there are, return the first one
+        if errmsgs:
+            return show_input_errors(errmsgs)
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
     for k, v in data.items():
