@@ -53,15 +53,17 @@ def setup():
 # App attribute functions  #
 ############################
 
+app.is_running = False
+
 def is_livesite():
+    if not app.is_running:
+        return False
     return ( domain() == "psetpartners.mit.edu" )
 
 def is_debug_mode():
     from flask import current_app
 
     return current_app.debug
-
-app.is_running = False
 
 def set_running():
     app.is_running = True

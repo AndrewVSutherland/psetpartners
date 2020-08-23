@@ -242,6 +242,15 @@ td.forminfo, span.forminfo {
    vertical-align: middle;
 }
 
+span.formcaption {
+  font-size: 90%;
+  outline: none;
+}
+span.formcaption:focus {
+  font-size: 85%;
+  font-weight: bold;
+}
+
 span.forminfo {
    padding-left: 2px;
 }

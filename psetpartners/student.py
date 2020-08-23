@@ -1,6 +1,6 @@
 import re
 from psetpartners import app
-from psetpartners.getdb import getdb
+from psetpartners.dbwrapper import getdb
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import (
@@ -238,7 +238,7 @@ class Student(UserMixin):
         for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
-        self.class_data = self.student_class_data()
+        self.class_data = self._class_data()
         self.classes = sorted(list(self.class_data))
         assert self.kerb
 
@@ -295,6 +295,7 @@ class Student(UserMixin):
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
             r = q.copy()
             r['class_id'] = class_id
+            r['class_number'] = class_number
             r['properties'] = self.class_data[class_number].get('properties',None)
             if class_number in self.class_data and any([self.class_data[class_number]['preferences'] != self.preferences,
                 self.class_data[class_number]["strengths"] != self.strengths]):
@@ -311,15 +312,14 @@ class Student(UserMixin):
             if S:
                 self._db.classlist.insert_many(S)
 
-    def student_class_data(self, year=current_year(), term=current_term()):
+    def _class_data(self, year=current_year(), term=current_term()):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
         class_data = {}
         classes = self._db.classlist.search(
             { 'student_id': self.id, "year": year, 'term': term},
-            projection=['class_id', 'properties', 'preferences', 'strengths'],
+            projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths'],
             )
         for r in classes:
-            r.update(self._db.classes.lucky({"id": r['class_id']}, projection=['class_number']))
             if not r['preferences']:
                 r['preferences'] = self.preferences
                 r['strengths'] = self.strengths
@@ -456,14 +456,20 @@ def generate_test_population(num_students=300,max_classes=6):
         else:
             if randint(0,9) == 0:
                 s['preferred_pronouns'] = "they/them"
-        s['location'] = 'near' if randint(0,3) == 0 else rand(location_options[1:])[0]
-        s['timezone'] = DEFAULT_TIMEZONE if s['location'] == 'near' else rand(timezones)[0]
-        hours = [[False for j in range(24)] for i in range(7)]
-        for i in range(7):
-            start = randint(0,23)
-            end = randint(start+1,24)
-            for j in range(start,end):
-                hours[i][j] = True
+        s['location'] = 'near' if randint(0,2) == 0 else rand(location_options[1:])[0]
+        s['timezone'] = DEFAULT_TIMEZONE_NAME if s['location'] == 'near' else rand(timezones)[0]
+        hours = [False for i in range(168)]
+        n = 0
+        while n < 168:
+            start = n + randint(0,23)
+            if start >= 168:
+                break
+            end = randint(start+1,start+8)
+            if end >= 168:
+                end = 168
+            for i in range(start,end):
+                hours[i] = True
+            n = end+1
         s['hours'] = hours
         prefs, strengths = {}, {}
         for p in student_preferences:
@@ -483,13 +489,13 @@ def generate_test_population(num_students=300,max_classes=6):
     S = []
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
-        classes = [db.classes.random({'year': year, 'term': term}, projection='id')]
+        classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
-            classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
+            classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
             for m in range(2,max_classes):
                 if randint(0,2*m-2):
                     break;
-                classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
+                classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -520,16 +526,25 @@ def generate_test_population(num_students=300,max_classes=6):
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa]['options'])[0]
                     strengths[pa] = randint(1,5)
-            c = {'year': year, 'term': term, 'student_id': student_id, 'class_id': classes[i], 'preferences': prefs, 'strengths': strengths, 'properties': props}
+            c = {
+                'class_id': classes[i]['id'], 
+                'student_id': student_id,
+                'class_number': classes[i]['class_number'],
+                'year': year,
+                'term': term,
+                'preferences': prefs,
+                'strengths': strengths,
+                'properties': props
+            }
             S.append(c)
     db.test_classlist.insert_many(S)
     S = []
-    for class_id in db.classes.search({'year': year, 'term': term}, projection='id'):
-        n = len(list(db.test_classlist.search({'class_id':class_id},projection='id')))
+    for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
+        n = len(list(db.test_classlist.search({'class_id':c['id']},projection='id')))
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            g = {"class_id": class_id, "group_name": name, "visibility":2, 'strengths': {}, 'preferences': {} }
+            g = {'class_id': c['id'], 'class_number': c['class_number'], 'group_name': name, 'visibility': 2, 'strengths': {}, 'preferences': {} }
             if not g in S:
                 S.append(g)
     if ( S ):

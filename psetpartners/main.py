@@ -1,4 +1,4 @@
-import re
+import re, json
 from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
@@ -40,6 +40,7 @@ from psetpartners.utils import (
     timezones,
     list_of_strings,
 )
+from psetpartners.dbwrapper import get_counts
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -177,6 +178,13 @@ def test503():
     app.logger.error("test503")
     return render_template("503.html", message="Thie is a test 503 message"), 503
 
+@app.route("/_ajax", methods=["POST"])
+def ajax():
+    print("in ajax")
+    for key in request.form:
+        print("%s: %s" % (key, request.form[key]))
+    return json.dumps({'status':'OK','result':'hi'})
+
 @app.route("/student")
 def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
@@ -185,6 +193,7 @@ def student(context={}):
         "student.html",
         options=template_options(),
         maxlength=maxlength,
+        counts={'general':get_counts('')},
         ctx=session.pop("ctx",""),
     )
 
@@ -267,7 +276,9 @@ def save_student():
         elif col.startswith("hours-"):
             try:
                 i,j = (int(x) for x in col[6:].split("-"))
-                data["hours"][i][j] = True
+                if i < 0 or i >= 7 or j < 0 or j >= 24:
+                    raise ValueError("Day or hour out of range")
+                data["hours"][24*i+j] = True
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
     # There should never be any errors coming from the form

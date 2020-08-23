@@ -94,7 +94,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
   </table>
   <br>
-  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;">
+  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
     <tr class="cbg">
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
@@ -105,7 +105,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     <tr class="checkboxgrid">
       {% for j in range(24) %}
       <td class="cbg"><label class="cbg">
-          <input class="cbg" name="hours-{{i}}-{{j}}" id="cb-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[i][j] %}checked{% endif %} />
+          <input class="cbg" name="hours-{{i}}-{{j}}" id="cb-hours-{{i}}-{{j}}" type="checkbox" {% if user.hours[24*i+j] %}checked{% endif %} />
           <span id="hours-{{i}}-{{j}}" class="cbg"></span>
       </label></td>
       {% endfor %}
@@ -113,9 +113,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </tr>
     {% endfor %}
   </table>
+  <center><span class="formcaption" id="hours-compatible" tabindex="11"></label></span></center>
   <h3 id="prefheader">Preferences</h3>
 
-   <div class="toggler" id="pref-toggler" tabindex="11">
+   <div class="toggler" id="pref-toggler" tabindex="12">
     {% for i in  range(maxlength["classes"]+1) %}
       <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
         {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
@@ -167,12 +168,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
   <table class="input">
 
-    {{PREF("When you like to start working", "start", 12)}}
-    {{PREF("How you like to collaborate", "together", 14)}}
-    {{PREF("How you like to communicate", "forum", 16)}}
-    {{PREF("Your ideal group size", "size", 18)}}
+    {{PREF("When you like to start working", "start", 13)}}
+    {{PREF("How you like to collaborate", "together", 15)}}
+    {{PREF("How you like to communicate", "forum", 17)}}
+    {{PREF("Your ideal group size", "size", 19)}}
     {{CPROP("Commitment to this course", "commitment", 20)}}
-    {{CPROP("Knowledge of the material", "confidence", 21)}}
+    {{CPROP("Knowledge of the material", "confidence", 23)}}
 
     <tr style="display:none; height:5px;" id="affinity-separator"><td colspan="3"></td></tr>
 
@@ -220,12 +221,14 @@ const timezoneOptions = [
 {% endfor %}
 ];
 
+const counts = {{ counts|tojson|safe }};
+
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, counts, maxlength, ctx */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -296,6 +299,9 @@ function setProps(props,i) {
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
+  $.ajax({url: '/_ajax', data: val, type: 'POST',
+          success: function(resp) {console.log('resp '+resp);},
+          error: function(err) { console.log('err '+err);}});
   let classesPrefs = {}, classesProps = {};
 
   let allPreferences = [...studentPreferences, ...studentClassPreferences];
@@ -404,6 +410,35 @@ function showAffinityPreferences() {
   document.getElementById('affinity-separator').style.display = caption ? 'inline-block' : 'none';
 }
 
+var hoursOverlap = 0;
+const hours = counts.general.hours;
+
+function hoursOffset() {
+  const tz = $('#timezone').val();
+  if ( tz === 'MIT' ) return 0;
+  const t = timezoneOptions.find(x => x.value === tz);
+  let n = parseInt(t.label.substring(4,3));
+  if ( parseInt(t.label.substring(9,2)) > 30 ) n = n < 0 ? n-1 : n+1;
+  return n;
+}
+
+function showHoursCompatible() {
+  const offset = hoursOffset();
+  hoursOverlap = 0;
+  for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
+    if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) hoursOverlap += hours[24*i+j];
+  }
+  $('#hours-compatible').text('Average overlap: ' + (hoursOverlap/counts.general.students).toFixed(2) + ' hours');
+}
+
+function updateHoursCompatible(e) {
+  const x = e.id.split('-');
+  if ( x.length != 4 ) return;
+  const i = parseInt(x[2]), j = parseInt(x[3]);
+  const n = hours[(24*i+j+168-hoursOffset())%168]; 
+  hoursOverlap += (e.checked ? 1 : -1 ) * n;
+  $('#hours-compatible').text('Average overlap: ' + (hoursOverlap/counts.general.students).toFixed(2) + ' hours');  
+}
 
 function checkChanges (e) {
   if ( ! e.target.name ) return;
@@ -413,6 +448,7 @@ function checkChanges (e) {
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
   if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
+  if ( e.target.id.startsWith('cb-hours-') ) updateHoursCompatible(e.target);
 }
 
 function submitStudentForm (value) {
@@ -489,6 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   showAffinityPreferences();
   showApplyPreferences();
+  showHoursCompatible();
   console.log('student page ready');
 });
 </script>
