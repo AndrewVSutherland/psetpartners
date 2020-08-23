@@ -34,7 +34,7 @@ departments           | text[]      | List of course_numbers in departments tabl
 description           |	text	    | Student's public description of themself (not currently used)
 email	              | text	    | smith@gmail.com (not currently used, we just email kerb@mit.edu)
 gender                | text        | optional, currently female, male, or non-binary (optional)
-hours                 | boolean[]   | a 7x24 array of booleans indicating hours available to pset (in timezone)
+hours                 | boolean[]   | a list of 7x24=168 booleans indicating hours available to pset (in timezone)
 kerb                  |	text	    | kerberos id
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 name                  |	text        | e.g. Johnathan Smith
@@ -53,8 +53,9 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
-year                  | smallint    | year of class
-term                  | smallint    | term of class
+class_number	      | text        | class number (e.g. "18.701")
+year                  | smallint    | year of class (e.g. 2020)
+term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
 visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
