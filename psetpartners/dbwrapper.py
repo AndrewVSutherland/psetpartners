@@ -106,7 +106,7 @@ def get_counts(classes):
     c['students'] = len(list(db.students.search({},projection='id')))
     c['groups'] = len(list(db.groups.search({'year': current_year(), 'term': current_term()},projection='id')))
     c['hours'] = count_hours(students_in_class(''))
-    counts['general'] = c
+    counts['General'] = c
     for class_number in classes:
         c = {}
         class_id = db.classes.lucky({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection="id")

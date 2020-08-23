@@ -376,6 +376,10 @@ function togglerIndex(i) {
   }
 }
 
+function togglerCaption() {
+  return $('.toggler-nav.toggler-active').text().trim();
+}
+
 function saveErrorMessage() {
   if ( document.getElementById('preferred_name').value.trim() === '' )
     return 'Please enter your preferred name.';
@@ -424,12 +428,17 @@ function hoursOffset() {
 function showHoursCompatible() {
   const offset = hoursOffset();
   currentOverlap = 0;
-  currentCounts = counts[['general', ...studentClasses][togglerIndex()]];
-  const hours = currentCounts.hours
+  console.log('"'+togglerCaption()+'"');
+  console.log(counts);
+  currentCounts = counts[togglerCaption()];
+  const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) currentOverlap += hours[(24*i+j+168-offset)%168];
   }
-  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours');
+  let c = ' with ' + togglerCaption() + ' students';
+  if ( c === ' with General students' ) c = '';
+
+  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours' + c);
 }
 
 function updateHoursCompatible(e) {
