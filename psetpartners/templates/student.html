@@ -417,16 +417,17 @@ function hoursOffset() {
   const tz = $('#timezone').val();
   if ( tz === 'MIT' ) return 0;
   const t = timezoneOptions.find(x => x.value === tz);
-  let n = parseInt(t.label.substring(4,3));
-  if ( parseInt(t.label.substring(9,2)) > 30 ) n = n < 0 ? n-1 : n+1;
+  let n = parseInt(t.label.substring(4,7));
+  if ( parseInt(t.label.substring(8,10)) > 30 ) n = n < 0 ? n-1 : n+1;
   return n;
 }
 
 function showHoursCompatible() {
   const offset = hoursOffset();
+  console.log(offset);
   hoursOverlap = 0;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
-    if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) hoursOverlap += hours[24*i+j];
+    if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) hoursOverlap += hours[(24*i+j+168-offset)%168];
   }
   $('#hours-compatible').text('Average overlap: ' + (hoursOverlap/counts.general.students).toFixed(2) + ' hours');
 }
@@ -448,7 +449,8 @@ function checkChanges (e) {
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
   if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
-  if ( e.target.id.startsWith('cb-hours-') ) updateHoursCompatible(e.target);
+  if ( e.target.name === 'timezone' ) showHoursCompatible();
+  if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
 }
 
 function submitStudentForm (value) {
