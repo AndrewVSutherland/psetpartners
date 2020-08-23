@@ -526,16 +526,8 @@ def generate_test_population(num_students=300,max_classes=6):
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa]['options'])[0]
                     strengths[pa] = randint(1,5)
-            c = {
-                'class_id': classes[i]['id'], 
-                'student_id': student_id,
-                'class_number': classes[i]['class_number'],
-                'year': year,
-                'term': term,
-                'preferences': prefs,
-                'strengths': strengths,
-                'properties': props
-            }
+            c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'class_number': classes[i]['class_number'],
+                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props }
             S.append(c)
     db.test_classlist.insert_many(S)
     S = []
@@ -544,9 +536,9 @@ def generate_test_population(num_students=300,max_classes=6):
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            g = {'class_id': c['id'], 'class_number': c['class_number'], 'group_name': name, 'visibility': 2, 'strengths': {}, 'preferences': {} }
-            if not g in S:
-                S.append(g)
+            g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
+                 'group_name': name, 'visibility': 2, 'strengths': {}, 'preferences': {} }
+            S.append(g) # don't worry about duplicating group names, it is unlikely and won't break anything
     if ( S ):
         db.test_groups.insert_many(S)
         S = []
