@@ -315,11 +315,9 @@ function changeClasses(val) {
   let defaultPrefs = getPrefs(studentPreferences, 0);
   for ( const pref of studentClassPreferences ) defaultPrefs[pref] = { value: '', strength: 3 };
   for ( const c of v ) if ( ! (c in classesPrefs) ) classesPrefs[c] = defaultPrefs;
-  console.log(classesPrefs);
   let defaultProps = {};
   for ( const prop of studentClassAffinities ) defaultProps[prop] = '';
   for ( const c of v ) if ( ! (c in classesProps) ) classesProps[c] = defaultProps;
-  console.log(classesProps);
   for ( let i = 0 ; i < v.length ; i++ ) {
     const c = v[i];
     if ( c != studentClasses[i] ) {
@@ -374,6 +372,7 @@ function togglerIndex(i) {
     e.toggleClass('toggler-active');
     showAffinityPreferences();
     showApplyPreferences();
+    showHoursCompatible();
   }
 }
 
@@ -410,8 +409,8 @@ function showAffinityPreferences() {
   document.getElementById('affinity-separator').style.display = caption ? 'inline-block' : 'none';
 }
 
-var hoursOverlap = 0;
-const hours = counts.general.hours;
+var currentOverlap = 0;
+var currentCounts = counts.general;
 
 function hoursOffset() {
   const tz = $('#timezone').val();
@@ -424,21 +423,22 @@ function hoursOffset() {
 
 function showHoursCompatible() {
   const offset = hoursOffset();
-  console.log(offset);
-  hoursOverlap = 0;
+  currentOverlap = 0;
+  currentCounts = counts[['general', ...studentClasses][togglerIndex()]];
+  const hours = currentCounts.hours
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
-    if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) hoursOverlap += hours[(24*i+j+168-offset)%168];
+    if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) currentOverlap += hours[(24*i+j+168-offset)%168];
   }
-  $('#hours-compatible').text('Average overlap: ' + (hoursOverlap/counts.general.students).toFixed(2) + ' hours');
+  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours');
 }
 
 function updateHoursCompatible(e) {
   const x = e.id.split('-');
   if ( x.length != 4 ) return;
   const i = parseInt(x[2]), j = parseInt(x[3]);
-  const n = hours[(24*i+j+168-hoursOffset())%168]; 
-  hoursOverlap += (e.checked ? 1 : -1 ) * n;
-  $('#hours-compatible').text('Average overlap: ' + (hoursOverlap/counts.general.students).toFixed(2) + ' hours');  
+  const n = currentCounts.hours[(24*i+j+168-hoursOffset())%168]; 
+  currentOverlap += (e.checked ? 1 : -1 ) * n;
+  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours');  
 }
 
 function checkChanges (e) {

@@ -71,28 +71,22 @@ class DBIterator:
         vals = self._iter.__next__()
         return { self._cols[i]: vals[i] for i in range(self._n) }
 
+def SQLWrapper(str,map={}):
+    from string import Formatter
+    keys = [t[1] for t in Formatter().parse(str) if t[1] is not None]
+    return (SQL(str).format(**{key:IdentifierWrapper(map[key] if key in map else key) for key in keys}))
+
 def students_in_class(class_number):
     s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
     if not class_number:
         return db[s].search({},projection=['timezone', 'hours', 'departments', 'year', 'gender','preferences', 'strengths'])
-    cmd = SQL(
+    cmd = SQLWrapper(
         """
-SELEECT {s}.{hours}, {s}.{departments}, {s}.{year}, {s}.{gender}, {c}.{properties}, {c}.{preferences}, {s}.{strengths}
+SELECT {s}.{timezone}, {s}.{hours}, {s}.{departments}, {s}.{year}, {s}.{gender}, {c}.{properties}, {c}.{preferences}, {s}.{strengths}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
 WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
-        """
-    ).format(
-        s=IdentifierWrapper(s),
-        c=IdentifierWrapper(c),
-        timezone=IdentifierWrapper('timezone'),
-        hours=IdentifierWrapper('hours'),
-        departments=IdentifierWrapper('departments'),
-        year=IdentifierWrapper('year'),
-        gender=IdentifierWrapper('gender'),
-        properties=IdentifierWrapper('properties'),
-        preferences=IdentifierWrapper('preferences'),
-        strengths=IdentifierWrapper('strengths'),
-        term=IdentifierWrapper('term'),
+        """,
+        {'s':s, 'c':c}
     )
     cols = ['timezone', 'hours', 'departments', 'year', 'gender', 'properties', 'preferences', 'strengths']
     return DBIterator(db._execute(cmd, [class_number, current_year(), current_term()]), cols)
@@ -105,16 +99,20 @@ def count_hours(iter):
             hours[(i-off) % 168] += 1 if r['hours'][i] else 0
     return hours
 
-def get_counts(class_number):
+def get_counts(classes):
     db = getdb();
     counts = {}
-    if class_number == '':
-        counts['students'] = len(list(db.students.search({},projection='id')))
-        counts['groups'] = len(list(db.groups.search({'year': current_year(), 'term': current_term()},projection='id')))
-        counts['hours'] = count_hours(students_in_class(''))
-    else:
+    c = {}
+    c['students'] = len(list(db.students.search({},projection='id')))
+    c['groups'] = len(list(db.groups.search({'year': current_year(), 'term': current_term()},projection='id')))
+    c['hours'] = count_hours(students_in_class(''))
+    counts['general'] = c
+    for class_number in classes:
+        c = {}
         class_id = db.classes.lucky({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection="id")
-        counts['students'] = len(list(db.classlit.search({'class_id':class_id},projection='id')))
-        counts['groups'] = len(list(db.groups.search({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection='id')))
-        counts['hours'] = count_hours(students_in_class(class_number))
+        if class_id is not None:
+            c['students'] = len(list(db.classlist.search({'class_id':class_id},projection='id')))
+            c['groups'] = len(list(db.groups.search({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection='id')))
+            c['hours'] = count_hours(students_in_class(class_number))
+            counts[class_number] = c
     return counts

@@ -193,7 +193,7 @@ def student(context={}):
         "student.html",
         options=template_options(),
         maxlength=maxlength,
-        counts={'general':get_counts('')},
+        counts=get_counts(current_user.classes),
         ctx=session.pop("ctx",""),
     )
 
