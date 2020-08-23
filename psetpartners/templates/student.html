@@ -221,7 +221,7 @@ const timezoneOptions = [
 {% endfor %}
 ];
 
-const counts = {{ counts|tojson|safe }};
+var counts = {{ counts|tojson|safe }};
 
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
@@ -299,9 +299,7 @@ function setProps(props,i) {
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
-  $.ajax({url: '/_ajax', data: val, type: 'POST',
-          success: function(resp) {console.log('resp '+resp);},
-          error: function(err) { console.log('err '+err);}});
+  $.ajax({url: '/_counts', data: {'classes': val}, dataType: 'json', success: function(resp) { counts = resp.counts; }});
   let classesPrefs = {}, classesProps = {};
 
   let allPreferences = [...studentPreferences, ...studentClassPreferences];
@@ -428,9 +426,8 @@ function hoursOffset() {
 function showHoursCompatible() {
   const offset = hoursOffset();
   currentOverlap = 0;
-  console.log('"'+togglerCaption()+'"');
-  console.log(counts);
   currentCounts = counts[togglerCaption()];
+  if ( ! currentCounts ) { $('#hours-compatible').text(''); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) currentOverlap += hours[(24*i+j+168-offset)%168];
@@ -442,10 +439,11 @@ function showHoursCompatible() {
 }
 
 function updateHoursCompatible(e) {
+  if ( ! currentCounts ) return;
   const x = e.id.split('-');
   if ( x.length != 4 ) return;
   const i = parseInt(x[2]), j = parseInt(x[3]);
-  const n = currentCounts.hours[(24*i+j+168-hoursOffset())%168]; 
+  const n = currentCounts.hours[(24*i+j+168-hoursOffset())%168];
   currentOverlap += (e.checked ? 1 : -1 ) * n;
   $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours');  
 }
@@ -475,9 +473,15 @@ function alertInfo(q,msg) {
   $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(3000, function() { $(q).html(content).show(); });
 }
 
+function ajaxErrorHandler(xmlhttpreq, textstatus, message) {
+  console.log(`ajacErrorHandler called for URL="${this.url}", textstatus="${textstatus}", message="${message}`);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }
   function departmentsLimit (n) { alertInfo('#departments_info', 'At most ' + maxlength.departments + ' departments permitted!'); }
+
+  $.ajaxSetup({error:ajaxErrorHandler}); // use this rather than ajexError so "this" is defined
 
   makeMultiSelect('departments',
     studentOptions.departments,

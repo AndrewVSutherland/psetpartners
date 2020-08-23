@@ -178,12 +178,11 @@ def test503():
     app.logger.error("test503")
     return render_template("503.html", message="Thie is a test 503 message"), 503
 
-@app.route("/_ajax", methods=["POST"])
-def ajax():
-    print("in ajax")
-    for key in request.form:
-        print("%s: %s" % (key, request.form[key]))
-    return json.dumps({'status':'OK','result':'hi'})
+@app.route("/_counts")
+@login_required
+def counts():
+    classes = request.args.get('classes',"").split(",")
+    return json.dumps({'counts': get_counts(classes)})
 
 @app.route("/student")
 def student(context={}):
