@@ -60,6 +60,8 @@ group_name            | text	    | custom name, editable by anyone in group
 visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
+creator               | text        | kerb of student who created the group (if applicable)
+max                   | smallint    | maximum number of students (only used for public groups)
 
 ## classlist
 
@@ -83,3 +85,6 @@ id                    |	bigint      | unique identifier automatically assigned b
 class_id              | bigint      | id in classes_table
 group_id	      | bigint      | id in groups table
 student_id            | bigint      | id in students table
+class_number          | text        | class number (copied for convenience)
+year		      | smallint    | year of class (copied for convenience)
+term                  | smallint    | term of class (copied for convenience)
