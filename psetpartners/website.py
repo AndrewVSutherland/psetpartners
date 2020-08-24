@@ -3,23 +3,14 @@
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
 
-import logging
-from .app import app
-from .config import Configuration
 from . import main
 assert main
 from . import db
 assert db
 
 def main():
-    logger = logging.getLogger("psetpartners")
-    logger.setLevel(logging.INFO)
-    logfile = Configuration().get_logging()["logfile"]
-    ch = logging.FileHandler(logfile)
-    ch.setLevel(logging.INFO)
-    ch.setFormatter(logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s"""))
-    logger.addHandler(ch)
-    app.logger.info("Website starting.")
+    from .app import app
+    from .config import Configuration
 
     flask_options = Configuration().get_flask()
 
@@ -31,5 +22,6 @@ def main():
         )
         del flask_options["profiler"]
 
+    app.logger.info("Calling app.run.")
     app.run(**flask_options)
-    app.logger.info("Website shutdown.")
+    app.logger.info("Returned from app.run.")
