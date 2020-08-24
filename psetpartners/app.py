@@ -36,40 +36,20 @@ if getpass.getuser() == 'psetpartners':
     )
 
 @app.before_first_request
-def setup():
-    from .config import Configuration
-    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
-
-    logger = logging.getLogger("psetpartners")
-    logger.setLevel(logging.INFO)
-    logfile = Configuration().get_logging()["logfile"]
-    ch = logging.FileHandler(logfile)
-    ch.setLevel(logging.INFO)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    app.logger.info("psetpartners restarted on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
+def before_first_request():
+    app.logger.info("psetpartners got its first request on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
 # App attribute functions  #
 ############################
 
-app.is_running = False
-
 def is_livesite():
-    if not app.is_running:
-        return False
     return ( domain() == "psetpartners.mit.edu" )
 
 def is_debug_mode():
     from flask import current_app
 
     return current_app.debug
-
-def set_running():
-    app.is_running = True
-
-def is_running():
-    return app.is_running
 
 def is_under_construction():
     return is_livesite() # TODO: change this line when we go live
