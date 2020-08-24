@@ -34,7 +34,7 @@ departments           | text[]      | List of course_numbers in departments tabl
 description           |	text	    | Student's public description of themself (not currently used)
 email	              | text	    | smith@gmail.com (not currently used, we just email kerb@mit.edu)
 gender                | text        | optional, currently female, male, or non-binary (optional)
-hours                 | boolean[]   | a 7x24 array of booleans indicating hours available to pset (in timezone)
+hours                 | boolean[]   | a list of 7x24=168 booleans indicating hours available to pset (in timezone)
 kerb                  |	text	    | kerberos id
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 name                  |	text        | e.g. Johnathan Smith
@@ -51,8 +51,11 @@ rejected_group_ids    | bigint[]    | list of group ids theis student has reject
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
+class_number	      | text        | class number (e.g. "18.701")
+year                  | smallint    | year of class (e.g. 2020)
+term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
 visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
@@ -62,12 +65,13 @@ strengths             | jsonb       | preference strengths
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      | unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
-year		      | smallint    | year of class (used to quickly get a list of current classes for a student)
-term                  | smallint    | term of class (used to quickly get a list of current classes for a student)
-properties            | jsonb       | class-specific student properties such as commentment/comfort lavel that may have associated affinity preferences
+class_number          | text        | class number (copied from classes table for convenience)
+year		      | smallint    | year of class
+term                  | smallint    | term of class
+properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
 			
@@ -75,7 +79,7 @@ strengths             | jsonb       | replaces students preferences if preferenc
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
-id                    |	bigint      |	unique identifier automatically assigned by postgres (not MIT id)
+id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id              | bigint      | id in classes_table
 group_id	      | bigint      | id in groups table
 student_id            | bigint      | id in students table

@@ -19,6 +19,7 @@ function makeSingleSelect(id, available, config) {
     onChange: onChange,
     autocomplete: config.autocomplete,
     placeholder: config.placeholder,
+    notes: config.notes,
   });
   se.addEventListener('keydown', function(evt) {
     if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); }
@@ -31,12 +32,13 @@ function makeSingleSelect(id, available, config) {
   return s;
 }
 
-function updateSingleSelect(id) {
+function updateSingleSelect(id, notes) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
   const s = jQuery(e).data('select');
   if ( !s ) throw 'Select attribute not set for in put ' + id;
   if ( e.value ) s.value(e.value); else s.reset();
+  if ( notes ) s.notes(notes);
 }
 
 /*
@@ -64,6 +66,7 @@ function makeMultiSelect(id, available, config) {
     onLimit: config.onLimit,
     placeholder: config.placeholder,
     shortTags: config.shortTags,
+    notes: config.notes,
   });
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {

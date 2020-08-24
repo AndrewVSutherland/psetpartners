@@ -1,4 +1,4 @@
-import re
+import re, json
 from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
@@ -28,6 +28,7 @@ from psetpartners.student import (
     current_classes,
     is_instructor,
     is_admin,
+    get_counts,
     )
 from psetpartners.utils import (
     format_input_errmsg,
@@ -177,6 +178,15 @@ def test503():
     app.logger.error("test503")
     return render_template("503.html", message="Thie is a test 503 message"), 503
 
+allowed_opts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
+
+@app.route("/_counts")
+@login_required
+def counts():
+    classes = request.args.get('classes',"").split(",")
+    opts = [x for x in request.args.get('opts',"").split(",") if x]
+    return json.dumps({'counts': get_counts(classes, allowed_opts if not opts else [opt for opt in opts if opt in allowed_opts])})
+
 @app.route("/student")
 def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
@@ -185,6 +195,7 @@ def student(context={}):
         "student.html",
         options=template_options(),
         maxlength=maxlength,
+        counts=get_counts([''] + current_user.classes, allowed_opts),
         ctx=session.pop("ctx",""),
     )
 
@@ -220,14 +231,16 @@ def save_student():
     prefs = [ {} for i in range(num_classes+1) ]
     sprefs = [ {} for i in range(num_classes+1) ]
     props = [ {} for i in range(num_classes+1) ]
-    data["hours"] = [[False for j in range(24)] for i in range(7)]
+    data["hours"] = [False for i in range(168)]
     for i in range(7):
         for j in range(24):
-            if raw_data.get("cb-hours-%d-%d"%(i,j),False):
-                data["hours"][i][j] = True
+            if raw_data.get("hours-%d-%d"%(i,j),False):
+                data["hours"][24*i+j] = True
 
     # TODO: validate data values, not just type (data from form should be fine)
     for col, val in raw_data.items():
+        if col.startswith('hours-'):
+            continue;
         if col in current_user.col_type:
             try:
                 typ = current_user.col_type[col]
@@ -267,12 +280,14 @@ def save_student():
         elif col.startswith("hours-"):
             try:
                 i,j = (int(x) for x in col[6:].split("-"))
-                data["hours"][i][j] = True
+                if i < 0 or i >= 7 or j < 0 or j >= 24:
+                    raise ValueError("Day or hour out of range")
+                data["hours"][24*i+j] = True
             except Exception as err:
                 errmsgs.append(format_input_errmsg(err, val, col))
-    # There should never be any errors coming from the form
-    if errmsgs:
-        return show_input_errors(errmsgs)
+        # There should never be any errors coming from the form but if there are, return the first one
+        if errmsgs:
+            return show_input_errors(errmsgs)
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
     for k, v in data.items():

@@ -160,6 +160,8 @@ def date_and_daytimes_to_times(date, s, tz):
 
 def naive_utcoffset(tz):
     if isinstance(tz, str):
+        if tz == DEFAULT_TIMEZONE_NAME:
+            tz = DEFAULT_TIMEZONE
         tz = pytz.timezone(tz)
     for h in range(10):
         try:
@@ -170,13 +172,19 @@ def naive_utcoffset(tz):
         ):
             pass
 
+def hours_from_default(tz):
+    delta = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(DEFAULT_TIMEZONE).total_seconds())
+    hours, remainder = divmod(abs(delta), 3600)
+    if remainder > 1800:
+        hours += 1
+    return hours if delta >= 0 else -hours
+
 def pretty_timezone(tz, dest="selecter", base_name='UTC', base_timezone='UTC'):
-    foo = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(base_timezone).total_seconds())
-    foo 
-    hours, remainder = divmod(abs(foo), 3600)
+    delta = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(base_timezone).total_seconds())
+    hours, remainder = divmod(abs(delta), 3600)
     minutes, seconds = divmod(remainder, 60)
     if dest == "selecter":  # used in time zone selecters
-        if foo < 0:
+        if delta < 0:
             diff = "-{:02d}:{:02d}".format(hours, minutes)
         else:
             diff = "+{:02d}:{:02d}".format(hours, minutes)
@@ -187,7 +195,7 @@ def pretty_timezone(tz, dest="selecter", base_name='UTC', base_timezone='UTC'):
             diff = "{}".format(hours)
         else:
             diff = "{}:{:02d}".format(hours, minutes)
-        if foo < 0:
+        if delta < 0:
             diff = "-" + diff
         else:
             diff = "+" + diff

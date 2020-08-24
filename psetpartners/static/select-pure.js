@@ -11,11 +11,13 @@ class Element {
 
   get() { return this._node; }
   append(element) { this._node.appendChild(element); return this; }
+  getFirstChild() { return this._node.firstElementChild; }
   addClass(className) { this._node.classList.add(className); return this; }
   removeClass(className) { this._node.classList.remove(className); return this; }
   toggleClass(className) { this._node.classList.toggle(className); return this; }
   addEventListener(type, callback) { this._node.addEventListener(type, callback); return this; }
   removeEventListener(type, callback) { this._node.removeEventListener(type, callback); return this; }
+  getText() { return this._node.textContent; }
   setText(text) { this._setTextContent(text); return this; }
   getHeight() { return window.getComputedStyle(this._node).height; }
   setTop(top) { this._node.style.top = `${top}px`; return this; }
@@ -34,10 +36,11 @@ const CLASSES = {
   selectOpen: "sp-select-open",                 // class added to container div when dropdown is open
   dropdown: "sp-dropdown",                      // container div for dropdown list
   label: "sp-label",                            // span showing selected option (or tags) in select div
-  tag: "sp-tag",                                // span for tag correspdoning to a selected option in multiselect div
+  tag: "sp-tag",                                // span for tag corresponding to a selected option in multiselect div
   placeholder: "sp-placeholder",                // placeholder span, can used to show open-arrow (use ::after with absolute positioning)
   placeholderHidden: "sp-placeholder-hidden",   // class added to placeholder once an option is set
   option: "sp-option",                          // div for each option in dropdown list
+  optionNote: "sp-option-note",                 // div for optional note following option label in dropdown list (typically floated right)
   optionDisabled: "sp-option-disabled",         // class added to option when disabled
   optionHidden: "sp-option-hidden",             // class added to option when hidden
   optionSelected: "sp-option-selected",         // class added to option when selected
@@ -97,12 +100,13 @@ class SelectPure {
   }
 
   // Public API
-  value(v) { if (v !== undefined) { this._setValue(v); } return this._config.value; }
+  value(v) { if ( v !== undefined ) { this._setValue(v); } else return this._config.value; }
   reset() { this._setValue(null); }
   open() { return this._open(); }
   close() { return this._close(); }
   next() { return this._next(); }
   prev() { return this._prev(); }
+  notes(v) { if ( v !== undefined ) { this._setNotes(v); } else return this._getNotes(); }
 
   // Private methods
   _create(_element) {
@@ -113,6 +117,8 @@ class SelectPure {
     this._label = new Element("span", { class: this._config.classNames.label });
     this._optionsWrapper = new Element("div", { class: this._config.classNames.dropdown });
     this._options = this._generateOptions();
+    this._optionsDict = {};
+    for ( let i = 0 ; i < this._config.options.length ; i++ ) this._optionsDict[this._config.options[i].value] = this._options[i];
     this._select.addEventListener("click", this._boundHandleClick);
     this._select.append(this._label.get());
     this._select.append(this._optionsWrapper.get());
@@ -131,6 +137,7 @@ class SelectPure {
       this._autocomplete.spellcheck = false; // this doesn't work for some reason...
       this._optionsWrapper.append(this._autocomplete.get());
     }
+    this._notes = {};
     return this._config.options.map(_option => {
       const option = new Element("div", {
         class: `${this._config.classNames.option}${_option.disabled ? " " + this._config.classNames.optionDisabled : ""}`,
@@ -139,10 +146,31 @@ class SelectPure {
         disabled: _option.disabled,
       });
       if ( _option.disabled ) this._config.disabledOptions.push(String(_option.value));
+      if ( this._config.notes && _option.value in this._config.notes ) {
+        const note = new Element("div", { class: this._config.classNames.optionNote, textContent: this._config.notes[_option.value] });
+        option.append(note.get());
+      }
       this._optionsWrapper.append(option.get());
       return option;
     });
   }
+
+  _setNotes(v) {
+    for (let k in v) {
+      if ( k in this._optionsDict ) {
+        const elt = this._optionsDict[k];
+        if ( ! elt.getFirstChild() ) {
+          const note = new Element("div", { class: this._config.classNames.optionNote, textContent: v[k] });
+          elt.append(note.get());
+        } else {
+          elt.getFirstChild().textContent = v[k];
+        }
+      } else {
+        console.log("key "+k+" not found");
+      }
+    }
+  }
+  _getNotes() { let v = {}; for (let k in this._optionsDict) { v[k] = this._optionsDict[k].getText(); } return v; }
 
   _focusIn() { this._select.addClass(this._config.classNames.focus); }
   _focusOut() { this._select.removeClass(this._config.classNames.focus); }

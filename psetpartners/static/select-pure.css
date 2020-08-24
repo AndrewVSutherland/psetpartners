@@ -135,6 +135,11 @@
   cursor: not-allowed;
 }
 
+.sp-option-note {
+  float: right;
+  margin-right: 5px;
+}
+
 .sp-label {
   padding-top: 0.5px;
   padding-bottom: 1px;

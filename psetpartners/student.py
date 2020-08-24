@@ -1,6 +1,6 @@
 import re
 from psetpartners import app
-from psetpartners.getdb import getdb
+from psetpartners.dbwrapper import getdb, students_in_class
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import (
@@ -8,12 +8,49 @@ from psetpartners.utils import (
     DEFAULT_TIMEZONE,
     current_year,
     current_term,
+    hours_from_default,
     )
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
 
-# Note that these also appear in static/options.js, you need to update both
+# Note that these also appear in static/options.js, you need to update both!
+
+departments_options = [
+  ( '1', 'Civil and Environmental Engineering'),
+  ( '2', 'Mechanical Engineering'),
+  ( '3', 'Materials Science and Engineering'),
+  ( '4', 'Architecture'),
+  ( '5', 'Chemistry'),
+  ( '6', 'EECS'),
+  ( '7', 'Biology'),
+  ( '8', 'Physics'),
+  ( '9', 'Brain and Cognitive Sciences'),
+  ( '10', 'Chemical Engineering'),
+  ( '11', 'Urban Studies and Planning'),
+  ( '12', 'EAPS'),
+  ( '14', 'Economics'),
+  ( '15', 'Management'),
+  ( '16', 'Aeronautics and Astronautics'),
+  ( '17', 'Political Science'),
+  ( '18', 'Mathematics'),
+  ( '20', 'Biological Engineering'),
+  ( '21', 'Humanities'),
+  ( '21A', 'Anthropology'),
+  ( '21E/21S', 'Humanities + Eng./Science'),
+  ( '21G', 'Global Studies and Languages'),
+  ( '21H', 'History'),
+  ( '21L', 'Literature'),
+  ( '21M', 'Music and Theater Arts'),
+  ( '22', 'Nuclear Science and Engineering'),
+  ( '24', 'Linguistics and Philosophy'),
+  ( 'CMS/21W', 'Comp. Media Studies/Writing'),
+  ( 'IDS', 'Data, Systems, and Society'),
+  ( 'IMES', 'Medical Engineering and Science'),
+  ( 'MAS', 'Media Arts and Sciences'),
+  ( 'STS', 'Science, Technology, and Society'),
+  ];
+
 year_options = [
     (1, "first year"),
     (2, "sophomore"),
@@ -148,6 +185,12 @@ student_class_properties = {
     "confidence" : { 'type': "posint", 'options': confidence_options },
 }
 
+countable_options = [
+    'hours', 'departments', 'year', 'gender', 'location', 'timezone',
+    'start', 'together', 'forum', 'size', 'commitment', 'confidence',
+    'departments_affinity', 'year_affinity', 'gender_affinity', 'commitment_affinity', 'confidence_affinity',
+]
+
 def default_value(typ):
     if typ.endswith('[]'):
         return []
@@ -183,6 +226,55 @@ def is_instructor(kerb):
 def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
+
+def _counts(iter, opts):
+    counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
+    count_hours = 'hours' in opts
+    count_departments = 'departments' in opts
+    if count_hours:
+        hours = [0 for i in range(168)]
+    if count_departments:
+        departments = {}
+    pref_opts = [ opt for opt in counts if opt in student_preferences ]
+    prop_opts = [ opt for opt in counts if opt in student_class_properties ]
+    base_opts = [ opt for opt in counts if opt not in pref_opts and opt not in prop_opts ]
+    n = 0
+    for r in iter:
+        if count_hours:
+            off = hours_from_default(r['timezone']) if r['timezone'] else 0
+            for i in range(168):
+                hours[(i-off) % 168] += 1 if r['hours'][i] else 0
+        for opt in base_opts:
+            val = str(r.get(opt,""))
+            counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
+        for opt in pref_opts:
+            val = str(r['preferences'].get(opt,"")) if 'preferences' in r else ""
+            counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
+        for opt in prop_opts:
+            val = str(r['properties'].get(opt,"")) if 'properties' in r else ""
+            counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
+        if count_departments:
+            for dept in r.get('departments',[]):
+                departments[dept] = departments[dept]+1 if dept in departments else 1
+        n += 1
+    if count_hours:
+        counts['hours'] = hours
+    if count_departments:
+        counts['departments'] = departments
+    counts["student"] = n
+    return counts
+
+
+def get_counts(classes, opts):
+    db = getdb();
+    counts = {}
+    if '' in classes:
+        counts[''] = _counts(db.students.search(), opts)
+    for class_number in classes:
+        if class_number:
+            counts[class_number] = _counts(students_in_class(class_number), opts)
+    return counts
+
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
@@ -238,7 +330,7 @@ class Student(UserMixin):
         for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
-        self.class_data = self.student_class_data()
+        self.class_data = self._class_data()
         self.classes = sorted(list(self.class_data))
         assert self.kerb
 
@@ -295,6 +387,7 @@ class Student(UserMixin):
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
             r = q.copy()
             r['class_id'] = class_id
+            r['class_number'] = class_number
             r['properties'] = self.class_data[class_number].get('properties',None)
             if class_number in self.class_data and any([self.class_data[class_number]['preferences'] != self.preferences,
                 self.class_data[class_number]["strengths"] != self.strengths]):
@@ -311,15 +404,14 @@ class Student(UserMixin):
             if S:
                 self._db.classlist.insert_many(S)
 
-    def student_class_data(self, year=current_year(), term=current_term()):
+    def _class_data(self, year=current_year(), term=current_term()):
         # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
         class_data = {}
         classes = self._db.classlist.search(
             { 'student_id': self.id, "year": year, 'term': term},
-            projection=['class_id', 'properties', 'preferences', 'strengths'],
+            projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths'],
             )
         for r in classes:
-            r.update(self._db.classes.lucky({"id": r['class_id']}, projection=['class_number']))
             if not r['preferences']:
                 r['preferences'] = self.preferences
                 r['strengths'] = self.strengths
@@ -397,16 +489,29 @@ class AnonymousUser(AnonymousUserMixin):
     def get_id(self):
         return None
 
+test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", "US/Alaska", "US/Pacific", "US/Mountain",
+                  "US/Central", "US/Eastern", "Brazil/East", "Canada/Newfoundland", "Brazil/DeNoronha", "Atlantic/Cape_Verde", "Iceland",
+                  "Europe/London", "Europe/Paris", "Europe/Athens", "Asia/Dubai", "Asia/Baghdad", "Asia/Jerusalem", "Asia/Tehran",
+                  "Asia/Karachi", "Asia/Kolkata", "Asia/Katmandu", "Asia/Dhaka", "Asia/Rangoon", "Asia/Jakarta", "Asia/Singapore", "Australia/Eucla",
+                  "Asia/Seoul", "Asia/Tokyo", "Australia/Adelaide", "Australia/Sydney", "Australia/Lord_Howe",
+                  "Pacific/Norfolk", "Pacific/Auckland", "Pacific/Chatham", "Pacific/Tongatapu", "Pacific/Kiritimati"]
+
+test_departments = ['6', '8', '7', '20', '5', '9', '10', '1', '3', '2', '16',  '14', '12', '4', '11', '22', '24', '21', '17']
 
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
     from random import randint
     from psetpartners import db
-    from psetpartners.utils import timezones
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
 
     def rand(x):
         return x[randint(0,len(x)-1)]
+
+    def wrand(x):
+        for i in range(len(x)):
+            if randint(0,i+2) == 0:
+                return x[i]
+        return rand(x)
 
     def rand_strength():
         if randint(0,2):
@@ -441,29 +546,33 @@ def generate_test_population(num_students=300,max_classes=6):
         elif ( s['year'] == 5 ):
             departments = ['18']
         else:
-            departments = ['18'] if randint(0,7) else [db.departments.random()]
+            departments = ['18'] if randint(0,7) else [wrand(test_departments)]
         if len(departments) and randint(0,2) == 2:
-            departments.append(db.departments.random())
+            departments.append(wrand(test_departments))
             if randint(0,4) == 2:
-                departments.append(db.departments.random())
-                if randint(0,4) == 2:
-                    departments.append(db.departments.random())
+                departments.append(wrand(test_departments))
         s['departments'] = list(set(departments))
-        s['gender'] = db.names.lookup(firstname,projection="gender") if randint(0,2) == 0 else None
+        s['gender'] = db.names.lookup(firstname,projection="gender") if randint(0,1) == 0 else None
         if s['gender']:
             if randint(0,2) == 0:
                 s['preferred_pronouns'] = pronouns[s['gender']]
         else:
             if randint(0,9) == 0:
                 s['preferred_pronouns'] = "they/them"
-        s['location'] = 'near' if randint(0,3) == 0 else rand(location_options[1:])[0]
-        s['timezone'] = DEFAULT_TIMEZONE if s['location'] == 'near' else rand(timezones)[0]
-        hours = [[False for j in range(24)] for i in range(7)]
-        for i in range(7):
-            start = randint(0,23)
-            end = randint(start+1,24)
-            for j in range(start,end):
-                hours[i][j] = True
+        s['location'] = 'near' if randint(0,2) == 0 else rand(location_options[1:])[0]
+        s['timezone'] = DEFAULT_TIMEZONE_NAME if s['location'] == 'near' else rand(test_timezones)
+        hours = [False for i in range(168)]
+        n = 0
+        while n < 168:
+            start = n + randint(0,23)
+            if start >= 168:
+                break
+            end = randint(start+1,start+8)
+            if end >= 168:
+                end = 168
+            for i in range(start,end):
+                hours[i] = True
+            n = end+1
         s['hours'] = hours
         prefs, strengths = {}, {}
         for p in student_preferences:
@@ -483,13 +592,13 @@ def generate_test_population(num_students=300,max_classes=6):
     S = []
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
-        classes = [db.classes.random({'year': year, 'term': term}, projection='id')]
+        classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
-            classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
+            classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
             for m in range(2,max_classes):
                 if randint(0,2*m-2):
                     break;
-                classes.append(db.classes.random({'year': year, 'term': term}, projection='id'))
+                classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -520,18 +629,19 @@ def generate_test_population(num_students=300,max_classes=6):
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa]['options'])[0]
                     strengths[pa] = randint(1,5)
-            c = {'year': year, 'term': term, 'student_id': student_id, 'class_id': classes[i], 'preferences': prefs, 'strengths': strengths, 'properties': props}
+            c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'class_number': classes[i]['class_number'],
+                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props }
             S.append(c)
     db.test_classlist.insert_many(S)
     S = []
-    for class_id in db.classes.search({'year': year, 'term': term}, projection='id'):
-        n = len(list(db.test_classlist.search({'class_id':class_id},projection='id')))
+    for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
+        n = len(list(db.test_classlist.search({'class_id':c['id']},projection='id')))
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            g = {"class_id": class_id, "group_name": name, "visibility":2, 'strengths': {}, 'preferences': {} }
-            if not g in S:
-                S.append(g)
+            g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
+                 'group_name': name, 'visibility': 2, 'strengths': {}, 'preferences': {} }
+            S.append(g) # don't worry about duplicating group names, it is unlikely and won't break anything
     if ( S ):
         db.test_groups.insert_many(S)
         S = []

@@ -7,4 +7,5 @@ flasklog
 *~
 *.pyc
 *.pyo
+*.sav
 .DS_Store
