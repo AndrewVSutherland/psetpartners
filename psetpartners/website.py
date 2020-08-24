@@ -1,23 +1,27 @@
-# -*- coding: utf-8 -*-
-
-
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
 
-from .app import app, set_running  # So that we can set it running below
+import logging
+from .app import app
+from .config import Configuration
 from . import main
 assert main
-
-from psetpartners import db
+from . import db
 assert db
 
 def main():
-    from .config import Configuration
+    logger = logging.getLogger("psetpartners")
+    logger.setLevel(logging.INFO)
+    logfile = Configuration().get_logging()["logfile"]
+    ch = logging.FileHandler(logfile)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s"""))
+    logger.addHandler(ch)
+    app.logger.info("Website starting.")
 
     flask_options = Configuration().get_flask()
-    # flask_options["debug"] = True
 
     if "profiler" in flask_options and flask_options["profiler"]:
         from werkzeug.contrib.profiler import ProfilerMiddleware
@@ -27,5 +31,5 @@ def main():
         )
         del flask_options["profiler"]
 
-    set_running()
     app.run(**flask_options)
+    app.logger.info("Website shutdown.")
