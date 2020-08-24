@@ -52,7 +52,10 @@ def before_first_request():
 ############################
 
 def is_livesite():
-    return ( domain() == "psetpartners.mit.edu" )
+    try:
+        return ( domain() == "psetpartners.mit.edu" )
+    except Exception:
+        return False
 
 def is_debug_mode():
     from flask import current_app
