@@ -60,6 +60,7 @@ group_name            | text	    | custom name, editable by anyone in group
 visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
+creator               | text        | kerb of student who created the group (if applicable)
 
 ## classlist
 
