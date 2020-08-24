@@ -149,6 +149,15 @@ class Configuration(_Configuration):
             default="psetpartners",
         )
 
+        emailgroup = parser.add_argument_group("emailing options:")
+        emailgroup.add_argument(
+            "--email-pass",
+            dest="email_password",
+            metavar="PASS",
+            help="email account password [default: %(default)s]",
+            default="", # Need to provide in secrets file instead
+        )
+
         # undocumented options
         parser.add_argument(
             "--enable-profiler",

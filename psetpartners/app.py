@@ -4,6 +4,8 @@ import time
 import logging
 import getpass
 
+from .config import Configuration
+
 from flask_mail import Mail, Message
 
 from flask import (
@@ -37,17 +39,13 @@ if getpass.getuser() == 'psetpartners':
         REMEMBER_COOKIE_HTTPONLY=True,
     )
 
-with open("temp.txt","r") as fp:
-    passwd = fp.read().strip()
-
 mail_settings = {
     "MAIL_SERVER": "heaviside.mit.edu",
     "MAIL_PORT": 465,
     "MAIL_USE_TLS": False,
     "MAIL_USE_SSL": True,
     "MAIL_USERNAME": "psetpartnersnoreply",
-    "MAIL_PASSWORD": passwd,
-    #"MAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD_MIT", ""),
+    "MAIL_PASSWORD": Configuration().options['email']['password'],
 }
 
 app.config.update(mail_settings)
@@ -55,7 +53,6 @@ mail = Mail(app)
 
 @app.before_first_request
 def setup():
-    from .config import Configuration
     formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
 
     logger = logging.getLogger("psetpartners")
