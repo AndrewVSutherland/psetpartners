@@ -3,16 +3,18 @@
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
 
+from .app import app, set_running  # So that we can set it running below
 from . import main
 assert main
-from . import db
+
+from psetpartners import db
 assert db
 
 def main():
-    from .app import app
     from .config import Configuration
 
     flask_options = Configuration().get_flask()
+    # flask_options["debug"] = True
 
     if "profiler" in flask_options and flask_options["profiler"]:
         from werkzeug.contrib.profiler import ProfilerMiddleware
@@ -22,4 +24,6 @@ def main():
         )
         del flask_options["profiler"]
 
+    set_running()
     app.run(**flask_options)
+    

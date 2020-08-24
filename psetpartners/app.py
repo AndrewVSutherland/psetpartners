@@ -3,7 +3,6 @@ import os
 import time
 import logging
 import getpass
-from .config import Configuration
 
 from flask import (
     Flask,
@@ -19,48 +18,39 @@ from psetpartners.utils import (
     domain,
     )
 
-############################
-#         Main app         #
-############################
-
-app = Flask(__name__, static_url_path="", static_folder="static",)
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-# IMPORTANT: the lines below ensure security of cookies
-# The check for the username is to allow non-https connections when running local for development
-if getpass.getuser() == 'psetpartners':
-    app.config.update(
-        SESSION_COOKIE_SECURE=True,
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Strict',
-        REMEMBER_COOKIE_SECURE=True,
-        REMEMBER_COOKIE_HTTPONLY=True,
-    )
-
 @app.before_first_request
-def before_first_request():
+def setup():
+    from .config import Configuration
+    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
+
     logger = logging.getLogger("psetpartners")
     logger.setLevel(logging.INFO)
     logfile = Configuration().get_logging()["logfile"]
     ch = logging.FileHandler(logfile)
     ch.setLevel(logging.INFO)
-    ch.setFormatter(logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s"""))
+    ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("Got first request on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
+    app.logger.info("psetpartners restarted on %s (running = %s, livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_running(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
 # App attribute functions  #
 ############################
 
+app.is_running = False
+
 def is_livesite():
-    try:
-        return ( domain() == "psetpartners.mit.edu" )
-    except Exception:
-        return False
+    return ( domain() == "psetpartners.mit.edu" )
 
 def is_debug_mode():
     from flask import current_app
 
     return current_app.debug
+
+def set_running():
+    app.is_running = True
+
+def is_running():
+    return app.is_running
 
 def is_under_construction():
     return is_livesite() # TODO: change this line when we go live
