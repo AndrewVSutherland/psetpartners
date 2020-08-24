@@ -221,14 +221,14 @@ const timezoneOptions = [
 {% endfor %}
 ];
 
-var counts = {{ counts|tojson|safe }};
+var allCounts = {{ counts|tojson|safe }};
 
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, counts, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, allCounts, maxlength, ctx */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -276,30 +276,46 @@ function getProps(props,i) {
   return res;
 }
 
-function setPrefs(prefs,i) {
+function prefNotes(pref, counts) { return counts ? (pref.endsWith("_affinity") ? null : counts[pref]) : null; }
+
+function setPrefs(prefs, i, counts) {
   for ( const p in prefs ) {
     const id = 'pref-' + p + '-' + i;
     const e = document.getElementById(id), s = jQuery(e).data('select');
     e.value = prefs[p].value;
-    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+    const notes = prefNotes (p, counts);
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p], notes: notes }); else updateSingleSelect (id, notes);
     document.getElementById('s'+id).value = prefs[p].strength;
     showPS(id, e.value);
   }
 }
 
-function setProps(props,i) {
+function setProps(props, i, counts) {
   for ( const p in props ) {
     const id = p + '-' + i;
     const e = document.getElementById(id), s = jQuery(e).data('select');
     e.value = props[p];
-    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p] }); else updateSingleSelect(id);
+    const notes = prefNotes (p, counts);
+    if ( ! s ) makeSingleSelect(id, studentOptions[p], { placeholder: studentPlaceholders[p], notes: notes }); else updateSingleSelect(id, notes);
   }
 }
+
+function addChosenBy(cnts) { for (let c in cnts) for (let k in cnts[c]) if ( k != 'student' && '' in cnts[c][k] ) cnts[c][k][''] = 'chosen by ' + cnts[c][k]['']; }
 
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
   v = v.map(x => x.trim()).filter(x => x !== '');
-  $.ajax({url: '/_counts', data: {'classes': val}, dataType: 'json', success: function(resp) { counts = resp.counts; }});
+
+  const vnew = v.filter(x => ! (x in allCounts)).join(",");
+  function updateCounts(r) {
+    addChosenBy(r.counts);
+    for (let c in r.counts) {
+      allCounts[c] = r.counts[c];
+      if ( c ) { const i = studentClasses.indexOf(c); setPrefs(classesPrefs[c], i+1, allCounts[c]); setProps(classesProps[c], i+1, allCounts[c]); }
+    }
+  }
+  if ( vnew.length ) $.ajax({url: '/_counts', data: {'classes': vnew}, dataType: 'json', success: updateCounts });
+
   let classesPrefs = {}, classesProps = {};
 
   let allPreferences = [...studentPreferences, ...studentClassPreferences];
@@ -319,8 +335,8 @@ function changeClasses(val) {
   for ( let i = 0 ; i < v.length ; i++ ) {
     const c = v[i];
     if ( c != studentClasses[i] ) {
-      setPrefs(classesPrefs[c], i+1);
-      setProps(classesProps[c], i+1);
+      setPrefs(classesPrefs[c], i+1, allCounts[c]);
+      setProps(classesProps[c], i+1, allCounts[c]);
       const q = $('#pref-'+(i+1)); q.html(c); q.show();
     }
   }
@@ -370,7 +386,7 @@ function togglerIndex(i) {
     e.toggleClass('toggler-active');
     showAffinityPreferences();
     showApplyPreferences();
-    showHoursCompatible();
+    computeHoursCompatible();
   }
 }
 
@@ -412,7 +428,7 @@ function showAffinityPreferences() {
 }
 
 var currentOverlap = 0;
-var currentCounts = counts.general;
+var currentCounts = allCounts[''];
 
 function hoursOffset() {
   const tz = $('#timezone').val();
@@ -424,18 +440,22 @@ function hoursOffset() {
 }
 
 function showHoursCompatible() {
+  let c = togglerCaption();  if ( c == 'General' ) c = 'all';
+  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.student).toFixed(2) + ' hours (' + c + ' students)');
+}
+
+function computeHoursCompatible() {
   const offset = hoursOffset();
   currentOverlap = 0;
-  currentCounts = counts[togglerCaption()];
+  let cur = togglerCaption();
+  currentCounts = allCounts[cur === 'General' ? '' : cur];
   if ( ! currentCounts ) { $('#hours-compatible').text(''); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
+    const n = (24*i+j+168-offset)%168;
     if ( document.getElementById('cb-hours-' + i + '-' + j).checked ) currentOverlap += hours[(24*i+j+168-offset)%168];
   }
-  let c = ' with ' + togglerCaption() + ' students';
-  if ( c === ' with General students' ) c = '';
-
-  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours' + c);
+  showHoursCompatible();
 }
 
 function updateHoursCompatible(e) {
@@ -445,7 +465,7 @@ function updateHoursCompatible(e) {
   const i = parseInt(x[2]), j = parseInt(x[3]);
   const n = currentCounts.hours[(24*i+j+168-hoursOffset())%168];
   currentOverlap += (e.checked ? 1 : -1 ) * n;
-  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours');  
+  showHoursCompatible();
 }
 
 function checkChanges (e) {
@@ -456,7 +476,7 @@ function checkChanges (e) {
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
   if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
-  if ( e.target.name === 'timezone' ) showHoursCompatible();
+  if ( e.target.name === 'timezone' ) computeHoursCompatible();
   if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
 }
 
@@ -482,6 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function departmentsLimit (n) { alertInfo('#departments_info', 'At most ' + maxlength.departments + ' departments permitted!'); }
 
   $.ajaxSetup({error:ajaxErrorHandler}); // use this rather than ajexError so "this" is defined
+  addChosenBy(allCounts);
 
   makeMultiSelect('departments',
     studentOptions.departments,
@@ -499,19 +520,20 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   makeSingleSelect('location', studentOptions.location, {});
   makeSingleSelect('timezone', timezoneOptions, {});
-  makeSingleSelect('year', studentOptions.year, { placeholder: studentPlaceholders.year });
-  makeSingleSelect('gender', studentOptions.gender, { placeholder: studentPlaceholders.gender });
+  const sp = studentPlaceholders;
+  makeSingleSelect('year', studentOptions.year, { placeholder: sp.year });
+  makeSingleSelect('gender', studentOptions.gender, { placeholder: sp.gender });
   for (const pref of studentPreferences) {
     for ( let i = 0 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: studentPlaceholders[pref] });
+      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref], notes: prefNotes(pref, allCounts[i?studentClasses[i-1]:'']) });
   }
   for (const pref of studentClassPreferences) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: studentPlaceholders[pref] });
+      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref] });
   }
   for (const prop of studentClassAffinities) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: studentPlaceholders[prop] });
+      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: sp[prop], notes: prefNotes(prop, allCounts[i?studentClasses[i-1]:'']) });
   }
   makeCheckboxGrid();
   showTimezoneOffset();
@@ -540,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   showAffinityPreferences();
   showApplyPreferences();
-  showHoursCompatible();
+  computeHoursCompatible();
   console.log('student page ready');
 });
 </script>
