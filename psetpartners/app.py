@@ -18,6 +18,24 @@ from psetpartners.utils import (
     domain,
     )
 
+############################
+#         Main app         #
+############################
+
+app = Flask(__name__, static_url_path="", static_folder="static",)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+# IMPORTANT: the lines below ensure security of cookies
+# The check for the username is to allow non-https connections when running local for development
+if getpass.getuser() == 'psetpartners':
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Strict',
+        REMEMBER_COOKIE_SECURE=True,
+        REMEMBER_COOKIE_HTTPONLY=True,
+    )
+
+
 @app.before_first_request
 def setup():
     from .config import Configuration
