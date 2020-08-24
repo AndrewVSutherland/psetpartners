@@ -48,13 +48,11 @@ def setup():
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("psetpartners restarted on %s (running = %s, livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_running(), is_livesite(), is_under_construction(), is_debug_mode()))
+    app.logger.info("first request on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
 # App attribute functions  #
 ############################
-
-app.is_running = False
 
 def is_livesite():
     return ( domain() == "psetpartners.mit.edu" )
@@ -63,12 +61,6 @@ def is_debug_mode():
     from flask import current_app
 
     return current_app.debug
-
-def set_running():
-    app.is_running = True
-
-def is_running():
-    return app.is_running
 
 def is_under_construction():
     return is_livesite() # TODO: change this line when we go live
