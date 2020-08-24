@@ -498,6 +498,8 @@ test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", 
 
 test_departments = ['6', '8', '7', '20', '5', '9', '10', '1', '3', '2', '16',  '14', '12', '4', '11', '22', '24', '21', '17']
 
+big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
+
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
     from random import randint
@@ -546,7 +548,7 @@ def generate_test_population(num_students=300,max_classes=6):
         elif ( s['year'] == 5 ):
             departments = ['18']
         else:
-            departments = ['18'] if randint(0,7) else [wrand(test_departments)]
+            departments = ['18'] if randint(0,2) else [wrand(test_departments)]
         if len(departments) and randint(0,2) == 2:
             departments.append(wrand(test_departments))
             if randint(0,4) == 2:
@@ -592,7 +594,10 @@ def generate_test_population(num_students=300,max_classes=6):
     S = []
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
-        classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+        if randint(0,1):
+            classes = [db.classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
+        else:
+            classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
             classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
             for m in range(2,max_classes):
