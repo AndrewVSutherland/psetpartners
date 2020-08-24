@@ -113,12 +113,18 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </tr>
     {% endfor %}
   </table>
-  <center><span class="formcaption" id="hours-compatible" tabindex="11"></label></span></center>
-  <h3 id="prefheader">Preferences</h3>
+  <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
 
-   <div class="toggler" id="pref-toggler" tabindex="12">
+  <div class="htoggler" tabindex="12">
+    <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
+    <label class="htoggler-after"></label>
+    <label class="htoggler-nav" id="group-header">Groups</label>
+  </div>
+  <div style="clear:both;"></div>
+
+   <div class="toggler" id="pref-toggler" tabindex="13">
     {% for i in  range(maxlength["classes"]+1) %}
-      <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="pref-{{i}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
+      <div class="toggler-nav {% if not i %}toggle-active{% endif %}" id="toggle-{{i}}" {% if i > user.classes|length %} style="display:none;"{% endif%}>
         {{"General" if i == 0 else (user.classes[i-1] if i and i <= user.classes|length else "")}}
       </div>
     {% endfor %}
@@ -132,61 +138,69 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% for i in range(start,maxlength["classes"]+1) %}
   {% set pval = user.class_data[user.classes[i-1]].preferences[pref] if i and i < n else user.preferences[pref] %}
   {% set sval = 3 if not pval else (user.class_data[user.classes[i-1]].strengths[pref] if i and i < n else user.strengths[pref]) %}
-    <tr class="pref-{{i}} pref-{{pref}}" style="display:none;">
-    <td class="caption"><label class="{{pref}}">{{caption}}</label></td>
-  <td class="value pref-{{i}} pref-{{pref}}" style="display:none;">
-    <span class="select" id="select-pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
-    <input class="pref-{{i}}" type="hidden" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
-  </td>
-  <td class="pref-{{i}} pref-{{pref}}" style="padding-left:10px; display:none;">
-    <input class="slider pref-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
-    <label class="strength" id="lspref-{{pref}}-{{i}}">{{options.strength[sval if pval else 0]}}</label>
-  {%if start != 0 %}
-    </tr>
-  {% endif %}
-{% endfor %}
-{%if start == 0 %}
+  <tr class="toggle-{{i}} pref-{{pref}}" style="display:none;">
+    <td class="caption"><label class="pref-{{pref}}">{{caption}}</label></td>
+    <td class="value pref-{{pref}}">
+      <span class="select" id="select-pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
+      <input type="hidden" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
+    </td>
+    <td class="pref-{{pref}}" style="padding-left:10px;">
+      <input class="slider" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
+      <label class="strength" id="lspref-{{pref}}-{{i}}">{{options.strength[sval if pval else 0]}}</label>
     </td>
   </tr>
-{% endif %}
+{% endfor %}
 {%- endmacro %}
 
 {% macro CPROP(caption, prop, tabindex) -%}
 {% set n = user.classes|length + 1 %}
   {% for i in range(1,maxlength["classes"]+1) %}
     {% set pval = user.class_data[user.classes[i-1]].properties[prop] if i < n else "" %}
-    <tr class="pref-{{i}}" style="display:none;">
+    <tr class="toggle-{{i}}" style="display:none;">
       <td class="caption"><label>{{caption}}</label></td>
       <td class="value">
         <span class="select" id="select-{{prop}}-{{i}}" tabindex="{{tabindex}}"></span>
-        <input class="prop-{{i}}" type="hidden" name="{{prop}}-{{i}}" id="{{prop}}-{{i}}" value="{{pval|blanknone}}"/>
+        <input type="hidden" name="{{prop}}-{{i}}" id="{{prop}}-{{i}}" value="{{pval|blanknone}}"/>
       </td>
       <td class="forminfo">optional</td>
     </tr>
   {% endfor %}
 {%- endmacro %}
 
-  <table class="input">
+  <table class="input pref">
 
-    {{PREF("When you like to start working", "start", 13)}}
-    {{PREF("How you like to collaborate", "together", 15)}}
-    {{PREF("How you like to communicate", "forum", 17)}}
-    {{PREF("Your ideal group size", "size", 19)}}
-    {{CPROP("Commitment to this course", "commitment", 20)}}
-    {{CPROP("Knowledge of the material", "confidence", 23)}}
+    {{PREF("When you like to start working", "start", 14)}}
+    {{PREF("How you like to collaborate", "together", 16)}}
+    {{PREF("How you like to communicate", "forum", 18)}}
+    {{PREF("Your ideal group size", "size", 20)}}
+    {{CPROP("Commitment to this course", "commitment", 21)}}
+    {{CPROP("Knowledge of the material", "confidence", 22)}}
 
     <tr style="display:none; height:5px;" id="affinity-separator"><td colspan="3"></td></tr>
 
-    {{PREF("", "departments_affinity", 22)}}
-    {{PREF("", "year_affinity", 24)}}
-    {{PREF("", "gender_affinity", 26)}}
-    {{PREF("", "commitment_affinity", 28, 1)}}
-    {{PREF("", "confidence_affinity", 30, 1)}}
+    {{PREF("", "departments_affinity", 23)}}
+    {{PREF("", "year_affinity", 25)}}
+    {{PREF("", "gender_affinity", 27)}}
+    {{PREF("", "commitment_affinity", 29, 1)}}
+    {{PREF("", "confidence_affinity", 31, 1)}}
  
   </table>
 
+  <div class="group" style="display:none;">
+
+  {% set n = user.classes|length + 1 %}
+  {% for i in range(maxlength["classes"]+1) %}
+    <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" class="toggle-{{i}}">
+      <p id="group-summary-{{i}}"></p>
+      <p id="group-instructions-{{i}}"></p>
+    </div>
+  {% endfor %}
+
+  </div>
+
   <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
-  <input class="ctx" type="hidden" name="ctx-togglerIndex" value="" />
+  <input class="ctx" type="hidden" name="ctx-currentClass" value="" />
+  <input class="ctx" type="hidden" name="ctx-htogglerId" value="" />
 
   <div style="display:inline-block;">
   <table class="submit">
@@ -300,7 +314,7 @@ function setProps(props, i, counts) {
   }
 }
 
-function addChosenBy(cnts) { for (let c in cnts) for (let k in cnts[c]) if ( k != 'student' && '' in cnts[c][k] ) cnts[c][k][''] = 'chosen by ' + cnts[c][k]['']; }
+function addChosenBy(cnts) { for (let c in cnts) for (let k in cnts[c]) if ( typeof(cnts[c][k]) === 'object' && '' in cnts[c][k] ) cnts[c][k][''] = 'chosen by ' + cnts[c][k]['']; }
 
 function changeClasses(val) {
   let v = typeof(val) == "string" ? val.split(',') : val;
@@ -337,7 +351,7 @@ function changeClasses(val) {
     if ( c != studentClasses[i] ) {
       setPrefs(classesPrefs[c], i+1, allCounts[c]);
       setProps(classesProps[c], i+1, allCounts[c]);
-      const q = $('#pref-'+(i+1)); q.html(c); q.show();
+      const q = $('#toggle-'+(i+1)); q.html(c); q.show();
     }
   }
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#pref-'+(i+1)); q.html(''); q.hide(); }
@@ -349,6 +363,39 @@ function changeClasses(val) {
     if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
   } else {
     togglerIndex(0);
+  }
+  setGroupPanes();
+}
+
+function setGroupPanes() {
+  let cnts = allCounts[''];
+  $('#group-summary-0').text(
+    `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${cnts.visibility['2']} are public.`
+  );
+  if ( studentClasses.length ) {
+    $('#group-instructions-0').text('Click on a class number to see your pset partnering options for that class.');
+  } else {
+    $('#group-instructions-0').text('Add one or more classes in order see information about how to join a pset group.');
+  }
+  for ( let i = 0 ; i < studentClasses.length ; i++ ) {
+    const c = studentClasses[i];
+    if ( c in allCounts ) {
+      const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
+      let v = ['0', '0', '0'];
+      for (let i = 0 ; i <= 2 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = allCounts[c].visibility[''+i];
+      let msg = `There are ${s} students in ${c} registered on pset partners.`;
+      if ( g ) {
+        msg += ` Currently ${sg} of these student are memebers of one of the ${g} pset groups that have formed in this class.`;
+        if ( sg+1 < s ) msg += ` That means ${s-sg} students may currently be looking for pset partners!`;
+        msg += '<br><br>';
+        msg += `Of the ${g} pset groups in this class, ${v[2]} are public, ${v[1]} are private but open to new members, and ${v[0]} are closed to new members.`;
+      } else {
+        msg += `No pset groups have been formed for this class yet, all ${s} students are looking for pset partners!`;
+      }
+      $('#group-summary-'+(i+1)).html(msg);
+    } else {
+      $('#group-summary-'+(i+1)).text(`Group data not yet retrieved for ${c}, click save to update.`);
+    }
   }
 }
 
@@ -371,23 +418,29 @@ function applyPreferences() {
   $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
 }
 
+function htogglerMakeActive(e) {
+    if ( e.classList.contains('htoggler-active') ) return;
+    $('.htoggler-active').removeClass('htoggler-active');
+    e.classList.add("htoggler-active");
+    if ( e.id === "pref-header" ) { console.log("pref"); $('.group').hide(); $('.pref').show(); }
+    if ( e.id === "group-header" ) { console.log("group"); $('.pref').hide(); $('.group').show(); }
+}
+
 function togglerIndex(i) {
   if ( typeof i === 'undefined'  ) {
     const id = $('.toggler-nav.toggler-active').attr('id');
     return id ? parseInt(id.split('-')[1]) : null;
-  } else {
-    const id = 'pref-' + i;
-    const oldid = $('.toggler-nav.toggler-active').attr('id');
-    $('#prefheader').text('Preferences' + (i > 0 ? ' for ' + classLabel(studentClasses[i-1]) : ''));
-    $('tr.' + oldid).hide();  $('tr.'+id).show();
-    $('td.' + oldid).hide();  $('td.'+id).show();
-    $('#'+oldid).toggleClass('toggler-active');
-    const e = $('#'+id);
-    e.toggleClass('toggler-active');
-    showAffinityPreferences();
-    showApplyPreferences();
-    computeHoursCompatible();
   }
+  const id = 'toggle-' + i;
+  const oldid = $('.toggler-nav.toggler-active').attr('id');
+  if ( id === oldid ) return;
+  $('.htoggler-after').html(i > 0 ? 'for ' + classLabel(studentClasses[i-1]) : '');
+  $('.' + oldid).hide();  $('.'+id).show();
+  $('#'+oldid).removeClass('toggler-active');
+  $('#'+id).addClass('toggler-active');
+  showAffinityPreferences();
+  showApplyPreferences();
+  computeHoursCompatible();
 }
 
 function togglerCaption() {
@@ -416,7 +469,7 @@ function showAffinityPreferences() {
   const affinities = i ? [...studentAffinities, ...studentClassAffinities] : studentAffinities;
   for ( let x of affinities ) {
     const val = document.getElementById(x + (studentClassAffinities.includes(x) ? '-' + i : '')).value;
-    const a = x + '_affinity', qv = '.pref-' + a + '.pref-' + i, qc = 'label.' + a;
+    const a = x + '_affinity', qv = '.pref-' + a + '.pref-' + i, qc = 'label.pref-' + a;
     $(qc).text(""); 
     if ( val === '' || val === '[]' ) {
       $(qv).hide();
@@ -441,7 +494,7 @@ function hoursOffset() {
 
 function showHoursCompatible() {
   let c = togglerCaption();  if ( c == 'General' ) c = 'all';
-  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.student).toFixed(2) + ' hours (' + c + ' students)');
+  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours (' + c + ' students)');
 }
 
 function computeHoursCompatible() {
@@ -482,7 +535,9 @@ function checkChanges (e) {
 
 function submitStudentForm (value) {
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
-  $('input[name="ctx-togglerIndex"]').val(togglerIndex());
+  const i = togglerIndex();
+  $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
+  $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
   if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
   return true;
@@ -504,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
   $.ajaxSetup({error:ajaxErrorHandler}); // use this rather than ajexError so "this" is defined
   addChosenBy(allCounts);
 
-  makeMultiSelect('departments',
+  makeMultiSelect('departments', 
     studentOptions.departments,
     { placeholder: studentPlaceholders.departments, limit: maxlength.departments, onLimit: departmentsLimit}
   );
@@ -538,9 +593,11 @@ document.addEventListener('DOMContentLoaded', function() {
   makeCheckboxGrid();
   showTimezoneOffset();
   showSaveErrorMessage();
+  setGroupPanes();
 
   $('input:text').attr('autocomplete','off');
 
+  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); return false; });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
   togglerIndex(0);
 
@@ -549,16 +606,23 @@ document.addEventListener('DOMContentLoaded', function() {
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
 
+  $('.htoggler').keydown(function(e){
+    if ( e.which === 37 || e.which === 39 ) {
+      htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'group-header' : 'pref-header'));
+    }
+  });
+  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-nav.htoggler-active').focus(); }});
   $('.toggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
-      const id =  $('.toggler-nav.toggler-active').attr('id');
+      const id =  $('.toggler-active').attr('id');
       togglerIndex((parseInt(id.split('-')[1]) + e.which - 38 + n) % n);
     }
   });
-  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-nav.toggler-active').focus(); }});
-  if ( ctx.togglerIndex ) togglerIndex(ctx.togglerIndex); else togglerIndex(0);
+  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-active').focus(); }});
+  if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
+  if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
 
   showAffinityPreferences();
   showApplyPreferences();

@@ -4,6 +4,11 @@ from psetpartners import db
 from psetpartners.app import is_livesite
 from psetpartners.utils import current_year, current_term
 
+# TODO: get rid of this once the .count method in psycodict is fixed!
+def count_rows(table, query):
+    _db = getdb()
+    return sum(1 for _ in _db[table].search(query, projection="id"))
+
 _db = None
 
 def getdb():
@@ -18,6 +23,12 @@ def getdb():
 class PsetPartnersTestDB:
     def __init__(self, db):
         self._db = db
+
+    def __getitem__(self,key):
+        if key in ['students', 'groups', 'classlist', 'grouplist']:
+            return self._db['test_'+key]
+        else:
+            return self._db[key]
 
     @property
     def students(self):
@@ -78,15 +89,33 @@ def SQLWrapper(str,map={}):
 
 def students_in_class(class_number):
     s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
+    # note that the order of cols must match the order they appear in the SELECT below
+    cols = ['kerb', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
     if not class_number:
-        return db[s].search({},projection=['timezone', 'hours', 'departments', 'year', 'gender','preferences', 'strengths'])
+        cols.remove('properties')
+        return db[s].search({},projection=cols)
     cmd = SQLWrapper(
         """
-SELECT {s}.{timezone}, {s}.{hours}, {s}.{departments}, {s}.{year}, {s}.{gender}, {c}.{properties}, {c}.{preferences}, {s}.{strengths}
+SELECT {s}.{kerb}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
 WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
         """,
         {'s':s, 'c':c}
     )
-    cols = ['timezone', 'hours', 'departments', 'year', 'gender', 'properties', 'preferences', 'strengths']
+    return DBIterator(db._execute(cmd, [class_number, current_year(), current_term()]), cols)
+
+def groups_in_class(class_number):
+    g, c = ("groups", "grouplist") if is_livesite() else ("test_students", "test_classlist")
+    # note that the order of cols must match the order they appear in the SELECT below
+    cols = ['group_name', 'visibility', 'preferences', 'strengths']
+    if not class_number:
+        return db[g].search({},projection=cols)
+    cmd = SQLWrapper(
+        """
+SELECT {g}.{group_name}, {g}.{visibility}, {g}.{preferences}, {g}.{strengths}
+FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
+WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
+        """,
+        {'g':g, 'c':c}
+    )
     return DBIterator(db._execute(cmd, [class_number, current_year(), current_term()]), cols)

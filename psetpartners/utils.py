@@ -25,7 +25,7 @@ maxlength = {
     'class_name': MAX_LONG_NAME_LEN,
     'class_number': MAX_ID_LEN,
     'classes': 8,
-    'departments': 4,
+    'departments': 3,
     'description': MAX_TEXT_LEN,
     'group_name' : MAX_SHORT_NAME_LEN,
     'homepage': MAX_URL_LEN,

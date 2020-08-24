@@ -4,6 +4,8 @@ import time
 import logging
 import getpass
 
+from flask_mail import Mail, Message
+
 from flask import (
     Flask,
     render_template,
@@ -35,6 +37,21 @@ if getpass.getuser() == 'psetpartners':
         REMEMBER_COOKIE_HTTPONLY=True,
     )
 
+with open("temp.txt","r") as fp:
+    passwd = fp.read().strip()
+
+mail_settings = {
+    "MAIL_SERVER": "heaviside.mit.edu",
+    "MAIL_PORT": 465,
+    "MAIL_USE_TLS": False,
+    "MAIL_USE_SSL": True,
+    "MAIL_USERNAME": "psetpartnersnoreply",
+    "MAIL_PASSWORD": passwd,
+    #"MAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD_MIT", ""),
+}
+
+app.config.update(mail_settings)
+mail = Mail(app)
 
 @app.before_first_request
 def setup():
@@ -55,7 +72,10 @@ def setup():
 ############################
 
 def is_livesite():
-    return ( domain() == "psetpartners.mit.edu" )
+    try:
+        return ( domain() == "psetpartners.mit.edu" )
+    except Exception:
+        return False
 
 def is_debug_mode():
     from flask import current_app
@@ -229,3 +249,22 @@ def css():
         response.headers["Cache-Control"] = "public, max-age=600"
     return response
 
+##############################
+#           Mail             #
+##############################
+
+def send_email(to, subject, message):
+    from html2text import html2text
+
+    sender = "psetpartnersnoreply@math.mit.edu"
+    app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
+    mail.send(
+        Message(
+            subject=subject,
+            html=message,
+            body=html2text(message),
+            sender=sender,
+            recipients=[to],
+        )
+    )
+    app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
