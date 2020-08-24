@@ -48,7 +48,7 @@ def setup():
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    app.logger.info("first request on %s (running = %s, livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
+    app.logger.info("first request on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
 # App attribute functions  #
