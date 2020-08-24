@@ -36,17 +36,15 @@ if getpass.getuser() == 'psetpartners':
         REMEMBER_COOKIE_HTTPONLY=True,
     )
 
-logger = logging.getLogger("psetpartners")
-logger.setLevel(logging.INFO)
-logfile = Configuration().get_logging()["logfile"]
-ch = logging.FileHandler(logfile)
-ch.setLevel(logging.INFO)
-ch.setFormatter(logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s"""))
-logger.addHandler(ch)
-logger.info("Loaded app module and started logging")
-
 @app.before_first_request
 def before_first_request():
+    logger = logging.getLogger("psetpartners")
+    logger.setLevel(logging.INFO)
+    logfile = Configuration().get_logging()["logfile"]
+    ch = logging.FileHandler(logfile)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s"""))
+    logger.addHandler(ch)
     app.logger.info("Got first request on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode()))
 
 ############################
