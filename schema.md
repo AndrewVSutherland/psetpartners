@@ -83,3 +83,6 @@ id                    |	bigint      | unique identifier automatically assigned b
 class_id              | bigint      | id in classes_table
 group_id	      | bigint      | id in groups table
 student_id            | bigint      | id in students table
+class_number          | text        | class number (copied for convenience)
+year		      | smallint    | year of class (copied for convenience)
+term                  | smallint    | term of class (copied for convenience)
