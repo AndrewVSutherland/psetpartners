@@ -16,7 +16,7 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from psetpartners.app import app, is_livesite
+from psetpartners.app import app, is_livesite, send_email
 from psetpartners.student import (
     Student,
     Instructor,
@@ -177,6 +177,16 @@ def test500():
 def test503():
     app.logger.error("test503")
     return render_template("503.html", message="Thie is a test 503 message"), 503
+
+@app.route("/testemail")
+@login_required
+def testemal():
+    if current_user.is_admin:
+        send_email(current_user.kerb + "@mit.edu", "Test email from psetpartners", "This is a test message from psetparenters.")
+        return "email sent."
+    else:
+        return "You are not authorized to perform this operation."
+
 
 allowed_opts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
 
