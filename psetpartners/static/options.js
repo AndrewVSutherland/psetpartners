@@ -138,8 +138,8 @@ const commitmentOptions = [
 const confidenceOptions = [
   { label: '', value: '' },
   { label: 'This will be all new for me', value: '1' },
-  { label: 'I have seen some of this material before', value: '2' },
-  { label: 'I am quite comfortable with this material', value: '3' },
+  { label: 'I have seen some of the material before', value: '2' },
+  { label: 'I am generally familiar with most of it', value: '3' },
 ];
 const commitment_affinityOptions = [
   { label: '', value: '' },

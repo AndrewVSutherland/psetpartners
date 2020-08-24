@@ -175,7 +175,7 @@ div.footer > a {
 }
 
 #content {
-  padding: 10px;
+  padding: var(--shadow-width);
 }
 
 h1 {
@@ -184,28 +184,16 @@ h1 {
   margin-bottom: 10px;
 }
 
-h1:first-of-type {
-  margin-top: 10px;
-}
-
 h2 {
   font-size: 130%;
   margin-top: 20px;
   margin-bottom: 10px;
 }
 
-h2:first-of-type {
-  margin-top: 10px;
-}
-
 h3 {
   font-size: 110%;
   margin-top: 20px;
   margin-bottom: 10px;
-}
-
-h3:first-of-type {
-  margin-top: 10px;
 }
 
 a, a:visited {
@@ -415,18 +403,56 @@ p.flash-error::before {
   padding-right: 3px;
 }
 
+/* BEGIN htoggler */
+.htoggler {
+  margin: 20px 0 0 0;
+  padding-left: 2px;
+  font-size: 110%;
+  font-weight: bold;
+  width: 100%;
+}
+
+.htoggler:focus {
+  outline: none;
+  text-shadow: 0 0 1.5px var(--mit-gray);
+}
+
+.htoggler-after {
+  margin: 0 0 0 5px;
+  float: none;
+  color: black; 
+}
+
+.htoggler-nav {
+  margin: 0 0 0 10px;
+  float: right;
+  color: var(--mit-maroon); 
+}
+
+.htoggler-active {
+  margin: 0;
+  float: left;
+  color: black;
+}
+
+.htoggler-nav:not(.htoggler-active):hover {
+  background: var(--select-fill);
+  cursor: pointer;
+}
+/* END htoggler */
+
 /* BEGIN toggler */
-div.toggler {
-  margin: 0 0 18px 0;
+.toggler {
+  margin: 0 0 10px 0;
   border-bottom: 1.5px solid var(--mit-maroon);
 }
 
-div.toggler:focus {
+.toggler:focus {
   outline: none;
   border-bottom: 2px solid var(--mit-maroon);
 }
 
-div.toggler-nav {
+.toggler-nav {
   display: inline-block;
   font-size: 16px;
   padding: 8px;
@@ -436,12 +462,12 @@ div.toggler-nav {
   outline: none;
 }
 
-div.toggler-active {
+.toggler-active {
   font-weight: bold;
   color: black;
 }
 
-div.toggler-nav:not(.toggle-active):hover {
+.toggler-nav:not(.toggle-active):hover {
   background: var(--select-fill);
   cursor: pointer;
 }

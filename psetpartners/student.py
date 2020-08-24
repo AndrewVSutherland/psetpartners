@@ -1,6 +1,6 @@
 import re
 from psetpartners import app
-from psetpartners.dbwrapper import getdb, students_in_class
+from psetpartners.dbwrapper import getdb, students_in_class, count_rows
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import (
@@ -227,7 +227,7 @@ def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
 
-def _counts(iter, opts):
+def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
     count_hours = 'hours' in opts
     count_departments = 'departments' in opts
@@ -261,20 +261,37 @@ def _counts(iter, opts):
         counts['hours'] = hours
     if count_departments:
         counts['departments'] = departments
-    counts["student"] = n
+    counts["students"] = n
     return counts
 
+def group_visibility_counts(class_number):
+    db = getdb()
+    vcounts = {}
+    if class_number:
+        for v in db.groups.search({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection="visibility"):
+            vcounts[v] = vcounts[v]+1 if v in vcounts else 1
+    else:
+        for v in db.groups.search({'year': current_year(), 'term': current_term()},projection="visibility"):
+            vcounts[v] = vcounts[v]+1 if v in vcounts else 1
+    return vcounts
 
 def get_counts(classes, opts):
     db = getdb();
     counts = {}
     if '' in classes:
-        counts[''] = _counts(db.students.search(), opts)
+        counts[''] = student_counts(db.students.search(), opts)
+        counts['']['classes'] = count_rows('classes', {'year':current_year(), 'term': current_term()})
+        counts['']['students_classes'] = count_rows('classlist', {'year':current_year(), 'term': current_term()})
+        counts['']['groups'] = count_rows('groups', {'year':current_year(), 'term': current_term()})
+        counts['']['students_groups'] = count_rows('grouplist', {'year':current_year(), 'term': current_term()})
+        counts['']['visibility'] = group_visibility_counts('')
     for class_number in classes:
         if class_number:
-            counts[class_number] = _counts(students_in_class(class_number), opts)
+            counts[class_number] = student_counts(students_in_class(class_number), opts)
+            counts[class_number]['groups'] = count_rows('groups',{'year':current_year(), 'term': current_term(), 'class_number': class_number})
+            counts[class_number]['students_groups'] = count_rows('grouplist', {'year':current_year(), 'term': current_term(), 'class_number': class_number})
+            counts[class_number]['visibility'] = group_visibility_counts(class_number)
     return counts
-
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
@@ -358,6 +375,10 @@ class Student(UserMixin):
     @property
     def is_authenticated(self):
         return True if getattr(self, 'kerb', "") else False
+
+    @property
+    def is_admin(self):
+        return self.kerb and is_admin(self.kerb)
 
     @property
     def is_anonymous(self):
@@ -640,7 +661,7 @@ def generate_test_population(num_students=300,max_classes=6):
     db.test_classlist.insert_many(S)
     S = []
     for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
-        n = len(list(db.test_classlist.search({'class_id':c['id']},projection='id')))
+        n = count_rows('test_classlist', {'class_id':c['id']})
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
@@ -652,11 +673,11 @@ def generate_test_population(num_students=300,max_classes=6):
         S = []
         for g in db.test_groups.search(projection=3):
             n = 0
-            group_id, class_id = g["id"], g["class_id"]
+            group_id, class_id, class_number = g['id'], g['class_id'], g['class_number']
             while True:
                 student_id = rand(list(db.test_classlist.search({'class_id': class_id},projection="student_id")))
                 if not student_id in [r['student_id'] for r in S if r['class_id'] == class_id]:
-                    S.append({'class_id': class_id, 'student_id': student_id, 'group_id': group_id})
+                    S.append({'class_id': class_id, 'student_id': student_id, 'group_id': group_id, 'year': year, 'term': term, 'class_number': class_number})
                     n = n + 1
                 if randint(0,2) == 0:
                     break
