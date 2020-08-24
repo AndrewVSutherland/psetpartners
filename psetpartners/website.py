@@ -22,6 +22,4 @@ def main():
         )
         del flask_options["profiler"]
 
-    app.logger.info("Calling app.run.")
     app.run(**flask_options)
-    app.logger.info("Returned from app.run.")
