@@ -3,7 +3,7 @@
 # License as published by the Free Software Foundation; either
 # version 2 of the License, or (at your option) any later version.
 
-from .app import app, set_running  # So that we can set it running below
+from .app import app
 from . import main
 assert main
 
@@ -24,6 +24,4 @@ def main():
         )
         del flask_options["profiler"]
 
-    set_running()
     app.run(**flask_options)
-    
