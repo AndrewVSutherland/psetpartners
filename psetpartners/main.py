@@ -28,6 +28,7 @@ from psetpartners.student import (
     current_classes,
     is_instructor,
     is_admin,
+    get_counts,
     )
 from psetpartners.utils import (
     format_input_errmsg,
@@ -40,7 +41,6 @@ from psetpartners.utils import (
     timezones,
     list_of_strings,
 )
-from psetpartners.dbwrapper import get_counts
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -178,11 +178,14 @@ def test503():
     app.logger.error("test503")
     return render_template("503.html", message="Thie is a test 503 message"), 503
 
+allowed_opts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
+
 @app.route("/_counts")
 @login_required
 def counts():
     classes = request.args.get('classes',"").split(",")
-    return json.dumps({'counts': get_counts(classes)})
+    opts = [x for x in request.args.get('opts',"").split(",") if x]
+    return json.dumps({'counts': get_counts(classes, allowed_opts if not opts else [opt for opt in opts if opt in allowed_opts])})
 
 @app.route("/student")
 def student(context={}):
@@ -192,7 +195,7 @@ def student(context={}):
         "student.html",
         options=template_options(),
         maxlength=maxlength,
-        counts=get_counts(current_user.classes),
+        counts=get_counts([''] + current_user.classes, allowed_opts),
         ctx=session.pop("ctx",""),
     )
 
