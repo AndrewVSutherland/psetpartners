@@ -61,7 +61,7 @@ visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open a
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 hours                 | boolean[]   | hours the group is potentially available to meet (used for matching)
 strengths             | jsonb       | preference strengths
-editors               | text[]      | students authorized to modify the group (empty list means everyone)
+editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
 max                   | smallint    | maximum number of students (only used for public groups)
 
 ## classlist
