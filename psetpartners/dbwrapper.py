@@ -91,6 +91,9 @@ def SQLWrapper(str,map={}):
     keys = [t[1] for t in Formatter().parse(str) if t[1] is not None]
     return (SQL(str).format(**{key:IdentifierWrapper(map[key] if key in map else key) for key in keys}))
 
+
+#TODO: add query and projection args to these functions
+
 def students_in_class(class_number, year=current_year(), term=current_term()):
     s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below

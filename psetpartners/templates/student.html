@@ -118,7 +118,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav" id="partner-header">Pset partners</label>
+    <label class="htoggler-nav" id="partner-header">Partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -192,7 +192,9 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   {% for i in range(maxlength["classes"]+1) %}
     <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" class="toggle-{{i}}">
       <p id="partner-summary-{{i}}"></p>
-      <p id="partner-instructions-{{i}}"></p>
+      <div id="partner-div-{{i}}"></div>
+      <div id="partner-buttons-{{i}}"></div>
+      <div id="partner-confirm-{{i}}"></div>
     </div>
   {% endfor %}
 
@@ -236,6 +238,7 @@ const timezoneOptions = [
 ];
 
 var allCounts = {{ counts|tojson|safe }};
+var allGroups = {{ groups|tojson|safe }};
 const classData = {{ user.class_data|tojson|safe }};
 const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
@@ -243,7 +246,8 @@ const ctx = {{ ctx|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, allCounts, classData, groupData, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, allCounts, allGroups, classData, groupData, maxlength, ctx */ // from template (ignored above)
+/* global yearShort, startShort, forumShort, togetherShort */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -328,8 +332,10 @@ function changeClasses(val) {
       allCounts[c] = r.counts[c];
       if ( c ) { const i = studentClasses.indexOf(c); setPrefs(classesPrefs[c], i+1, allCounts[c]); setProps(classesProps[c], i+1, allCounts[c]); }
     }
+    for (let c in r.groups) allGroups[c] = r.groups[c];
+    setPartnerPanes();
   }
-  if ( vnew.length ) $.ajax({url: '/_counts', data: {'classes': vnew}, dataType: 'json', success: updateCounts });
+  if ( vnew.length ) $.ajax({url: '/_counts_groups', data: {'classes': vnew}, dataType: 'json', success: updateCounts });
 
   let classesPrefs = {}, classesProps = {};
 
@@ -368,46 +374,89 @@ function changeClasses(val) {
   setPartnerPanes();
 }
 
+// member record should be an array of strings [preferred_name, preferred_pronouns, year, kerb]
+function mtabHead() { return "<thead><tr><th>name</th><th>year</th><th>email</th></tr></thead>\n"; }
+function mtabRow(s) {
+  let name = s[0] ? s[0] : s[3];
+  if ( s[1] ) name += "(" + s[1] + ")";
+  let year = s[2] ? parseInt(s[2]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "";
+  return `<tr><td>${name}</td><td align="center">${year}</td><td><a href="mailto:${s[3]}@mit.edu">${s[3]}@mit.edu</a></td></tr>`;
+}
+
+// group record should be an array [group_name, start, together, forum, size, max, ...] (entries after max will be ignored here)
+function gtabHead() {
+  return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
+}
+function gtabRow(g) {
+  console.log(g);
+  let start = g[1] ? parseInt(g[1]) : 0;  start = ( start > 0 && start < startShort.length ) ? startShort[start] : "-";
+  let together = g[2] ? parseInt(g[2]) : 0;  together = ( together > 0 && together < togetherShort.length ) ? togetherShort[together] : "-";
+  let row = `<tr><td>${g[0]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
+  row += `<td align="center">${g[3]?g[3]:"-"}</td><td>${g[4]}</td><td>${g[5]?g[5]:"-"}</td>`;
+  row += ( !g[5] || parseInt(g[4]) < parseInt(g[5]) ) ? `<td><label class="action" onclick="confirmJoin('${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
+  return row;
+}
+
+function actionButtons(c) {
+  let btab = '<table class="btab">\n<tbody><tr>';
+  const d = allCounts[c].next_match_date;
+  if ( d) btab += `<td><label class="action" onclick="confirmMatch('${c}')">match ${d}<label></td>`;
+  btab += `<td><label class="action" onclick="confirmInstaMatch('${c}')">match asap<label></td>`;
+  btab += `<td><label class="action" onclick="confirmPrivateGroup('${c}')">create private group<label></td>`;
+  btab += `<td><label class="action" onclick="confirmPublicGroup('${c}')">create public group<label></td>`;
+  btab += '</tr>\n</tbody></table>';
+  console.log(btab);
+  return btab;
+}
+
 function setPartnerPanes() {
   let cnts = allCounts[''];
   $('#parnter-summary-0').text(
     `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${cnts.visibility['2']} are public.`
   );
   if ( studentClasses.length ) {
-    $('#partner-instructions-0').text('Click on a class number to see your pset partnering options for that class.');
+    $('#partner-summary-0').text('Click on a class number to see your pset partnering options for that class.');
   } else {
-    $('#partner-instructions-0').text('Add one or more classes in order see information about how to find pset partners.');
+    $('#partner-summary-0').text('Add one or more classes in order see information about how to find pset partners.');
   }
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( c in allCounts ) {
       if ( c in groupData ) {
         const g = groupData[c];
-        if ( ! g.kerbs.length ) {
-          $('#partner-summary-'+(i+1)).html(`You are currently the sole member of the group <b>${g.group_name}</b>`);
-        } else {
-          let names = [], lst = '';
-          for ( let j = 0 ; j < g.kerbs.length ; j++ )  names.push(`${g.preferred_names[j]} (${g.kerbs[j]})`);
-          if ( names.length == 1 ) lst = names[0];
-          else if ( names.length == 2 ) lst = names[0] + ' and ' + names[1];
-          else lst = names.slice(names.length-1).join(', ') + ', and ' + names[names.length-1];
-          const msg = `You are currently a member of the group <b>${g.group_name}</b>, along with ${lst}.`;
-          $('#partner-summary-'+(i+1)).html(msg);
-        }
+        $('#partner-summary-'+(i+1)).html(`You are currently a member of the group <b>${g.group_name}</b>:`);
+        const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
+        $('#partner-div-'+(i+1)).html(mtab);
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
-        let v = ['0', '0', '0'];
-        for (let i = 0 ; i <= 2 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = allCounts[c].visibility[''+i];
-        let msg = `There are ${s} students in ${c} registered on pset partners.`;
-        if ( g ) {
-          msg += ` Currently ${sg} of these students are memebers of one of the ${g} pset groups that have formed in this classof which ${v[2]} are public and ${v[1]} are private but open to new members.`;
+        let v = [0,0,0,0];
+        for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
+        const w = v[2]+v[3];
+        const wt = w ? (w==1?"one is":w+" are") : "none are";
+        const tg = g > 1 ? "one of the " + g + " pset groups that have" : "the one pset group that has";
+        let msg = `There are ${s} students who have ${c} listed on pset partners. `;
+        if ( sg ) {
+          msg += `Currently ${sg} of these students are memebers of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
+          const groups = allGroups[c];
+          if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
+          if ( groups.length ) {
+            const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
+            console.log(gtab);
+            $('#partner-div-'+(i+1)).html(gtab);
+          } else {
+            $('#partner-div-'+(i+1)).html('');
+          }
+          msg += '<br><br>To find a pset partner, click any of the highlighted join links or one of the highlighted action links below.  Each link will tell you what is going to happen and ask you to confirm before proceeding, so click confidently!';
         } else {
-          msg += `No pset groups have been formed for this class yet, all ${s} students are looking for pset partners!`;
+          msg += 'All of these students are still looking for pset partners!<br><br>';
+          msg += 'To find a pset partner, click any of the highlighted action links below.  Each link will tell you what is going to happen and require confirmation before proceeding, so click confidently!';
         }
         $('#partner-summary-'+(i+1)).html(msg);
+        $('#partner-buttons-'+(i+1)).html(actionButtons(c));
       }
     } else {
-      $('#partner-summary-'+(i+1)).text(`Save your changes to obtain up to date pset partner data for ${c}.`);
+      $('#partner-summary-'+(i+1)).text(`Save your changes to obtain get the latest pset partner data for ${c}.`);
     }
   }
 }

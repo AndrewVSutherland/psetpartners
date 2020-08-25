@@ -403,6 +403,42 @@ p.flash-error::before {
   padding-right: 3px;
 }
 
+table.mtab, table.gtab {
+  margin: 0 auto;
+}
+
+table.mtab th, table.gtab th {
+  padding: 2px;
+  border-bottom: 1px solid black;
+}
+
+table.mtab td, table.gtab td {
+  padding: 2px 20px;
+}
+
+table.mtab tbody, table.gtab tbody {
+  //* border-bottom: 1px solid black; */
+}
+
+table.btab {
+  margin: 10px auto;
+}
+table.btab td {
+  padding: 0 30px;
+}
+
+label.action {
+  color: var(--mit-maroon);
+  padding: 2px;
+  cursor: pointer;
+  font-size: 95%;
+  font-weight: bold;
+}
+label.action:hover {
+  background: var(--mit-pink);
+}
+
+
 /* BEGIN htoggler */
 .htoggler {
   margin: 20px 0 0 0;
