@@ -181,6 +181,9 @@ def test503():
 @app.route("/testemail")
 @login_required
 def testemal():
+    from .config import Configuration
+    if len(Configuration().options['email']['password']) < 16:
+        return "No can do, you are either running in a test installation or using a weak password."
     if current_user.is_admin:
         send_email(current_user.kerb + "@mit.edu", "Test email from psetpartners", "This is a test message from psetparenters.")
         return "email sent."
