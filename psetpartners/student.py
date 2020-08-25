@@ -1,6 +1,6 @@
 import re
 from psetpartners import app
-from psetpartners.dbwrapper import getdb, students_in_class, count_rows
+from psetpartners.dbwrapper import getdb, students_in_class, students_in_group, count_rows
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from psetpartners.utils import (
@@ -349,6 +349,8 @@ class Student(UserMixin):
                 setattr(self, col, default_value(typ))
         self.class_data = self._class_data()
         self.classes = sorted(list(self.class_data))
+        self.group_data = self._group_data()
+        self.groups = sorted(list(self.group_data))
         assert self.kerb
 
     @property
@@ -426,10 +428,8 @@ class Student(UserMixin):
                 self._db.classlist.insert_many(S)
 
     def _class_data(self, year=current_year(), term=current_term()):
-        # TODO: Use a join here (but there is no point in doing this until the schema stabilizes)
         class_data = {}
-        classes = self._db.classlist.search(
-            { 'student_id': self.id, "year": year, 'term': term},
+        classes = self._db.classlist.search({ 'student_id': self.id, 'year': year, 'term': term},
             projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths'],
             )
         for r in classes:
@@ -439,6 +439,15 @@ class Student(UserMixin):
             class_data[r["class_number"]] = r
         return class_data
 
+    def _group_data(self, year=current_year(), term=current_term()):
+        group_data = {}
+        for r in self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection=['group_id', 'class_id']):
+            g = self._db.groups.lucky({'id', r['group_id']}, projection=['group_name', 'class_number', 'visibility'])
+            students = students_in_group(r['group_id'])
+            g['kerbs'] = [s['kerb'] for s in students if s['kerb'] != self.kerb]
+            g['preferred_names'] = [s['preferred_name'] for s in students if s['kerb'] != self.kerb]
+            group_data[g['class_number']] = g
+        return group_data
 
 class Instructor(UserMixin):
     def __init__(self, kerb):
@@ -472,6 +481,10 @@ class Instructor(UserMixin):
     @property
     def is_authenticated(self):
         return True if getattr(self, 'kerb', "") else False
+
+    @property
+    def is_admin(self):
+        return self.kerb and is_admin(self.kerb)
 
     @property
     def is_anonymous(self):
