@@ -1,9 +1,9 @@
 import re
-from psetpartners import app
-from psetpartners.dbwrapper import getdb, students_in_class, students_in_group, count_rows
+from . import app
+from .dbwrapper import getdb, students_in_class, students_in_group, count_rows
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
-from psetpartners.utils import (
+from .utils import (
     DEFAULT_TIMEZONE_NAME,
     DEFAULT_TIMEZONE,
     current_year,
@@ -442,10 +442,11 @@ class Student(UserMixin):
     def _group_data(self, year=current_year(), term=current_term()):
         group_data = {}
         for r in self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection=['group_id', 'class_id']):
-            g = self._db.groups.lucky({'id', r['group_id']}, projection=['group_name', 'class_number', 'visibility'])
-            students = students_in_group(r['group_id'])
+            g = self._db.groups.lucky({'id': r['group_id']}, projection=['group_name', 'class_number', 'visibility'])
+            students = list(students_in_group(r['group_id']))
             g['kerbs'] = [s['kerb'] for s in students if s['kerb'] != self.kerb]
             g['preferred_names'] = [s['preferred_name'] for s in students if s['kerb'] != self.kerb]
+            print(g)
             group_data[g['class_number']] = g
         return group_data
 
@@ -537,7 +538,7 @@ big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
     from random import randint
-    from psetpartners import db
+    from . import db
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
 
     def rand(x):

@@ -16,8 +16,8 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from psetpartners.app import app, is_livesite, send_email
-from psetpartners.student import (
+from .app import app, is_livesite, send_email
+from .student import (
     Student,
     Instructor,
     AnonymousUser,
@@ -30,7 +30,7 @@ from psetpartners.student import (
     is_admin,
     get_counts,
     )
-from psetpartners.utils import (
+from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
@@ -190,6 +190,14 @@ def testemal():
     else:
         return "You are not authorized to perform this operation."
 
+@app.route("/testlog")
+def testlog():
+    from .app import is_debug_mode, is_under_construction
+    from .utils import domain
+
+    msg = "Test message on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode())
+    app.logger.info(msg)
+    return "The following message was just logged:\n\n"+msg
 
 allowed_opts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
 
