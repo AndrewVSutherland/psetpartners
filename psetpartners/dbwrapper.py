@@ -43,6 +43,10 @@ class PsetPartnersTestDB:
         return self._db.test_classlist
 
     @property
+    def grouplist(self):
+        return self._db.test_grouplist
+
+    @property
     def departments(self):
         return self._db.departments
 
