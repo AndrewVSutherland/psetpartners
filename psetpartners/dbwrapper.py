@@ -1,8 +1,8 @@
 from psycopg2.sql import SQL
 from psycodict.utils import IdentifierWrapper
-from psetpartners import db
-from psetpartners.app import is_livesite
-from psetpartners.utils import current_year, current_term
+from . import db
+from .app import is_livesite
+from .utils import current_year, current_term
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
 def count_rows(table, query):

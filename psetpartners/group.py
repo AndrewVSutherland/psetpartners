@@ -1,4 +1,4 @@
-from psetpartners import db
+from . import db
 
 def generate_group_name():
     while True:

@@ -7,7 +7,7 @@ from .app import app
 from . import main
 assert main
 
-from psetpartners import db
+from . import db
 assert db
 
 def main():
