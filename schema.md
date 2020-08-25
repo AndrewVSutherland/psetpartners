@@ -23,7 +23,7 @@ term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=su
 instructor_names[]    | text[]      | list of instructor names
 instructor_kerbs[]    | text[]      | list of instructor kerbs
 homepage              | text        | course homepage
-pset_dates            | date[] 	    | list of due dates for psets (optional, possibly only first 3 relevant)
+match_dates           | date[] 	    | matching dates (only future dates are relevant)
 
 ## students
 			
@@ -78,6 +78,7 @@ term                  | smallint    | term of class (copied from classes table f
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
+status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested
 			
 ## grouplist
 
