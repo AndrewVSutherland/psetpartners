@@ -118,7 +118,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav" id="group-header">Groups</label>
+    <label class="htoggler-nav" id="partner-header">Pset partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -186,13 +186,13 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
  
   </table>
 
-  <div class="group" style="display:none;">
+  <div class="partner" style="display:none;">
 
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
     <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" class="toggle-{{i}}">
-      <p id="group-summary-{{i}}"></p>
-      <p id="group-instructions-{{i}}"></p>
+      <p id="partner-summary-{{i}}"></p>
+      <p id="partner-instructions-{{i}}"></p>
     </div>
   {% endfor %}
 
@@ -236,13 +236,14 @@ const timezoneOptions = [
 ];
 
 var allCounts = {{ counts|tojson|safe }};
-
+const classData = {{ user.class_data|tojson|safe }};
+const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, allCounts, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, allCounts, classData, groupData, maxlength, ctx */ // from template (ignored above)
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
 
@@ -364,37 +365,49 @@ function changeClasses(val) {
   } else {
     togglerIndex(0);
   }
-  setGroupPanes();
+  setPartnerPanes();
 }
 
-function setGroupPanes() {
+function setPartnerPanes() {
   let cnts = allCounts[''];
-  $('#group-summary-0').text(
+  $('#parnter-summary-0').text(
     `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${cnts.visibility['2']} are public.`
   );
   if ( studentClasses.length ) {
-    $('#group-instructions-0').text('Click on a class number to see your pset partnering options for that class.');
+    $('#partner-instructions-0').text('Click on a class number to see your pset partnering options for that class.');
   } else {
-    $('#group-instructions-0').text('Add one or more classes in order see information about how to join a pset group.');
+    $('#partner-instructions-0').text('Add one or more classes in order see information about how to find pset partners.');
   }
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( c in allCounts ) {
-      const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
-      let v = ['0', '0', '0'];
-      for (let i = 0 ; i <= 2 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = allCounts[c].visibility[''+i];
-      let msg = `There are ${s} students in ${c} registered on pset partners.`;
-      if ( g ) {
-        msg += ` Currently ${sg} of these student are memebers of one of the ${g} pset groups that have formed in this class.`;
-        if ( sg+1 < s ) msg += ` That means ${s-sg} students may currently be looking for pset partners!`;
-        msg += '<br><br>';
-        msg += `Of the ${g} pset groups in this class, ${v[2]} are public and ${v[1]} are private but open to new members.`;
+      if ( c in groupData ) {
+        const g = groupData[c];
+        if ( ! g.kerbs.length ) {
+          $('#partner-summary-'+(i+1)).html(`You are currently the sole member of the group <b>${g.group_name}</b>`);
+        } else {
+          let names = [], lst = '';
+          for ( let j = 0 ; j < g.kerbs.length ; j++ )  names.push(`${g.preferred_names[j]} (${g.kerbs[j]})`);
+          if ( names.length == 1 ) lst = names[0];
+          else if ( names.length == 2 ) lst = names[0] + ' and ' + names[1];
+          else lst = names.slice(names.length-1).join(', ') + ', and ' + names[names.length-1];
+          const msg = `You are currently a member of the group <b>${g.group_name}</b>, along with ${lst}.`;
+          $('#partner-summary-'+(i+1)).html(msg);
+        }
       } else {
-        msg += `No pset groups have been formed for this class yet, all ${s} students are looking for pset partners!`;
+        const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
+        let v = ['0', '0', '0'];
+        for (let i = 0 ; i <= 2 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = allCounts[c].visibility[''+i];
+        let msg = `There are ${s} students in ${c} registered on pset partners.`;
+        if ( g ) {
+          msg += ` Currently ${sg} of these students are memebers of one of the ${g} pset groups that have formed in this classof which ${v[2]} are public and ${v[1]} are private but open to new members.`;
+        } else {
+          msg += `No pset groups have been formed for this class yet, all ${s} students are looking for pset partners!`;
+        }
+        $('#partner-summary-'+(i+1)).html(msg);
       }
-      $('#group-summary-'+(i+1)).html(msg);
     } else {
-      $('#group-summary-'+(i+1)).text(`Group data not yet retrieved for ${c}, click save to update.`);
+      $('#partner-summary-'+(i+1)).text(`Save your changes to obtain up to date pset partner data for ${c}.`);
     }
   }
 }
@@ -422,8 +435,8 @@ function htogglerMakeActive(e) {
     if ( e.classList.contains('htoggler-active') ) return;
     $('.htoggler-active').removeClass('htoggler-active');
     e.classList.add("htoggler-active");
-    if ( e.id === "pref-header" ) { console.log("pref"); $('.group').hide(); $('.pref').show(); }
-    if ( e.id === "group-header" ) { console.log("group"); $('.pref').hide(); $('.group').show(); }
+    if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
+    if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
 }
 
 function togglerIndex(i) {
@@ -593,7 +606,7 @@ document.addEventListener('DOMContentLoaded', function() {
   makeCheckboxGrid();
   showTimezoneOffset();
   showSaveErrorMessage();
-  setGroupPanes();
+  setPartnerPanes();
 
   $('input:text').attr('autocomplete','off');
 
@@ -608,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('.htoggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
-      htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'group-header' : 'pref-header'));
+      htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header'));
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-nav.htoggler-active').focus(); }});
