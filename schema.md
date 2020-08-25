@@ -71,9 +71,10 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
+kerb                  | text        | kerberos id of student (copied from students table for conveniencE)
 class_number          | text        | class number (copied from classes table for convenience)
-year		      | smallint    | year of class
-term                  | smallint    | term of class
+year		      | smallint    | year of class (copied from classes table for convenience)
+term                  | smallint    | term of class (copied from classes table for convenience)
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
@@ -86,6 +87,7 @@ id                    |	bigint      | unique identifier automatically assigned b
 class_id              | bigint      | id in classes_table
 group_id	      | bigint      | id in groups table
 student_id            | bigint      | id in students table
-class_number          | text        | class number (copied for convenience)
-year		      | smallint    | year of class (copied for convenience)
+kerb                  | text        | kerberos ud of student (copied from students table for convenience)
+class_number          | text        | class number (copied from classes table for convenience)
+year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied for convenience)
