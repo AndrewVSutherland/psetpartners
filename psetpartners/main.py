@@ -29,6 +29,7 @@ from .student import (
     is_instructor,
     is_admin,
     get_counts,
+    class_groups,
     )
 from .utils import (
     format_input_errmsg,
@@ -199,14 +200,32 @@ def testlog():
     app.logger.info(msg)
     return "The following message was just logged:\n\n"+msg
 
-allowed_opts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
+allowed_copts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
+allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
 
 @app.route("/_counts")
 @login_required
 def counts():
     classes = request.args.get('classes',"").split(",")
-    opts = [x for x in request.args.get('opts',"").split(",") if x]
-    return json.dumps({'counts': get_counts(classes, allowed_opts if not opts else [opt for opt in opts if opt in allowed_opts])})
+    copts = [x for x in request.args.get('opts',"").split(",") if x and x in allowed_copts]
+    return json.dumps({'counts': get_counts(classes, copts if copts else allowed_copts)})
+
+@app.route("/_groups")
+@login_required
+def groups():
+    classes = request.args.get('classes',"").split(",")
+    gopts = [x for x in request.args.get('opts',"").split(",") if x and x in allowed_gopts]
+    return json.dumps({'groups': {c: class_groups(c, gopts if gopts else allowed_gopts) for c in classes}})
+
+@app.route("/_counts_groups")
+@login_required
+def counts_groups():
+    classes = request.args.get('classes',"").split(",")
+    copts = [x for x in request.args.get('opts',"").split(",") if x and x in allowed_copts]
+    gopts = [x for x in request.args.get('opts',"").split(",") if x and x in allowed_gopts]
+    return json.dumps({'counts': get_counts(classes, copts if copts else allowed_copts),
+                       'groups': {c: class_groups(c, gopts if gopts else allowed_gopts) for c in classes}})
+
 
 @app.route("/student")
 def student(context={}):
@@ -216,7 +235,8 @@ def student(context={}):
         "student.html",
         options=template_options(),
         maxlength=maxlength,
-        counts=get_counts([''] + current_user.classes, allowed_opts),
+        counts=get_counts([''] + current_user.classes, allowed_copts),
+        groups={c:class_groups(c, allowed_gopts, visibility=2) for c in current_user.classes},
         ctx=session.pop("ctx",""),
     )
 

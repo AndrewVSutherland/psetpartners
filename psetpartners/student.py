@@ -203,6 +203,9 @@ def default_value(typ):
 CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
+def _str(s):
+    return str(s) if s is not None else ""
+
 def course_number_key(s):
     r = COURSE_NUMBER_RE.match(s)
     if r.group(1) == '':
@@ -226,6 +229,18 @@ def is_instructor(kerb):
 def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
+
+def next_match_date(class_number, year=current_year(), term=current_term()):
+    import datetime
+
+    db = getdb()
+    match_dates = db.classes.lucky({'class_number': class_number, 'year': year, 'term': term}, projection='match_dates')
+    if match_dates:
+        today = datetime.datetime.now().date()
+        match_dates = [d for d in match_dates if d > today]
+        if match_dates:
+            return match_dates[0].strftime("%b %-d")
+    return ""
 
 def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
@@ -264,34 +279,48 @@ def student_counts(iter, opts):
     counts["students"] = n
     return counts
 
-def group_visibility_counts(class_number):
+def group_visibility_counts(class_number, year=current_year(), term=current_term()):
     db = getdb()
     vcounts = {}
     if class_number:
-        for v in db.groups.search({'year': current_year(), 'term': current_term(), 'class_number': class_number},projection="visibility"):
+        for v in db.groups.search({'year': year, 'term': term, 'class_number': class_number},projection="visibility"):
             vcounts[v] = vcounts[v]+1 if v in vcounts else 1
     else:
-        for v in db.groups.search({'year': current_year(), 'term': current_term()},projection="visibility"):
+        for v in db.groups.search({'year': year, 'term': term},projection="visibility"):
             vcounts[v] = vcounts[v]+1 if v in vcounts else 1
     return vcounts
 
-def get_counts(classes, opts):
+def get_counts(classes, opts, year=current_year(), term=current_term()):
     db = getdb();
     counts = {}
     if '' in classes:
         counts[''] = student_counts(db.students.search(), opts)
-        counts['']['classes'] = count_rows('classes', {'year':current_year(), 'term': current_term()})
-        counts['']['students_classes'] = count_rows('classlist', {'year':current_year(), 'term': current_term()})
-        counts['']['groups'] = count_rows('groups', {'year':current_year(), 'term': current_term()})
-        counts['']['students_groups'] = count_rows('grouplist', {'year':current_year(), 'term': current_term()})
+        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term})
+        counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
+        counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
+        counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term})
         counts['']['visibility'] = group_visibility_counts('')
     for class_number in classes:
         if class_number:
             counts[class_number] = student_counts(students_in_class(class_number), opts)
-            counts[class_number]['groups'] = count_rows('groups',{'year':current_year(), 'term': current_term(), 'class_number': class_number})
-            counts[class_number]['students_groups'] = count_rows('grouplist', {'year':current_year(), 'term': current_term(), 'class_number': class_number})
+            counts[class_number]['groups'] = count_rows('groups',{'year': year, 'term': term, 'class_number': class_number})
+            counts[class_number]['students_groups'] = count_rows('grouplist', {'year': year, 'term': term, 'class_number': class_number})
             counts[class_number]['visibility'] = group_visibility_counts(class_number)
+            counts[class_number]['next_match_date'] = next_match_date(class_number)
     return counts
+
+def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
+    db = getdb()
+    G = []
+    for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term}, projection=['id']+[o for o in opts if o in db.groups.col_type]):
+        members = list(students_in_group(g['id']))
+        n = len(members)
+        p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
+        r = [g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
+        if 'members' in opts and (g['visibility'] == 3 or instructor_view):
+            r.append(sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members]))
+        G.append(r)
+    return sorted(G,key=lambda x: x[0])
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
@@ -398,7 +427,7 @@ class Student(UserMixin):
             self._db.students.insert_many([rec])
             self.id = rec["id"]
         else:
-            self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols})
+            self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols}, resort=False)
         if len(set(self.classes)) < len(self.classes):
             raise ValueError("Duplicates in class list %s" % self.classes)
         q = {'student_id':self.id, 'year': current_year(), 'term': current_term()}
@@ -433,6 +462,7 @@ class Student(UserMixin):
             projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths'],
             )
         for r in classes:
+            r['next_match_date'] = next_match_date(r['class_number'])
             if not r['preferences']:
                 r['preferences'] = self.preferences
                 r['strengths'] = self.strengths
@@ -443,10 +473,9 @@ class Student(UserMixin):
         group_data = {}
         for r in self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection=['group_id', 'class_id']):
             g = self._db.groups.lucky({'id': r['group_id']}, projection=['group_name', 'class_number', 'visibility'])
-            students = list(students_in_group(r['group_id']))
-            g['kerbs'] = [s['kerb'] for s in students if s['kerb'] != self.kerb]
-            g['preferred_names'] = [s['preferred_name'] for s in students if s['kerb'] != self.kerb]
-            print(g)
+            members = list(students_in_group(r['group_id']))
+            g['count'] = len(members)
+            g['members'] = sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members])
             group_data[g['class_number']] = g
         return group_data
 
@@ -563,10 +592,10 @@ def generate_test_population(num_students=300,max_classes=6):
     if not choice or choice[0] != 'y':
         print("No changes made.")
         return
-    db.test_students.delete({})
-    db.test_groups.delete({})
-    db.test_classlist.delete({})
-    db.test_grouplist.delete({})
+    db.test_students.delete({}, resort=False)
+    db.test_groups.delete({}, resort=False)
+    db.test_classlist.delete({}, resort=False)
+    db.test_grouplist.delete({}, resort=False)
     print("Deleted all records in test_students, test_groups, test_classlist, and test_grouplist.")
     year, term = current_year(), current_term()
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
@@ -617,6 +646,8 @@ def generate_test_population(num_students=300,max_classes=6):
                 if randint(0,1):
                     prefs[p] = rand(student_preferences[p]['options'])[0]
                     strengths[p] = randint(1,5)
+                    if p == "forum" and p in prefs and prefs[p] == "in-person":
+                        prefs[p] = "video";
             else:
                 q = p.split('_')[0]
                 if q in student_affinities and s[q]:
@@ -625,14 +656,16 @@ def generate_test_population(num_students=300,max_classes=6):
         s['preferences'] = prefs
         s['strengths'] = strengths
         S.append(s)
-    db.test_students.insert_many(S)
+    db.test_students.insert_many(S, resort=False)
     S = []
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
-        if randint(0,1):
+        if s['year'] in [1,2] and randint(0,3):
             classes = [db.classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
         else:
             classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+            while s['year'] in [3,4,5] and classes[0]['class_number'].split('.')[1][0] == '0':
+                classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
             classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
             for m in range(2,max_classes):
@@ -669,32 +702,58 @@ def generate_test_population(num_students=300,max_classes=6):
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa]['options'])[0]
                     strengths[pa] = randint(1,5)
-            c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'class_number': classes[i]['class_number'],
+            c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'kerb': s['kerb'], 'class_number': classes[i]['class_number'],
                   'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props }
             S.append(c)
-    db.test_classlist.insert_many(S)
+    db.test_classlist.insert_many(S, resort=False)
     S = []
     for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
-        n = count_rows('test_classlist', {'class_id':c['id']})
+        kerbs = list(db.test_classlist.search({'class_id':c['id']},projection='kerb'))
+        n = len(kerbs)
+        creators, names = set(), set()
         for i in range(n//10):
             name = db.plural_nouns.random()
             name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
+            if name in names:
+                continue
+            creator = rand(kerbs)
+            if creator in creators:
+                continue
+            s = db.test_students.lookup(creator,projection=["preferences", "strengths"])
+            prefs = { k: s['preferences'][k] for k in s.get('preferences',{}) if not k.endswith('affinity') }
+            strengths = { k: s['strengths'][k] for k in s.get('strengths',{}) if not k.endswith('affinity') }
+            if 'size' in prefs:
+                maxsize = [o[0] for o in size_options if o[0] > prefs['size']]
+                if not maxsize:
+                    maxsize = None
+                else:
+                    maxsize = maxsize[0]-1
+            else:
+                maxsize = None
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 2, 'strengths': {}, 'preferences': {} }
-            S.append(g) # don't worry about duplicating group names, it is unlikely and won't break anything
+                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': [creator], 'max': maxsize }
+            creators.add(creator)
+            names.add(name)
+            S.append(g)
     if ( S ):
-        db.test_groups.insert_many(S)
+        db.test_groups.insert_many(S, resort=False)
         S = []
         for g in db.test_groups.search(projection=3):
-            n = 0
-            group_id, class_id, class_number = g['id'], g['class_id'], g['class_number']
+            gid, cid, cnum, eds = g['id'], g['class_id'], g['class_number'], g['editors']
+            members = []
+            for k in eds:
+                sid = db.test_students.lookup(k,projection="id")
+                S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
+                members.append(student_id)
             while True:
-                student_id = rand(list(db.test_classlist.search({'class_id': class_id},projection="student_id")))
-                if not student_id in [r['student_id'] for r in S if r['class_id'] == class_id]:
-                    S.append({'class_id': class_id, 'student_id': student_id, 'group_id': group_id, 'year': year, 'term': term, 'class_number': class_number})
-                    n = n + 1
-                if randint(0,2) == 0:
+                if g['max'] and len(members) >= g['max']:
                     break
-            if ( n == 0 ):
-                db.test_groups.delete({'id': group_id})
-        db.test_grouplist.insert_many(S)
+                s = rand(list(db.test_classlist.search({'class_id': cid},projection=["student_id", "kerb"])))
+                if s['student_id'] in members:
+                    break
+                S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
+                db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
+                members.append(s['student_id'])
+                if randint(0,len(members)-1):
+                    break
+        db.test_grouplist.insert_many(S, resort=False)

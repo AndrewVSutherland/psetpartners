@@ -44,6 +44,8 @@ const yearOptions = [
   { label: 'graduate student', value: '5', },
 ];
 
+const yearShort = ["", "first year", "sophomore", "junior", "senior", "graduate"]
+
 const genderOptions = [
   { label: '', value: '' },
   { label: 'female', value: 'female', },
@@ -85,18 +87,25 @@ const startOptions = [
   { label: '3-4 days before the pset is due', value: '4', },
   { label: '1-2 days before the pset is due', value: '2', },
 ];
+const startShort = ["", "early", "midway", "late"];
+
 const togetherOptions = [
   { label: '', value: '' },
   { label: 'solve the problems together', value: '1', },
   { label: 'discuss strategies, work together if stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
+const togetherShort = ["", "unified", "collegial", "solo artists"];
+
 const forumOptions = [
   { label: '', value: '' },
   { label: 'text (e.g. Slack or Zulip)', value: 'text', },
   { label: 'video (e.g. Zoom)', value: 'video', },
   { label: 'in person', value: 'in-person', disabled: true },
 ];
+const forumShort = ["", "text", "video", "in-person"];
+
+
 const sizeOptions = [
   { label: '', value: '' },
   { label: '2 students', value: '2', },
