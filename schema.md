@@ -23,7 +23,7 @@ term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=su
 instructor_names[]    | text[]      | list of instructor names
 instructor_kerbs[]    | text[]      | list of instructor kerbs
 homepage              | text        | course homepage
-pset_dates            | date[] 	    | list of due dates for psets (optional, possibly only first 3 relevant)
+match_dates           | date[] 	    | matching dates (only future dates are relevant)
 
 ## students
 			
@@ -57,7 +57,7 @@ class_number	      | text        | class number (e.g. "18.701")
 year                  | smallint    | year of class (e.g. 2020)
 term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
-visibility            | smallint    | 0=closed, 1=open, 2=public  (closed+open are system created)
+visibility            | smallint    | 0=private closed, 1=private open, 2=public group with private membership, 3=public group with public membership
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 hours                 | boolean[]   | hours the group is potentially available to meet (used for matching)
 strengths             | jsonb       | preference strengths
@@ -78,6 +78,7 @@ term                  | smallint    | term of class (copied from classes table f
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
+status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested
 			
 ## grouplist
 
