@@ -87,25 +87,39 @@ def SQLWrapper(str,map={}):
     keys = [t[1] for t in Formatter().parse(str) if t[1] is not None]
     return (SQL(str).format(**{key:IdentifierWrapper(map[key] if key in map else key) for key in keys}))
 
-def students_in_class(class_number):
+def students_in_class(class_number, year=current_year(), term=current_term()):
     s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['kerb', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
+    cols = ['kerb', 'preferred_name', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
     if not class_number:
         cols.remove('properties')
         return db[s].search({},projection=cols)
     cmd = SQLWrapper(
         """
-SELECT {s}.{kerb}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
+SELECT {s}.{kerb}, {s}.{preferred_name}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
 WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
         """,
         {'s':s, 'c':c}
     )
-    return DBIterator(db._execute(cmd, [class_number, current_year(), current_term()]), cols)
+    return DBIterator(db._execute(cmd, [class_number, year, term]), cols)
 
-def groups_in_class(class_number):
-    g, c = ("groups", "grouplist") if is_livesite() else ("test_students", "test_classlist")
+def students_in_group(group_id):
+    s, g = ("students", "grouplist") if is_livesite() else ("test_students", "test_grouplist")
+    # note that the order of cols must match the order they appear in the SELECT below
+    cols = ['kerb', 'preferred_name', 'departments', 'year', 'gender', 'location', 'timezone', 'hours']
+    cmd = SQLWrapper(
+        """
+SELECT {s}.{kerb}, {s}.{preferred_name}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}
+FROM {g} INNER JOIN {s} ON {s}.{id} = {g}.{student_id}
+WHERE {g}.{group_id} = %s
+        """,
+        {'s':s, 'g':g}
+    )
+    return DBIterator(db._execute(cmd, [group_id]), cols)
+
+def groups_in_class(class_number, year=current_year(), term=current_term()):
+    g, c = ("groups", "grouplist") if is_livesite() else ("test_groups", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['group_name', 'visibility', 'preferences', 'strengths']
     if not class_number:
@@ -113,9 +127,9 @@ def groups_in_class(class_number):
     cmd = SQLWrapper(
         """
 SELECT {g}.{group_name}, {g}.{visibility}, {g}.{preferences}, {g}.{strengths}
-FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
+FROM {c} INNER JOIN {s} ON {g}.{id} = {c}.{group_id}
 WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
         """,
         {'g':g, 'c':c}
     )
-    return DBIterator(db._execute(cmd, [class_number, current_year(), current_term()]), cols)
+    return DBIterator(db._execute(cmd, [class_number, year, term]), cols)
