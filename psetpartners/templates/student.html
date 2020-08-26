@@ -689,9 +689,11 @@ function showAffinityPreferences() {
   const i = togglerIndex();
   const affinities = i ? [...studentAffinities, ...studentClassAffinities] : studentAffinities;
   for ( let x of affinities ) {
+    console.log(x);
     const val = document.getElementById(x + (studentClassAffinities.includes(x) ? '-' + i : '')).value;
-    const a = x + '_affinity', qv = '.pref-' + a + '.pref-' + i, qc = 'label.pref-' + a;
+    const a = x + '_affinity', qv = '.pref-' + a + '.toggle-' + i, qc = 'label.pref-' + a;
     $(qc).text(""); 
+    console.log(val);
     if ( val === '' || val === '[]' ) {
       $(qv).hide();
     } else {
