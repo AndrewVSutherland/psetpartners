@@ -480,9 +480,13 @@ div.caction p i {
   width: 100%;
 }
 
+.htoggler-nav {
+  margin: -8px 0 0 0;
+}
+
 .htoggler:focus {
   outline: none;
-  text-shadow: 0 0 1.5px var(--mit-gray);
+  text-shadow: 1px 1px 2px var(--mit-gray);
 }
 
 .htoggler-after {
@@ -491,10 +495,13 @@ div.caction p i {
   color: black; 
 }
 
-.htoggler-nav {
-  margin: 0 0 0 10px;
+.htoggler-inactive {
   float: right;
   color: var(--mit-maroon); 
+  background: var(--lighter-gray);
+  border-radius: 14px;
+  border-bottom: solid 4px var(--light-gray);
+  padding: 5px 10px;
 }
 
 .htoggler-active {
@@ -503,10 +510,11 @@ div.caction p i {
   color: black;
 }
 
-.htoggler-nav:not(.htoggler-active):hover {
+.htoggler-inactive:hover {
   background: var(--select-fill);
   cursor: pointer;
 }
+
 /* END htoggler */
 
 /* BEGIN toggler */

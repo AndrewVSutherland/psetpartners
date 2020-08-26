@@ -27,12 +27,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
-    <tr>
+    <!--<tr>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
       <td class="forminfo" id="homepage_info">optional</td>
-    </tr>
+    </tr>-->
     <tr>
       <td class="caption">Department(s)</td>
       <td class="value">
@@ -89,7 +89,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
-      <td class="forminfo">optional</td>
+      <td class="forminfo">required</td>
     </tr>
     <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
   </table>
@@ -118,7 +118,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav" id="partner-header">Partners</label>
+    <label class="htoggler-nav htoggler-inactive" id="partner-header">Partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -366,12 +366,19 @@ function changeClasses(val) {
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#toggle-'+(i+1)); q.html(''); q.hide(); }
   const i = togglerIndex();
   const c = i ? studentClasses[i-1] : '';
+  const oldlength = studentClasses.length;
   studentClasses = [...v];
-  if ( c ) {
-    const j = studentClasses.indexOf(c);
-    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
+  console.log(v.length);
+  console.log(oldlength);
+  if ( v.length > oldlength ) {
+    toggleIndex(v.length);
   } else {
-    togglerIndex(0);
+    if ( c ) {
+      const j = studentClasses.indexOf(c);
+      if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
+    } else {
+      togglerIndex(0);
+    }
   }
   setPartnerPanes();
 }
@@ -643,7 +650,9 @@ function applyPreferences() {
 
 function htogglerMakeActive(e) {
     if ( e.classList.contains('htoggler-active') ) return;
+    $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
+    e.classList.remove("htoggler-inactive");
     e.classList.add("htoggler-active");
     if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
     if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
@@ -671,12 +680,9 @@ function togglerCaption() {
 }
 
 function saveErrorMessage() {
-  if ( document.getElementById('preferred_name').value.trim() === '' )
-    return 'Please enter your preferred name.';
-  if ( $('#hours input:checkbox:checked').length < 6 )
-    return 'Please select at least 6 hours when you are available to collaborate.';
-  if ( ! validURL(document.getElementById('homepage').value) )
-    return 'Please correct or delete the invalid URL listed for your homepage.';
+  if ( document.getElementById('preferred_name').value.trim() === '' ) return 'Please enter your preferred name.';
+  if ( $('#hours input:checkbox:checked').length < 6 ) return 'Please select at least 6 hours when you are available to collaborate.';
+  //if ( ! validURL(document.getElementById('homepage').value) ) return 'Please correct or delete the invalid URL listed for your homepage.';
   return '';
 }
 
@@ -823,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); return false; });
+  $('.htoggler-nav').click(function(e) { console.log('click'); e.preventDefault(); htogglerMakeActive(e.target); return false; });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
   togglerIndex(0);
 
@@ -837,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
       htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header'));
     }
   });
-  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-nav.htoggler-active').focus(); }});
+  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-active').focus(); }});
   $('.toggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
@@ -849,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
   if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
+  else  htogglerMakeActive(document.getElementById('partner-header'));
 
   showAffinityPreferences();
   showApplyPreferences();
