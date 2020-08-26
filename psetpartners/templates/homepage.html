@@ -137,12 +137,13 @@
 
 <div class="main-page">
 
-  {% if under_construction %}
+  {% if not under_construction %}
     <div style="padding-top:10%;">
     <img src="{{ url_for('static', filename='under-construction.png') }}" style="display:block; margin:auto; height:25%; width:40%;">
     <br><br>
     <center>
-    <b>This site will go live on or before August 31, 2020.<b>
+    <p><b>This site will go live on or before August 31, 2020.</b></p>
+    <p>In the meantime, please visit our <a href="https://psetpartners-test.mit.edu/">test site!</a></p>
   </center>
   </div>
   {% else %}
