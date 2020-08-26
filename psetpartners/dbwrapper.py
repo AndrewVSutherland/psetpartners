@@ -1,7 +1,7 @@
 from psycopg2.sql import SQL
 from psycodict.utils import IdentifierWrapper
 from . import db
-from .app import is_livesite
+from .app import livesite
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
 def count_rows(table, query):
@@ -13,7 +13,7 @@ _db = None
 def getdb():
     global _db
 
-    if is_livesite():
+    if livesite():
         return db
     if _db is None:
         _db = PsetPartnersTestDB(db)
@@ -94,7 +94,7 @@ def SQLWrapper(str,map={}):
 #TODO: add query and projection args to these functions
 
 def students_in_class(class_id):
-    s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
+    s, c = ("students", "classlist") if livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['kerb', 'preferred_name', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
     cmd = SQLWrapper(
@@ -108,7 +108,7 @@ WHERE {c}.{class_id} = %s
     return DBIterator(db._execute(cmd, [class_id]), cols)
 
 def students_in_group(group_id):
-    s, g = ("students", "grouplist") if is_livesite() else ("test_students", "test_grouplist")
+    s, g = ("students", "grouplist") if livesite() else ("test_students", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['kerb', 'preferred_name', 'departments', 'year', 'gender', 'location', 'timezone', 'hours']
     cmd = SQLWrapper(
@@ -122,7 +122,7 @@ WHERE {g}.{group_id} = %s
     return DBIterator(db._execute(cmd, [group_id]), cols)
 
 def groups_in_class(class_id):
-    g, c = ("groups", "grouplist") if is_livesite() else ("test_groups", "test_grouplist")
+    g, c = ("groups", "grouplist") if livesite() else ("test_groups", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['group_name', 'visibility', 'preferences', 'strengths']
     cmd = SQLWrapper(

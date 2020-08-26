@@ -95,7 +95,7 @@ const togetherOptions = [
   { label: 'discuss strategies, work together if stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
-const togetherShort = ["", "together", "collegial", "soloists"];
+const togetherShort = ["", "unified", "collegial", "independent"];
 
 const forumOptions = [
   { label: '', value: '' },

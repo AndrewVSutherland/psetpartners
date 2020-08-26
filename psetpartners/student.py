@@ -10,6 +10,7 @@ from .utils import (
     current_term,
     hours_from_default,
     )
+from .group import generate_group_name
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
@@ -242,6 +243,14 @@ def next_match_date(class_id):
             return match_dates[0].strftime("%b %-d")
     return ""
 
+def max_size_from_prefs(prefs):
+    if not 'size' in prefs:
+        return None
+    bigger = [o[0] for o in size_options if o[0] > prefs['size']]
+    if not bigger:
+        return None
+    return bigger[0]-1
+
 def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
     count_hours = 'hours' in opts
@@ -314,7 +323,8 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
 def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
     db = getdb()
     G = []
-    for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term}, projection=['id']+[o for o in opts if o in db.groups.col_type]):
+    mv = 0 if instructor_view else 2
+    for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
         members = list(students_in_group(g['id']))
         n = len(members)
         p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
@@ -378,12 +388,8 @@ class Student(UserMixin):
         for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
-        self.class_data = self._class_data()
-        self.classes = sorted(list(self.class_data))
-        self.group_data = self._group_data()
-        self.groups = sorted(list(self.group_data))
+        self._reload()
         assert self.kerb
-        print(self.hours)
 
     @property
     def is_student(self):
@@ -422,6 +428,13 @@ class Student(UserMixin):
     def get_id(self):
         return lambda: getattr(self, 'kerb', None)
 
+    def _reload(self):
+        """ This function should be called after any updates to classlist or grouplist related this student """
+        self.class_data = self._class_data()
+        self.classes = sorted(list(self.class_data))
+        self.group_data = self._group_data()
+        self.groups = sorted(list(self.group_data))
+
     def save(self):
         # TODO: put all of this in a transaction
         if self.new:
@@ -458,63 +471,106 @@ class Student(UserMixin):
             self._db.classlist.delete(q)
             if S:
                 self._db.classlist.insert_many(S)
+        self._reload()
         return "Changes saved!"
 
     def join(self, group_id):
-        g = self._db.groups.lucky({'id': group_id})
+        g = self._db.groups.lucky({'id': group_id}, projection=['class_id', 'class_number', 'year', 'term', 'group_name'])
         if not g:
             app.logger.warning("User %s attempted to join non-existent group %s" % (self.kerb, group_id))
             raise ValueError("Group not found in database")
-        if not g['class_number'] in self.classes:
-            app.logger.warning("User %s attempted to join group %s in class %s not in their class list" % (self.kerb, group_id, g['class_number']))
-            raise ValueError("Group not found in any of your classes")
+        c = g['class_number']
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to join group %s in class %s not in their class list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in any of your classes for this term")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
+            raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1})
         r = { k: g[k] for k in  ['class_number', 'year', 'term']}
-        r['group_id'] = group_id
-        r['student_id'] = self.id
-        r['kerb'] = self.kerb
+        r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r])
+        self._reload()
         return "Welcome to %s!" % g['group_name']
 
     def leave(self, group_id):
         g = self._db.groups.lucky({'id': group_id})
-        print(g)
         if not g:
             app.logger.warning("User %s attempted to leave non-existent group %s" % (self.kerb, group_id))
             raise ValueError("Group not found in database.")
-        if not g['class_number'] in self.classes:
-            app.logger.warning("User %s attempted to leave group %s in class %s not in their class list" % (self.kerb, group_id, g['class_number']))
-            raise ValueError("Group not found in any of your classes.")
+        c = g['class_number']
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to leave group %s in class %s not in their class list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in any of your classes for this term.")
+        if not c in self.groups:
+            app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in your list of groups for this term.")
         self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id})
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0})
-        return "You have been removed from the group %s." % g['group_name']
+        msg = "You have been removed from the group %s in %s." % (g['group_name'], c)
+        if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
+            self._db.group.delete({'id': group_id})
+            self._reload()
+            msg += " You were the sole remaining member of this group, so it has been disbanded."
+        self._reload()
+        return msg
 
     def pool(self, class_id):
-        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection=["class_number", "status"])
+        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, "class_number")
         if not c:
-            raise ValueError("Class not found among your classes.")
-        if c['status'] == 4:
-            raise ValueError("We are currently working on a match for you in %s, please be patient." % c['class_number'])
-        if c['status'] == 3:
-            group_name = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id}, projection="group_name")
-            if group_name:
-                raise "You cannot enter the match pool for %s until you leave the group %s" % (c['class_number'], group_name)
+            app.logger.warning("User %s attempted to join the pool for non-existent class %s" % (self.kerb, class_id))
+            raise ValueError("Class not found in database.")
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to join the pool for class %s not in their class list" % (self.kerb, class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to join the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 4:
+            raise ValueError("We are already working on a match for you in %s, please be patient." % c)
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2})
         d = next_match_date(class_id)
-        return "You are now in the match pool for %s and will be matched on %s." %(c['class_number'], d)
+        self._reload()
+        return "You are now in the match pool for %s and will be matched on %s." %(c, d)
 
     def match(self, class_id):
-        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection=["class_number", "status"])
+        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
+        if not c:
+            raise ValueError("Class not found in database.")
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to join the pool for class %s not in their class list" % (self.kerb, class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c in self.groups:
+            app.logger.warning("User %s requested a match for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before requesting a match." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 3 or self.class_data[c]['status'] == 4:
+            return "We are currently working on a match for you in %s, please be patient!" % c['class_number']
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3})
+        self._reload()
+        return "We will start working on a match for you in %s, you should receive an email from us within 24 hours." % c
+
+    def create_group(self, class_id, public=True):
+        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
         if not c:
             raise ValueError("Class not found among your classes.")
-        if c['status'] == 3:
-            return "We are currently working on a match for you in %s, please be patient!" % c['class_number']
-        if c['status'] == 1:
-            group_name = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id}, projection="group_name")
-            if group_name:
-                raise "You cannot seek a new match in %s until you leave the group %s" % (c['class_number'], group_name)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3})
-        return "We will start working on a match for you in %s, you should receive an email from us within 24 hours." %(c['class_number'])
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to join the pool for class %s not in their class list" % (self.kerb, class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c in self.groups:
+            app.logger.warning("User %s tried to create a group in class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
+        c = self.class_data[c]
+        prefs = { k: c['preferences'][k] for k in c.get('preferences',{}) if not k.endswith('affinity') }
+        strengths = { k: c['strengths'][k] for k in c.get('strengths',{}) if not k.endswith('affinity') }
+        maxsize = max_size_from_prefs(prefs)
+        name = generate_group_name()
+        g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
+             'visibility': 2 if public else 1, 'preferences': prefs, 'strengths': strengths, 'editors': [], 'max': maxsize }
+        self._db.groups.insert_many([g])
+        r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
+        self._db.grouplist.insert_many([r])
+        self._reload()
+        return "Created the group %s!" % g['group_name']
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
@@ -522,6 +578,8 @@ class Student(UserMixin):
             projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths', 'status'],
             )
         for r in classes:
+            # we could also group instructor names and match_dates from classes, but not necessary right now
+            r['id'] = r['class_id'] # just so we don't get confused
             r['next_match_date'] = next_match_date(r['class_id'])
             if not r['preferences']:
                 r['preferences'] = self.preferences
@@ -531,9 +589,12 @@ class Student(UserMixin):
 
     def _group_data(self, year=current_year(), term=current_term()):
         group_data = {}
-        for r in self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection=['group_id', 'class_id']):
-            g = self._db.groups.lucky({'id': r['group_id']}, projection=['id', 'group_name', 'class_number', 'visibility'])
-            members = list(students_in_group(r['group_id']))
+        groups = self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection='group_id')
+        for gid in groups:
+            g = self._db.groups.lucky({'id': gid},
+                projection=['id', 'group_name', 'class_number', 'visibility', 'preferences', 'strengths', 'editors', 'max'])
+            g['group_id'] = g['id'] # just so we don't get confused
+            members = list(students_in_group(gid))
             g['count'] = len(members)
             g['members'] = sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members])
             group_data[g['class_number']] = g
@@ -782,16 +843,9 @@ def generate_test_population(num_students=300,max_classes=6):
             s = db.test_students.lookup(creator,projection=["preferences", "strengths"])
             prefs = { k: s['preferences'][k] for k in s.get('preferences',{}) if not k.endswith('affinity') }
             strengths = { k: s['strengths'][k] for k in s.get('strengths',{}) if not k.endswith('affinity') }
-            if 'size' in prefs:
-                maxsize = [o[0] for o in size_options if o[0] > prefs['size']]
-                if not maxsize:
-                    maxsize = None
-                else:
-                    maxsize = maxsize[0]-1
-            else:
-                maxsize = None
+            maxsize = max_size_from_prefs(prefs)
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': [creator], 'max': maxsize }
+                 'group_name': name, 'visibility': 2, 'preferences': prefs, 'strengths': strengths, 'editors': [creator], 'max': maxsize }
             creators.add(creator)
             names.add(name)
             S.append(g)

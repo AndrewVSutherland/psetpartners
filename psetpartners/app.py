@@ -67,19 +67,19 @@ def setup():
 # App attribute functions  #
 ############################
 
-def is_livesite():
+def livesite():
     try:
         return ( domain() == "psetpartners.mit.edu" )
     except Exception:
         return False
 
-def is_debug_mode():
+def debug_mode():
     from flask import current_app
 
     return current_app.debug
 
-def is_under_construction():
-    return is_livesite() # TODO: change this line when we go live
+def under_construction():
+    return livesite() # TODO: change this line when we go live
 
 ############################
 # Global app configuration #
@@ -124,12 +124,12 @@ def ctx_proc_userdata():
     data = {"info": {} }
     data["meta_description"] = r"Welcome to psetpartners, a tool for finding others to help work on problem sets!"
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
-    data["DEBUG"] = is_debug_mode()
+    data["DEBUG"] = debug_mode()
     data["domain"] = domain()
     data["current_upcoming"] = current_upcoming()
     data["current_term_pretty"] = current_term_pretty()
-    data["livesite"] = is_livesite()
-    data["under_construction"] = is_under_construction()
+    data["livesite"] = livesite()
+    data["under_construction"] = under_construction()
     return data
 
 ##############################
@@ -164,7 +164,7 @@ def not_found_503(error):
 @app.route("/health")
 @app.route("/alive")
 def alive():
-    msg = 'psetpartners is alive and well at "%s", which %s the live site' % (domain(), "is" if is_livesite() else "is not")
+    msg = 'psetpartners is alive and well at "%s", which %s the live site' % (domain(), "is" if livesite() else "is not")
     app.logger.info(msg)
     return msg
 
