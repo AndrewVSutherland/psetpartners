@@ -16,7 +16,7 @@ from flask_login import (
     LoginManager,
 )
 from datetime import datetime
-from .app import app, is_livesite, send_email
+from .app import app, livesite, debug_mode, under_construction, send_email
 from .student import (
     Student,
     Instructor,
@@ -87,7 +87,7 @@ KERB_RE = re.compile(r"^[a-z0-9][a-z0-9][a-z0-9]+$")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if is_livesite():
+    if livesite():
         if request.method != "GET":
             return render_template("500.html", message="Invalid login method"), 500
         eppn = request.environ.get("HTTP_EPPN", "")
@@ -125,7 +125,7 @@ def login():
     session["affiliation"] = affiliation
     login_user(user, remember=False)
     app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
-        (kerb,"live site" if is_livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
+        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/loginas/<kerb>")
@@ -156,7 +156,7 @@ def index():
         else:
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
-        if is_livesite():
+        if livesite():
             return redirect(url_for(".login"))
         else:
             return render_template("login.html", maxlength=maxlength)
@@ -194,10 +194,9 @@ def testemal():
 
 @app.route("/testlog")
 def testlog():
-    from .app import is_debug_mode, is_under_construction
     from .utils import domain
 
-    msg = "Test message on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), is_livesite(), is_under_construction(), is_debug_mode())
+    msg = "Test message on %s (livesite = %s, under_construction = %s, debug = %s)" % (domain(), livesite(), under_construction(), debug_mode())
     app.logger.info(msg)
     return "The following message was just logged:\n\n"+msg
 
@@ -242,7 +241,6 @@ Then click the "Partners" tab and click through your classes to see what your op
             """)
     return render_template(
         "student.html",
-        islive=is_livesite(),
         options=template_options(),
         maxlength=maxlength,
         counts=get_counts([''] + current_user.classes, allowed_copts),
@@ -256,7 +254,6 @@ def instructor(context={}):
         return redirect(url_for("index"))
     return render_template(
         "instructor.html",
-        islive=is_livesite(),
         options=template_options(),
         maxlength=maxlength,
         ctx=session.pop("ctx",""),
@@ -289,32 +286,49 @@ def save_student():
         try:
             flash_info(current_user.join(int(submit[1])))
         except Exception as err:
+            if debug_mode():
+                raise
             flash_error("Error joining group: {0}{1!r}".format(type(err).__name__, err.args))
     elif submit[0] == "leave":
         try:
             flash_info(current_user.leave(int(submit[1])))
         except Exception as err:
+            if debug_mode():
+                raise
             flash_error("Error leaving group: {0}{1!r}".format(type(err).__name__, err.args))
     elif submit[0] == "pool":
         try:
             flash_info(current_user.pool(int(submit[1])))
         except Exception as err:
+            if debug_mode():
+                raise
             flash_error("Error adding you to the match pool for {0}: {1}{2!r}".format(submit[1], type(err).__name__, err.args))
     elif submit[0] == "match":
         try:
             flash_info(current_user.match(int(submit[1])))
         except Exception as err:
+            if debug_mode():
+                raise
             flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
     elif submit[0] == "createprivate":
-        flash_error("Group creation is temporarily disabled, check back tomorrow.")
+        try:
+            flash_info(current_user.create_group (int(submit[1]), public=False))
+        except Exception as err:
+            if debug_mode():
+                raise
+            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
     elif submit[0] == "createpublic":
-        flash_error("Group creation is temporarily disabled, check back tomorrow.")
+        try:
+            flash_info(current_user.create_group (int(submit[1]), public=True))
+        except Exception as err:
+            if debug_mode():
+                raise
+            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
     else:
         flash_error("Unrecognized submit command.")
     return redirect(url_for(".student"))
 
 def save_changes(raw_data):
-    print("saving")
     errmsgs = []
     data = {}
     try:
@@ -391,7 +405,6 @@ def save_changes(raw_data):
     current_user.class_data = { data["classes"][i]: { "properties": props[i+1], "preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
     try:
        flash_info(current_user.save())
-       print("saved!")
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
         return False
@@ -401,7 +414,7 @@ def save_changes(raw_data):
 @login_required
 def logout():
     logout_user()
-    if not is_livesite():
+    if not livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
         resp = make_response(render_template("goodbye.html"))

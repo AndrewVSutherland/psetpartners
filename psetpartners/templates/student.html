@@ -238,7 +238,7 @@ const timezoneOptions = [
 {% endfor %}
 ];
 
-const isLive = {{ islive|tojson|safe }};
+const isLive = {{ livesite|tojson|safe }};
 var allCounts = {{ counts|tojson|safe }};
 var allGroups = {{ groups|tojson|safe }};
 const classData = {{ user.class_data|tojson|safe }};
@@ -558,7 +558,7 @@ function confirmPool(e, c) {
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -592,8 +592,8 @@ function confirmPublicGroup(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  let msg = `<p>You are about to create a public group based on your general preferences. `;
-  msg += `This group will be visisble to all students in ${c} using pset partners, and all are able to join your group up to the size limit indicated in your preferences, if any.  You will be emailed whenever new students join or leave the group. `;
+  let msg = `<p>You are about to create a public group based on your preference settings for ${c}. `;
+  msg += `This group will be visisble to all students in ${c} using pset partners.  Anyone can join your group. up to the size limit indicated in your preferences (if any).  You will be emailed whenever new students join or leave the group. `;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
@@ -746,7 +746,7 @@ function updateHoursCompatible(e) {
 
 function checkChanges (e) {
   if ( ! e.target.name ) return;
-  console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
+  // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
   $('#student :submit').prop('disabled',!change);
   showSaveErrorMessage();
@@ -853,8 +853,7 @@ document.addEventListener('DOMContentLoaded', function() {
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
-  console.log('student page ready');
-  console.log(isLive);
+  console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 </script>
 

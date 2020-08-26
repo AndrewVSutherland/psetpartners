@@ -388,13 +388,17 @@ p.flash-info::before, p.flash-announce:before, p.flash-instruct:before {
   content:"✔";
   color:#469c33;
 }
-p.flash-announce:before, p.flash-instruct:before {
+p.flash-announce:before {
   font-size:120%;
-  content:"🎉";
+  content: "🎉";
 }
-p.flash-announce:after, p.flash-instruct:after {
+p.flash-instruct:before {
+  font-size:120%;
+  content: "💡";
+}
+p.flash-error:after, p.flash-announce:after, p.flash-instruct:after {
   color: var(--mit-maroon);
-  content:" [Click here to make this message disappear]";
+  content:" [Dismiss this message]";
   cursor: pointer;
 }
 p.flash-warning::before {
