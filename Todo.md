@@ -7,7 +7,7 @@ Setup/Config
 Decisions
 =========
 
-* Should public group membership be public or optionally public (currently you have to join to see who is a member, which sends an email to everyone else).  One option would be to make the identity of the creator of the group public.
+* Should public group membership be visible? (currently you have to join to see the list of members, which sends an email to everyone else).  One option would be to make the identity of the creator of the group public.
 * Who should be able to edit group preferences?  Currently only creator can edit groups they created, but all members can edit groups created by the system.
 
 Pages needed
@@ -20,7 +20,7 @@ Pages needed
  - list of public pset groups (already available on student pages)
  - list of course members
  - match dates (presumably organized around pset deadlines)
-* Instructor homepage (basically a list of course homepages)
+* Instructor homepage (basically a list of course homepages, but instructors can see all groups, not just public groups)
 
 Matching restriction
 ====================
