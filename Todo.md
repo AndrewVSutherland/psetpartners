@@ -14,6 +14,7 @@ Decisions
 Pages needed
 =============
 
+* Group homepage where members (or maybe just the owner) can edit group preferences and create invitation links.
 * Course homepage, including an editable list of public resources (e.g. chat links), public pset groups (already available on student pages), and course members, as well as matching dates (presumably organized around pset deadlines)
 * Instructor homepage (basically a list of course homepages, but instructors can see all groups, not just public groups)
 
