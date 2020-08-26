@@ -393,11 +393,12 @@ p.flash-announce:before {
   content: "🎉";
 }
 p.flash-instruct:before {
-  font-size:120%;
+  font-size:100%;
   content: "💡";
 }
 p.flash-error:after, p.flash-announce:after, p.flash-instruct:after {
   color: var(--mit-maroon);
+  font-size: 95%;
   content:" [Dismiss this message]";
   cursor: pointer;
 }
