@@ -35,6 +35,7 @@ from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
+    flash_instruct,
     flash_error,
     process_user_input,
     maxlength,
@@ -231,6 +232,14 @@ def counts_groups():
 def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
+    if current_user.new:
+        flash_instruct("""
+Welcome to pset partners!
+To get started, first enter your preferred name and any other personal details you care to share.
+Then select your location and timezone, the math classes you are taking this term, and indicate your hours of availability.
+You can then set preferences if you wish (none are required), both generally and for each class individually.
+Then click the "Partners" tab and click through your classes to see what your options are.
+            """)
     return render_template(
         "student.html",
         options=template_options(),
