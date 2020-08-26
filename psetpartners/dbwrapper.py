@@ -94,22 +94,19 @@ def SQLWrapper(str,map={}):
 
 #TODO: add query and projection args to these functions
 
-def students_in_class(class_number, year=current_year(), term=current_term()):
+def students_in_class(class_id):
     s, c = ("students", "classlist") if is_livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['kerb', 'preferred_name', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
-    if not class_number:
-        cols.remove('properties')
-        return db[s].search({},projection=cols)
     cmd = SQLWrapper(
         """
 SELECT {s}.{kerb}, {s}.{preferred_name}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
-WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
+WHERE {c}.{class_id} = %s
         """,
         {'s':s, 'c':c}
     )
-    return DBIterator(db._execute(cmd, [class_number, year, term]), cols)
+    return DBIterator(db._execute(cmd, [class_id]), cols)
 
 def students_in_group(group_id):
     s, g = ("students", "grouplist") if is_livesite() else ("test_students", "test_grouplist")
@@ -125,18 +122,16 @@ WHERE {g}.{group_id} = %s
     )
     return DBIterator(db._execute(cmd, [group_id]), cols)
 
-def groups_in_class(class_number, year=current_year(), term=current_term()):
+def groups_in_class(class_id):
     g, c = ("groups", "grouplist") if is_livesite() else ("test_groups", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['group_name', 'visibility', 'preferences', 'strengths']
-    if not class_number:
-        return db[g].search({},projection=cols)
     cmd = SQLWrapper(
         """
 SELECT {g}.{group_name}, {g}.{visibility}, {g}.{preferences}, {g}.{strengths}
 FROM {c} INNER JOIN {s} ON {g}.{id} = {c}.{group_id}
-WHERE {c}.{class_number} = %s and {c}.{year} = %s and {c}.{term} = %s
+WHERE {c}.{class_id} = %s
         """,
         {'g':g, 'c':c}
     )
-    return DBIterator(db._execute(cmd, [class_number, year, term]), cols)
+    return DBIterator(db._execute(cmd, [class_id]), cols)

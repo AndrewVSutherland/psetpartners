@@ -18,9 +18,9 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" required maxlength="{{maxlength['preferred_name']}}" 
+      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" maxlength="{{maxlength['preferred_name']}}" 
        oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
-      <td class="forminfo">required</td>
+      <td class="forminfo" id="preferred_name_info">required</td>
     </tr>
     <tr>
       <td class="caption">Preferred pronouns</td>
@@ -188,16 +188,16 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
   <div class="partner" style="display:none;">
 
+  <!-- TOOO figure out what is up with the margin-right's below, they should not be needed (or handled in style.css) -->
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
-    <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" class="toggle-{{i}}">
-      <p id="partner-summary-{{i}}"></p>
-      <div id="partner-div-{{i}}"></div>
-      <div id="partner-buttons-{{i}}"></div>
-      <div id="partner-confirm-{{i}}"></div>
+    <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
+      <p style="margin-right:30px;" id="partner-summary-{{i}}"></p>
+      <div style="margin-right:30px'" id="partner-div-{{i}}"></div>
+      <div style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
   {% endfor %}
-
+  <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
   </div>
 
   <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
@@ -207,16 +207,17 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
-      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Save</button></td>
-      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>Reset</button></td>
+      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>save</button></td>
+      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
+      <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
     </tr>
   </table>
 </div>
 <div style="display:inline-block; float:right;">
 <table class="submit">
   <tr><td>
-  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">Apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
+  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
 </td></tr>
 </table></div>
   </form>
@@ -361,7 +362,7 @@ function changeClasses(val) {
       const q = $('#toggle-'+(i+1)); q.html(c); q.show();
     }
   }
-  for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#pref-'+(i+1)); q.html(''); q.hide(); }
+  for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#toggle-'+(i+1)); q.html(''); q.hide(); }
   const i = togglerIndex();
   const c = i ? studentClasses[i-1] : '';
   studentClasses = [...v];
@@ -379,33 +380,38 @@ function mtabHead() { return "<thead><tr><th>name</th><th>year</th><th>email</th
 function mtabRow(s) {
   let name = s[0] ? s[0] : s[3];
   if ( s[1] ) name += "(" + s[1] + ")";
-  let year = s[2] ? parseInt(s[2]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "";
+  let year = s[2] ? parseInt(s[2]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
   return `<tr><td>${name}</td><td align="center">${year}</td><td><a href="mailto:${s[3]}@mit.edu">${s[3]}@mit.edu</a></td></tr>`;
 }
 
-// group record should be an array [group_name, start, together, forum, size, max, ...] (entries after max will be ignored here)
+// group record should be an array [group_id, group_name, start, together, forum, size, max, ...] (entries after max will be ignored here)
 function gtabHead() {
   return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
 }
 function gtabRow(g) {
-  console.log(g);
-  let start = g[1] ? parseInt(g[1]) : 0;  start = ( start > 0 && start < startShort.length ) ? startShort[start] : "-";
-  let together = g[2] ? parseInt(g[2]) : 0;  together = ( together > 0 && together < togetherShort.length ) ? togetherShort[together] : "-";
-  let row = `<tr><td>${g[0]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
-  row += `<td align="center">${g[3]?g[3]:"-"}</td><td>${g[4]}</td><td>${g[5]?g[5]:"-"}</td>`;
-  row += ( !g[5] || parseInt(g[4]) < parseInt(g[5]) ) ? `<td><label class="action" onclick="confirmJoin('${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
+  let start = g[2] ? parseInt(g[2]) : 0;  start = ( start > 0 && start < startShort.length ) ? startShort[start] : "-";
+  let together = g[3] ? parseInt(g[3]) : 0;  together = ( together > 0 && together < togetherShort.length ) ? togetherShort[together] : "-";
+  let row = `<tr><td>${g[1]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
+  row += `<td align="center">${g[4]?g[4]:"-"}</td><td>${g[5]}</td><td>${g[6]?g[6]:"-"}</td>`;
+  row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
   return row;
 }
 
-function actionButtons(c) {
+function partnerActionButtons(c) {
   let btab = '<table class="btab">\n<tbody><tr>';
   const d = allCounts[c].next_match_date;
-  if ( d) btab += `<td><label class="action" onclick="confirmMatch('${c}')">match ${d}<label></td>`;
-  btab += `<td><label class="action" onclick="confirmInstaMatch('${c}')">match asap<label></td>`;
-  btab += `<td><label class="action" onclick="confirmPrivateGroup('${c}')">create private group<label></td>`;
-  btab += `<td><label class="action" onclick="confirmPublicGroup('${c}')">create public group<label></td>`;
+  if ( d) btab += `<td><label class="paction" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
+  btab += `<td><label class="paction" onclick="confirmMatch(this, '${c}')">match me asap<label></td>`;
+  btab += `<td><label class="paction" onclick="confirmPrivateGroup(this, '${c}')">create private group<label></td>`;
+  btab += `<td><label class="paction" onclick="confirmPublicGroup(this, '${c}')">create public group<label></td>`;
   btab += '</tr>\n</tbody></table>';
-  console.log(btab);
+  return btab;
+}
+
+function unpartnerActionButtons(gid) {
+  let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
+  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group<label></td>`;
+  btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
   return btab;
 }
 
@@ -424,9 +430,11 @@ function setPartnerPanes() {
     if ( c in allCounts ) {
       if ( c in groupData ) {
         const g = groupData[c];
-        $('#partner-summary-'+(i+1)).html(`You are currently a member of the group <b>${g.group_name}</b>:`);
+        console.log(g);
+        $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(mtab);
+        $('#partner-buttons-'+(i+1)).html(unpartnerActionButtons(g.id));        
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
@@ -442,29 +450,137 @@ function setPartnerPanes() {
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
           if ( groups.length ) {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
-            console.log(gtab);
             $('#partner-div-'+(i+1)).html(gtab);
           } else {
             $('#partner-div-'+(i+1)).html('');
           }
-          msg += '<br><br>To find a pset partner, click any of the highlighted join links or one of the highlighted action links below.  Each link will tell you what is going to happen and ask you to confirm before proceeding, so click confidently!';
+          if ( c in classData && classData[c].status in [2,3,4] ) {
+            if ( classData[c].status == 2 ) {
+              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to join a group or request a more urgent match by clinking on one of the links below. `;
+            } else if ( classData[c].status == 3 ) {
+              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
+            } else if ( classData[c].status == 4 ) {
+              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
+            }
+            console.log("Unreachable code in setPartnerPanes!");
+          } else {
+            msg += '<br><br>To find a pset partner, click any of the highlighted join links or one of the highlighted action links. ';
+          }
         } else {
-          msg += 'All of these students are still looking for pset partners!<br><br>';
-          msg += 'To find a pset partner, click any of the highlighted action links below.  Each link will tell you what is going to happen and require confirmation before proceeding, so click confidently!';
+          msg += 'All of these students are still looking for pset partners! ';
+          msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
         }
+        msg += 'Each link will tell you what is going to happen and ask for a confirmation before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
-        $('#partner-buttons-'+(i+1)).html(actionButtons(c));
+        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
       }
     } else {
-      $('#partner-summary-'+(i+1)).text(`Save your changes to obtain get the latest pset partner data for ${c}.`);
+      $('#partner-summary-'+(i+1)).text(`Save your changes to get the latest pset partner data for ${c}.`);
     }
   }
+}
+
+function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
+function pending() { return ! $('#cancel').is(':disabled'); }
+
+function showConfirm(msg) { // msg should be html that defines a submit button with the id="confirm"
+  $('label.paction').hide(); $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
+  $('#confirm').focusout(hideConfirm); $('#confirm').focus();
+}
+function hideConfirm() {
+  $('#partner-confirm').html(''); $('label.paction').show(); $('button[type="submit"]').show();
+}
+
+function confirmJoin(e, gid) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  console.log(i);
+  if ( ! i || i > studentClasses.length ) return;
+  const c = studentClasses[i-1];
+  const g = allGroups[c].find(x => x[0] == gid);
+  if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
+  let msg = `<p>You are about to join the public group <i>${g[1]}</i>. `;
+  if ( g[7] == '3' ) {
+    msg += 'Existing members of this group will be notified and your membership will be visible to other students on pset partners. ';
+  } else {
+    msg += 'Existing members of this group will be notified. ';
+  }
+  let val = "join " + gid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
+}
+
+function confirmLeave(e, gid) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const c = studentClasses[i-1];
+  const g = allGroups[c].find(x => x[0] == gid);
+  if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
+  console.log(g);
+  let msg = `<p>You are about to leave the group <i>${g[1]}</i>. Existing members of this group will be notified. `;
+  if ( g[7] != '2' && g[7] != '3' && g[5] != '1') msg += ' This is a private group, so you will need an invitation to rejoin. ';
+  if ( g[5] =='1' ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
+  let val = "leave " + gid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g[1]}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
+}
+
+function confirmPool(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const d = allCounts[c].next_match_date;
+  const cid = allCounts[c].class_id;
+  const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
+  console.log(res);
+  let msg = `<p>You are about to be put in the match pool for ${c}. `;
+  msg += `On ${d} the system will attempt to put you in a pset group that matches your availability and preferences. `;
+  msg += 'This may be accomplished either by forming a new group with other students in the pool, or bv adding you to an existing private group. ';
+  let val = "pool " + cid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += '<br><br>';
+  if ( Object.values(res).find(r => r.strength == '5') )
+    msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
+  msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
+}
+
+function confirmMatch(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const d = allCounts[c].next_match_date;
+  const cid = allCounts[c].class_id;
+  const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
+  let msg = `<p>You are about to request an urgent match for ${c}. `;
+  msg += `The system will attempt to put you in one of the existing pset groups. `;
+  msg += `Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime. Please do not use this option lightly, it may generate many emails (in the sandbox no eamils will be sent). `;
+  let val = "match " + cid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += '<br><br>';
+  if ( Object.values(res).find(r => r.strength == '5') )
+    msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
 }
 
 function showApplyPreferences() {
   if ( typeof (showApplyPreferences.snapshot) == 'undefined' ) {
     showApplyPreferences.snapshot = JSON.stringify(getPrefs(studentPreferences,0));
     $('#apply-prefs').hide();
+    return;
   }
   if ( togglerIndex() === 0 && JSON.stringify(getPrefs(studentPreferences,0)) != showApplyPreferences.snapshot ) {
     $('#apply-prefs').show();
@@ -590,7 +706,9 @@ function checkChanges (e) {
   $('#student :submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
-  if ( e.target.classList.contains('pref-0') ) showApplyPreferences();
+  console.log(e.target.name);
+  if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' ) 
+    showApplyPreferences();
   if ( e.target.name === 'timezone' ) computeHoursCompatible();
   if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
 }
