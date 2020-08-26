@@ -248,7 +248,7 @@ const ctx = {{ ctx|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, allCounts, allGroups, classData, groupData, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx */ // from template (ignored above)
 /* global yearShort, startShort, forumShort, togetherShort */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
@@ -572,7 +572,8 @@ function confirmMatch(e, c) {
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `<p>You are about to request an urgent match for ${c}. `;
   msg += `The system will attempt to put you in one of the existing pset groups. `;
-  msg += `Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime.<br><br>Please do not use this option lightly, it may generate many emails (in the sandbox no emails will be sent). `;
+  msg += 'Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime.<br><br>Please do not use this option lightly, it may generate many emails';
+  msg += isLive ? '. ' : ' (in the sandbox no emails will be sent). ';
   let val = "match " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
