@@ -11,7 +11,7 @@ Decisions
 * Who should be able to edit group preferences?  Currently only creator can edit groups they created, but all members can edit groups created by the system.
 
 Pages needed
-===== ======
+=============
 
 * Course homepage
  - basic course info
@@ -22,8 +22,8 @@ Pages needed
  - match dates (presumably organized around pset deadlines)
 * Instructor homepage (basically a list of course homepages)
 
-Matching restrictions
-======== ============
+Matching restriction
+====================
 
 * If you ever withdraw from a group, the system should never match you with that group again.
 * Blocklist (prevent matching with any group containing a blocked list of kerbs)
