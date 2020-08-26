@@ -17,8 +17,8 @@ Pages needed
 * Course homepage, including an editable list of public resources (e.g. chat links), public pset groups (already available on student pages), and course members, as well as matching dates (presumably organized around pset deadlines)
 * Instructor homepage (basically a list of course homepages, but instructors can see all groups, not just public groups)
 
-Matching restriction
-====================
+Matching restrictions
+=====================
 
 * If you ever withdraw from a group, the system should never match you with that group again (this might be too extreme, maybe make it an option?).
 * Blocklist (prevent matching with any group containing a blocked list of kerbs)
