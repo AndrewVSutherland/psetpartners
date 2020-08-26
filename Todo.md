@@ -23,3 +23,9 @@ Matching restrictions
 
 * If you ever withdraw from a group, the system should never match you with that group again (this might be too extreme, maybe make it an option?).
 * Blocklist (prevent matching with any group containing a blocked list of kerbs)
+
+User interface
+==============
+
+* Student page is using too much vertical space, causing scrolling.  Make the profile section collapsible to save space.
+
