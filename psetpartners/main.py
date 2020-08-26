@@ -259,9 +259,45 @@ PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 def save_student():
     raw_data = request.form
     session["ctx"] = { x[4:] : raw_data[x] for x in raw_data if x.startswith("ctx-") } # return ctx-XXX values to
-    if raw_data.get("submit") == "cancel":
+    submit = [x for x in raw_data.get("submit").split(' ') if x];
+    if not submit:
+        flash_error("Unrecognized submit command, no changes made.")
+        return redirect(url_for(".studnet"))
+    if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
+    if submit[0] == "save":
+        if not save_changes(raw_data):
+            if submit != "save":
+                flash_error("The action you requested was not performed.")
+            return redirect(url_for(".student"))
+        submit = submit[1:]
+    if not submit:
+        return redirect(url_for(".student"))    
+    if submit[0] == "join":
+        try:
+            flash_info(current_user.join(int(submit[1])))
+        except Exception as err:
+            flash_error("Error joining group: {0}{1!r}".format(type(err).__name__, err.args))
+    elif submit[0] == "leave":
+        try:
+            flash_info(current_user.leave(int(submit[1])))
+        except Exception as err:
+            flash_error("Error leaving group: {0}{1!r}".format(type(err).__name__, err.args))
+    elif submit[0] == "pool":
+        try:
+            flash_info(current_user.pool(int(submit[1])))
+        except Exception as err:
+            flash_error("Error adding you to the match pool for {0}: {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+    elif submit[0] == "match":
+        try:
+            flash_info(current_user.match(int(submit[1])))
+        except Exception as err:
+            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+    return redirect(url_for(".student"))
+
+def save_changes(raw_data):
+    print("saving")
     errmsgs = []
     data = {}
     try:
@@ -328,18 +364,21 @@ def save_student():
                 errmsgs.append(format_input_errmsg(err, val, col))
         # There should never be any errors coming from the form but if there are, return the first one
         if errmsgs:
-            return show_input_errors(errmsgs)
+            for msg in errmsgs:
+                flash_error(msg)
+            return False;
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
     for k, v in data.items():
         setattr(current_user, k, v)
     current_user.class_data = { data["classes"][i]: { "properties": props[i+1], "preferences": prefs[i+1], "strengths": sprefs[i+1]} for i in range(num_classes) }
     try:
-       current_user.save()
-       flash_info ("Changes saved.") 
+       flash_info(current_user.save())
+       print("saved!")
     except Exception as err:
         flash_error("Error saving changes: %s" % err)
-    return redirect(url_for(".student"))
+        return False
+    return True
 
 @app.route("/logout")
 @login_required

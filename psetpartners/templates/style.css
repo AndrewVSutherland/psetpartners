@@ -379,6 +379,7 @@ label.confirm::before {
 p.flash-info, p.flash-warning {
   margin-left: 0;
   margin-top: 8px;
+  margin-bottom: 0;
   font-size: 90%;
   padding-bottom: 6px;
 }
@@ -403,7 +404,7 @@ p.flash-error::before {
   padding-right: 3px;
 }
 
-table.mtab, table.gtab {
+table.mtab, table.gtab, table.ctab {
   margin: 0 auto;
 }
 
@@ -412,7 +413,7 @@ table.mtab th, table.gtab th {
   border-bottom: 1px solid black;
 }
 
-table.mtab td, table.gtab td {
+table.mtab td, table.gtab td, table.ctab td {
   padding: 2px 20px;
 }
 
@@ -427,17 +428,34 @@ table.btab td {
   padding: 0 30px;
 }
 
-label.action {
+label.paction {
   color: var(--mit-maroon);
   padding: 2px;
   cursor: pointer;
   font-size: 95%;
   font-weight: bold;
 }
-label.action:hover {
+label.paction:hover {
   background: var(--mit-pink);
 }
 
+label.naction {
+  color: var(--mit-maroon);
+  padding: 2px;
+  cursor: pointer;
+  font-size: 85%;
+  font-weight: bold;
+}
+label.naction:hover {
+  background: var(--lighter-gray);
+}
+
+div.caction p {
+  font-weight: bold;
+}
+div.caction p i {
+  color: var(--mit-maroon);
+}
 
 /* BEGIN htoggler */
 .htoggler {

@@ -78,7 +78,7 @@ term                  | smallint    | term of class (copied from classes table f
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
-status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested
+status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match in progress
 			
 ## grouplist
 
