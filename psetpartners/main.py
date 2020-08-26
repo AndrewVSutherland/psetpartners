@@ -242,6 +242,7 @@ Then click the "Partners" tab and click through your classes to see what your op
             """)
     return render_template(
         "student.html",
+        islive=is_livesite(),
         options=template_options(),
         maxlength=maxlength,
         counts=get_counts([''] + current_user.classes, allowed_copts),
@@ -255,6 +256,7 @@ def instructor(context={}):
         return redirect(url_for("index"))
     return render_template(
         "instructor.html",
+        islive=is_livesite(),
         options=template_options(),
         maxlength=maxlength,
         ctx=session.pop("ctx",""),
