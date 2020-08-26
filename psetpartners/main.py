@@ -240,7 +240,7 @@ Then select your location and timezone, the math classes you are taking this ter
 You can then set preferences if you wish (none are required), both generally and for each class individually.
 Then click the "Partners" tab and click through your classes to see what your options are.
             """)
-        flash_instruct('Text or boxes drawn in MIT colors are clickable.  Try clicking the "Partners" tab SE of the time grid!')
+        flash_instruct('Elements drawn in MIT colors are clickable.  Try clicking the "Partners" heading SE of the time grid!')
     return render_template(
         "student.html",
         options=template_options(),
