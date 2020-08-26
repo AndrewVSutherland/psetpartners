@@ -214,6 +214,12 @@ def format_input_errmsg(err, inp, col):
 def flash_info(msg):
     flash(msg, "info")
 
+def flash_instruct(msg):
+    flash(msg, "instruct")
+
+def flash_announce(msg):
+    flash(msg, "announce")
+
 def flash_warning(msg):
     flash(msg, "warning")
 

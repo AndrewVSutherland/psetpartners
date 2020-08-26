@@ -374,7 +374,7 @@ class Student(UserMixin):
         self.__dict__.update(data)
         assert self.kerb
         if self.hours is None:
-            self.hours = [[False for j in range(24)] for i in range(7)]
+            self.hours = [False for i in range(168)]
         for col, typ in self._db.students.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
@@ -383,6 +383,7 @@ class Student(UserMixin):
         self.group_data = self._group_data()
         self.groups = sorted(list(self.group_data))
         assert self.kerb
+        print(self.hours)
 
     @property
     def is_student(self):

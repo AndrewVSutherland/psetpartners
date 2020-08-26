@@ -156,7 +156,7 @@
       {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
         <div id="flash-error">
           {% for category, msg in msgs -%}
-            <p class="flash-{{category}}">{{msg|safe}}</p>
+            <p class="flash-{{category}}" onclick="jQuery(this).hide();">{{msg|safe}}</p>
           {%- endfor %}
         </div>
       {%- endwith %}

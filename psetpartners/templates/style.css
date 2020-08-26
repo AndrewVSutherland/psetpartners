@@ -383,10 +383,19 @@ p.flash-info, p.flash-warning {
   font-size: 90%;
   padding-bottom: 6px;
 }
-p.flash-info::before {
+p.flash-info::before, p.flash-announce:before, p.flash-instruct:before {
   font-size:120%;
   content:"✔";
   color:#469c33;
+}
+p.flash-announce:before, p.flash-instruct:before {
+  font-size:120%;
+  content:"🎉";
+}
+p.flash-announce:after, p.flash-instruct:after {
+  color: var(--mit-maroon);
+  content:" [Click here to make this message disappear]";
+  cursor: pointer;
 }
 p.flash-warning::before {
   font-size:120%;
@@ -394,7 +403,7 @@ p.flash-warning::before {
   color:#f5ad42;
   margin-bottom: -5px;
 }
-p.flash-error {
+p.flash-error, p.flash-announce, p.flash-instruct {
   margin-left: 0;
 }
 p.flash-error::before {
