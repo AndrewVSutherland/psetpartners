@@ -294,6 +294,12 @@ def save_student():
             flash_info(current_user.match(int(submit[1])))
         except Exception as err:
             flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+    elif submit[0] == "createprivate":
+        flash_error("Group creation is temporarily disabled, check back tomorrow.")
+    elif submit[0] == "createpublic":
+        flash_error("Group creation is temporarily disabled, check back tomorrow.")
+    else:
+        flash_error("Unrecognized submit command.")
     return redirect(url_for(".student"))
 
 def save_changes(raw_data):

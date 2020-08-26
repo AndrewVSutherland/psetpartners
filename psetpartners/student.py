@@ -498,7 +498,7 @@ class Student(UserMixin):
             group_name = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id}, projection="group_name")
             if group_name:
                 raise "You cannot enter the match pool for %s until you leave the group %s" % (c['class_number'], group_name)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':2})
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2})
         d = next_match_date(class_id)
         return "You are now in the match pool for %s and will be matched on %s." %(c['class_number'], d)
 
@@ -512,7 +512,7 @@ class Student(UserMixin):
             group_name = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id}, projection="group_name")
             if group_name:
                 raise "You cannot seek a new match in %s until you leave the group %s" % (c['class_number'], group_name)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':2})
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3})
         return "We will start working on a match for you in %s, you should receive an email from us within 24 hours." %(c['class_number'])
 
     def _class_data(self, year=current_year(), term=current_term()):

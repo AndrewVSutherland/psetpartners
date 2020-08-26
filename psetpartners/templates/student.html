@@ -430,7 +430,6 @@ function setPartnerPanes() {
     if ( c in allCounts ) {
       if ( c in groupData ) {
         const g = groupData[c];
-        console.log(g);
         $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(mtab);
@@ -454,9 +453,9 @@ function setPartnerPanes() {
           } else {
             $('#partner-div-'+(i+1)).html('');
           }
-          if ( c in classData && classData[c].status in [2,3,4] ) {
+          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to join a group or request a more urgent match by clinking on one of the links below. `;
+              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to join or create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
               msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
             } else if ( classData[c].status == 4 ) {
@@ -468,7 +467,18 @@ function setPartnerPanes() {
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
-          msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
+          if ( c in classData && classData[c].status in [2,3,4] ) {
+            if ( classData[c].status == 2 ) {
+              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to create a group or request a more urgent match by clinking on one of the links below. `;
+            } else if ( classData[c].status == 3 ) {
+              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly. `;
+            } else if ( classData[c].status == 4 ) {
+              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
+            }
+            console.log("Unreachable code in setPartnerPanes!");
+          } else {
+            msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
+          }
         }
         msg += 'Each link will tell you what is going to happen and ask for a confirmation before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
@@ -494,7 +504,6 @@ function hideConfirm() {
 function confirmJoin(e, gid) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
-  console.log(i);
   if ( ! i || i > studentClasses.length ) return;
   const c = studentClasses[i-1];
   const g = allGroups[c].find(x => x[0] == gid);
@@ -520,7 +529,6 @@ function confirmLeave(e, gid) {
   const c = studentClasses[i-1];
   const g = allGroups[c].find(x => x[0] == gid);
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  console.log(g);
   let msg = `<p>You are about to leave the group <i>${g[1]}</i>. Existing members of this group will be notified. `;
   if ( g[7] != '2' && g[7] != '3' && g[5] != '1') msg += ' This is a private group, so you will need an invitation to rejoin. ';
   if ( g[5] =='1' ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
@@ -539,7 +547,6 @@ function confirmPool(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  console.log(res);
   let msg = `<p>You are about to be put in the match pool for ${c}. `;
   msg += `On ${d} the system will attempt to put you in a pset group that matches your availability and preferences. `;
   msg += 'This may be accomplished either by forming a new group with other students in the pool, or bv adding you to an existing private group. ';
@@ -564,7 +571,7 @@ function confirmMatch(e, c) {
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `<p>You are about to request an urgent match for ${c}. `;
   msg += `The system will attempt to put you in one of the existing pset groups. `;
-  msg += `Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime. Please do not use this option lightly, it may generate many emails (in the sandbox no eamils will be sent). `;
+  msg += `Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime. Please do not use this option lightly, it may generate many emails (in the sandbox no emails will be sent). `;
   let val = "match " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
@@ -572,6 +579,42 @@ function confirmMatch(e, c) {
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
   msg += `</p><table class="ctab"><tbody><tr>`;
   msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
+}
+
+function confirmPublicGroup(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const d = allCounts[c].next_match_date;
+  const cid = allCounts[c].class_id;
+  const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
+  let msg = `<p>You are about to create a public group based on your general preferences. `;
+  msg += `This group will be visisble to all students in ${c} using pset partners, and all are able to join your group up to the size limit indicated in your preferences, if any.  You will be emailed whenever new students join or leave the group. `;
+  let val = "createpublic " + cid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += '<br><br>';
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
+  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
+  showConfirm(msg);
+}
+
+function confirmPrivateGroup(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const d = allCounts[c].next_match_date;
+  const cid = allCounts[c].class_id;
+  const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
+  let msg = `<p>You are about to create a private group based on your general preferences. `;
+  msg += `This group will not be visisble to students using pset partners, but you can email others a link that will let them join your group.  If you indicate that your group is open to new members, the system may contact you when students with compatible availability and preferences are looking for pset partners. `;
+  let val = "createprivate " + cid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  msg += '<br><br>';
+  msg += `</p><table class="ctab"><tbody><tr>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -706,7 +749,6 @@ function checkChanges (e) {
   $('#student :submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
-  console.log(e.target.name);
   if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' ) 
     showApplyPreferences();
   if ( e.target.name === 'timezone' ) computeHoursCompatible();
