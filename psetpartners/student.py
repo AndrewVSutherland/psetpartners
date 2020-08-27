@@ -11,6 +11,7 @@ from .utils import (
     hours_from_default,
     )
 from .group import generate_group_name
+from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
@@ -436,43 +437,43 @@ class Student(UserMixin):
         self.groups = sorted(list(self.group_data))
 
     def save(self):
-        # TODO: put all of this in a transaction
-        if self.new:
-            assert self._db.students.lookup(self.kerb) is None
-            rec = {col: getattr(self, col, None) for col in self._db.students.search_cols if col != "id"}
-            self._db.students.insert_many([rec])
-            self.id = rec["id"]
-        else:
-            self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols}, resort=False)
-        if len(set(self.classes)) < len(self.classes):
-            raise ValueError("Duplicates in class list %s" % self.classes)
-        q = {'student_id':self.id, 'year': current_year(), 'term': current_term()}
-        S = []
-        for class_number in self.classes:
-            query = { 'class_number': class_number, 'year': current_year(), 'term': current_term()}
-            class_id = self._db.classes.lucky(query, projection='id')
-            if class_id is None:
-                raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
-            r = q.copy()
-            r['class_id'] = class_id
-            r['class_number'] = class_number
-            r['properties'] = self.class_data[class_number].get('properties',None)
-            if class_number in self.class_data and any([self.class_data[class_number]['preferences'] != self.preferences,
-                self.class_data[class_number]["strengths"] != self.strengths]):
-                r['preferences'] = self.class_data[class_number]['preferences']
-                r['strengths'] = self.class_data[class_number]['strengths']
+        with DelayCommit(self):
+            if self.new:
+                assert self._db.students.lookup(self.kerb) is None
+                rec = {col: getattr(self, col, None) for col in self._db.students.search_cols if col != "id"}
+                self._db.students.insert_many([rec])
+                self.id = rec["id"]
             else:
-                r['preferences'] = None
-                r['strengths'] = None
-            S.append(r)
-        S = sorted(S, key=lambda x: x['class_id'])
-        T = sorted(self._db.classlist.search(q), key=lambda x: x['class_id'])
-        if S != T:
-            self._db.classlist.delete(q)
-            if S:
-                self._db.classlist.insert_many(S)
-        self._reload()
-        return "Changes saved!"
+                self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols}, resort=False)
+            if len(set(self.classes)) < len(self.classes):
+                raise ValueError("Duplicates in class list %s" % self.classes)
+            q = {'student_id':self.id, 'year': current_year(), 'term': current_term()}
+            S = []
+            for class_number in self.classes:
+                query = { 'class_number': class_number, 'year': current_year(), 'term': current_term()}
+                class_id = self._db.classes.lucky(query, projection='id')
+                if class_id is None:
+                    raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
+                r = q.copy()
+                r['class_id'] = class_id
+                r['class_number'] = class_number
+                r['properties'] = self.class_data[class_number].get('properties',None)
+                if class_number in self.class_data and any([self.class_data[class_number]['preferences'] != self.preferences,
+                    self.class_data[class_number]["strengths"] != self.strengths]):
+                    r['preferences'] = self.class_data[class_number]['preferences']
+                    r['strengths'] = self.class_data[class_number]['strengths']
+                else:
+                    r['preferences'] = None
+                    r['strengths'] = None
+                S.append(r)
+            S = sorted(S, key=lambda x: x['class_id'])
+            T = sorted(self._db.classlist.search(q), key=lambda x: x['class_id'])
+            if S != T:
+                self._db.classlist.delete(q)
+                if S:
+                    self._db.classlist.insert_many(S)
+            self._reload()
+            return "Changes saved!"
 
     def join(self, group_id):
         g = self._db.groups.lucky({'id': group_id}, projection=['class_id', 'class_number', 'year', 'term', 'group_name'])
@@ -486,12 +487,13 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
             raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1})
-        r = { k: g[k] for k in  ['class_number', 'year', 'term']}
-        r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
-        self._db.grouplist.insert_many([r])
-        self._reload()
-        return "Welcome to %s!" % g['group_name']
+        with DelayCommit(self):
+            self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1})
+            r = { k: g[k] for k in  ['class_number', 'year', 'term']}
+            r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
+            self._db.grouplist.insert_many([r])
+            self._reload()
+            return "Welcome to %s!" % g['group_name']
 
     def leave(self, group_id):
         g = self._db.groups.lucky({'id': group_id})
@@ -505,15 +507,16 @@ class Student(UserMixin):
         if not c in self.groups:
             app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, c))
             raise ValueError("Group not found in your list of groups for this term.")
-        self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id})
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0})
-        msg = "You have been removed from the group %s in %s." % (g['group_name'], c)
-        if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
-            self._db.groups.delete({'id': group_id})
+        with DelayCommit(self):
+            self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id})
+            self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0})
+            msg = "You have been removed from the group %s in %s." % (g['group_name'], c)
+            if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
+                self._db.groups.delete({'id': group_id})
+                self._reload()
+                msg += " You were the only member of this group, so it has been disbanded."
             self._reload()
-            msg += " You were the only member of this group, so it has been disbanded."
-        self._reload()
-        return msg
+            return msg
 
     def pool(self, class_id):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, "class_number")
@@ -566,11 +569,12 @@ class Student(UserMixin):
         name = generate_group_name()
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
              'visibility': 2 if public else 1, 'preferences': prefs, 'strengths': strengths, 'editors': [], 'max': maxsize }
-        self._db.groups.insert_many([g])
-        r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
-        self._db.grouplist.insert_many([r])
-        self._reload()
-        return "Created the group %s!" % g['group_name']
+        with DelayCommit(self):
+            self._db.groups.insert_many([g])
+            r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
+            self._db.grouplist.insert_many([r])
+            self._reload()
+            return "Created the group %s!" % g['group_name']
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
