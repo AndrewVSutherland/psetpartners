@@ -11,10 +11,14 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-  <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
+<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
-  <h3>Personal profile</h3>
-
+<div class="profile-toggler">
+  <label id="personal-profile-caption" data-expand="Personal pofile for {{user.preferred_name}}" data-collapse="Personal profile">Personal profile</label>
+  <label class="profile-toggler-toggle" tabindex="1" onclick="toggleProfile(this,'personal-profile-caption','personal-profile');">collapse</label>
+</div>
+<div style="clear:both;"></div>
+<div id="personal-profile">
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
@@ -64,8 +68,14 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </tr>
     #}
   </table>
+</div>
 
-  <h3>Profile for the {{current_upcoming}} term ({{current_term_pretty}})</h3>
+<div class="profile-toggler">
+  <label id="term-profile-caption">Profile for {{current_term_pretty}}</label>
+  <label class="profile-toggler-toggle" tabindex="8" onclick="toggleProfile(this, 'term-profile-caption','term-profile');">collapse</label>
+</div>
+<div style="clear:both;"></div>
+<div id="term-profile">
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
@@ -114,7 +124,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     {% endfor %}
   </table>
   <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
-
+</div>
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
@@ -259,6 +269,16 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
+
+function toggleProfile(e, cid, id) {
+  visible = $('#'+id).is(':visible');
+  e.textContent = visible ? 'expand':'collapse';
+  c = document.getElementById(cid);
+  if ( 'collapse' in c.dataset && 'expand' in c.dataset )
+    $('#'+id).toggle('fast','linear',function(){c.textContent = visible ? c.dataset.expand : c.dataset.collapse;});
+  else 
+    $('#'+id).toggle('fast','linear');
+}
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
