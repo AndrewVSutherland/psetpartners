@@ -449,7 +449,7 @@ function setPartnerPanes() {
         const tg = g > 1 ? "one of the " + g + " pset groups that have" : "the one pset group that has";
         let msg = `There are ${s} students who have ${c} listed on pset partners. `;
         if ( sg ) {
-          msg += `Currently ${sg} of these students are memebers of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += `Currently ${sg} of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
@@ -467,13 +467,12 @@ function setPartnerPanes() {
             } else if ( classData[c].status == 4 ) {
               msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
             }
-            console.log("Unreachable code in setPartnerPanes!");
           } else {
             msg += '<br><br>To find a pset partner, click any of the action buttons below. ';
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
-          if ( c in classData && classData[c].status in [2,3,4] ) {
+          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
               msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
@@ -481,7 +480,6 @@ function setPartnerPanes() {
             } else if ( classData[c].status == 4 ) {
               msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
             }
-            console.log("Unreachable code in setPartnerPanes!");
           } else {
             msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
           }
@@ -557,7 +555,7 @@ function confirmPool(e, c) {
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `<p>You are about to be put in the match pool for ${c}. `;
   msg += `On ${d} the system will attempt to put you in a pset group that matches your availability and preferences. `;
-  msg += 'This may be accomplished either by forming a new group with other students in the pool, or bv adding you to an existing private group that is open to new members. ';
+  msg += 'This may be accomplished either by forming a new group with other students in the pool, or by adding you to an existing private group that is open to new members. ';
   let val = "pool " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';

@@ -19,59 +19,35 @@ def getdb():
         _db = PsetPartnersTestDB(db)
     return _db
 
-class PsetPartnersTestDB:
+# list of tablenames X we want to redirect to test_X
+test_redirects = ['students', 'groups', 'classlist', 'grouplist']
+
+def test_redirect(str):
+    return 'test_'+str if str in test_redirects else str
+
+class PsetPartnersTestDB():
     def __init__(self, db):
         self._db = db
 
-    def __getitem__(self,key):
-        if key in ['students', 'groups', 'classlist', 'grouplist']:
-            return self._db['test_'+key]
+    def __getitem__(self, key):
+        return self._db[test_redirect(key)]
+
+    def __getattr__(self, item):
+        if item == "_db":
+            return self.__dict__["_db"]
+        return getattr(self._db, test_redirect(item))
+
+    def __setattr__(self, item, value):
+        if item == "_db":
+            self.__dict__["_db"] = value
         else:
-            return self._db[key]
+            setattr(self._db, test_redirect(item), value)
 
-    @property
-    def students(self):
-        return self._db.test_students
-
-    @property
-    def groups(self):
-        return self._db.test_groups
-
-    @property
-    def classlist(self):
-        return self._db.test_classlist
-
-    @property
-    def grouplist(self):
-        return self._db.test_grouplist
-
-    @property
-    def departments(self):
-        return self._db.departments
-
-    @property
-    def classes(self):
-        return self._db.classes
-
-    @property
-    def admins(self):
-        return self._db.admins
-
-    @property
-    def names(self):
-        return self._db.names
-
-    @property
-    def plural_nouns(self):
-        return self._db.plural_nouns
-
-    @property
-    def math_adjectives(self):
-        return self._db.positive_adjectives
-
-    @property
-    def positive_adjectives(self):
-        return self._db.positive_adjectives
+    def __delattr__(self, item):
+        if item == "_db":
+            self.__dict__.pop("_db")
+        else:
+            delattr(self._db, test_redirect(item))
 
 class DBIterator:
     def __init__(self, SQL_iterator, cols):
