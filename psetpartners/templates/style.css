@@ -374,9 +374,9 @@ label.confirm::before {
 .alertinfo {
   padding-left: 6px;
   font-size: 75%;
-  font-weight: bold;
+  font-weight: bold!important;
   font-style: italic;
-  color: var(--alert-color);
+  color: var(--alert-color)!important;
   vertical-align: middle;
 }
 
@@ -523,7 +523,7 @@ div.caction p i {
   background: var(--lighter-gray);
   border-radius: 14px;
   border-bottom: solid 4px var(--light-gray);
-  padding: 2px 8px 1px 8px;
+  padding: 1px 8px;
 }
 
 .htoggler-active {

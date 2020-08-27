@@ -14,30 +14,31 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
 <div class="profile-toggler">
-  <label id="personal-profile-caption" data-expand="Personal pofile for {{user.preferred_name}}" data-collapse="Personal profile">Personal profile</label>
-  <label class="profile-toggler-toggle" tabindex="1" onclick="toggleProfile(this,'personal-profile-caption','personal-profile');">collapse</label>
+  <label id="personal-profile-caption" >Personal profile</label>
+  <label class="profile-toggler-toggle" tabindex="1"
+    onclick="$('#personal-profile-caption').text((this.textContent.trim()=='collapse' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); toggleProfile(this,'personal-profile');">{% if user.preferred_name %}collapse{% else %}expand{% endif %}</label>
 </div>
 <div style="clear:both;"></div>
 <div id="personal-profile">
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" maxlength="{{maxlength['preferred_name']}}" 
-       oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
-      <td class="forminfo" id="preferred_name_info">required</td>
+      <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
+       oninput="if (this.value.trim()) $('#preferred_name_info').removeClass('alertinfo'); else $('#preferred_name_info').addClass('alertinfo');"/></td>
+      <td class="forminfo {% if user.preferred_name == '' %}alertinfo{% endif %}" id="preferred_name_info">required</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
-    <!--<tr>
+    <!--<tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
       <td class="forminfo" id="homepage_info">optional</td>
     </tr>-->
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Department(s)</td>
       <td class="value">
         <span class="select" id="select-departments" tabindex="4"></span>
@@ -45,7 +46,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       </td>
       <td class="forminfo" id="departments_info">optional</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Current year</td>
       <td class="value">
         <span class="select" id="select-year" tabindex="5"></span>
@@ -53,7 +54,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       </td>
     <td class="forminfo">optional</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Gender identity</td>
       <td class="value">
         <span class="select" id="select-gender" tabindex="6"></span>
@@ -270,14 +271,17 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
 
-function toggleProfile(e, cid, id) {
-  visible = $('#'+id).is(':visible');
-  e.textContent = visible ? 'expand':'collapse';
-  c = document.getElementById(cid);
-  if ( 'collapse' in c.dataset && 'expand' in c.dataset )
-    $('#'+id).toggle('fast','linear',function(){c.textContent = visible ? c.dataset.expand : c.dataset.collapse;});
-  else 
-    $('#'+id).toggle('fast','linear');
+function toggleProfile(e, id) {
+  console.log(e.textContent);
+  console.log(e.textContent.length);
+  e.textContent = e.textContent.trim() == 'expand' ? 'collapse': 'expand';
+  console.log(e.textContent);
+  if ( $('#'+id+' input.required').filter(function(){return this.value.trim()==="";}).length ) {
+    $('#'+id+' tr.profile-optional').toggle();
+  } else {
+    if ( $('#'+id).is(':visible') && e.textContent == 'collapse' ) $('#'+id+' tr.profile-optional').show();
+    else $('#'+id).toggle('fast','linear');
+  }
 }
 
 function showTimezoneOffset() {
@@ -561,7 +565,7 @@ function confirmLeave(e, gid) {
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g['group_name']}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }

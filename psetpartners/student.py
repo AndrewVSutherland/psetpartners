@@ -351,8 +351,6 @@ def class_groups(class_number, opts, year=current_year(), term=current_term(), v
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
-    if not data.get('preferred_name'):
-        data['preferred_name'] = kerb
     for col in student_options:
         if data.get(col):
             if not data[col] in [r[0] for r in student_options[col]]:

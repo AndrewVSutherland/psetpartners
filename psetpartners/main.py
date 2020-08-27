@@ -36,7 +36,6 @@ from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
-    flash_announce,
     flash_error,
     process_user_input,
     maxlength,
