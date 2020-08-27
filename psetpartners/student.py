@@ -509,9 +509,9 @@ class Student(UserMixin):
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0})
         msg = "You have been removed from the group %s in %s." % (g['group_name'], c)
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
-            self._db.group.delete({'id': group_id})
+            self._db.groups.delete({'id': group_id})
             self._reload()
-            msg += " You were the sole remaining member of this group, so it has been disbanded."
+            msg += " You were the only member of this group, so it has been disbanded."
         self._reload()
         return msg
 
