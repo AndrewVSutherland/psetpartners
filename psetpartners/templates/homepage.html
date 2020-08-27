@@ -154,23 +154,40 @@
     </noscript>
 
     <div id="content" style="display:none;">
-      {% with msgs = get_flashed_messages(category_filter=["announce", "instruct", "error"],with_categories=true) -%}
-        <div id="flash-error">
-          {% for category, msg in msgs -%}
-            <p class="flash-{{category}}" onclick="jQuery(this).hide();">{{msg|safe}}</p>
+      <div id="flash-top">
+        {% with msgs = get_flashed_messages(category_filter=["error"]) -%}
+          {% for msg in msgs -%}
+            <p class="flash-error">
+              {{msg|safe}}<label class="flash-after" onclick="this.parentElement.style.display='none';" > [dismiss]</label>
+            </p>
           {%- endfor %}
-        </div>
-      {%- endwith %}
+        {%- endwith %}
+        {% with msgs = get_flashed_messages(category_filter=["announce"]) -%}
+          {% for msg in msgs -%}
+            {% set parts = msg.split(":") %}
+            <p class="flash-announce">
+              {{parts[1]|safe}}<label class="flash-after" onclick="ack({{parts[0]}}); this.parentElement.style.display='none';" > [ok]</label>
+            </p>
+          {%- endfor %}
+        {%- endwith %}
+        {% with msgs = get_flashed_messages(category_filter=["instruct"]) -%}
+          {% for msg in msgs -%}
+            <p class="flash-instruct">
+              {{msg|safe}}<label class="flash-after" onclick="this.parentElement.style.display='none';" > [got it]</label>
+            </p>
+          {%- endfor %}
+        {%- endwith %}
+      </div>
       {% block content -%}
         This is a template with no content.
       {%- endblock content %}
+      <div id="flash-bottom">
       {% with msgs = get_flashed_messages(category_filter=["warning","info","confirm"],with_categories=true) -%}
-        <div id="flash-warning">
-          {% for category, msg in msgs -%}
-            <p class="flash-{{category}}">{{msg|safe}}</p>
-          {%- endfor %}
-        </div>
+        {% for category, msg in msgs -%}
+          <p class="flash-{{category}}">{{msg|safe}}</p>
+        {%- endfor %}
       {%- endwith %}
+      </div>
     </div>
   {% endif %}
 </div>
@@ -189,6 +206,8 @@
 </footer>
 
 <script>
+function ack(msgid) { $.ajax({url: '/_acknowledge', data: {'msgid': msgid}, dataType: 'json' }); }
+
 document.addEventListener('DOMContentLoaded', function() {
   $("#content").fadeIn(0);
   $("#footer").fadeIn(0);
