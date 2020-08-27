@@ -27,12 +27,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
-    <tr>
+    <!--<tr>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
       <td class="forminfo" id="homepage_info">optional</td>
-    </tr>
+    </tr>-->
     <tr>
       <td class="caption">Department(s)</td>
       <td class="value">
@@ -89,7 +89,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
-      <td class="forminfo">optional</td>
+      <td class="forminfo">required</td>
     </tr>
     <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
   </table>
@@ -118,7 +118,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav" id="partner-header">Partners</label>
+    <label class="htoggler-nav htoggler-inactive" id="partner-header">Partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -192,9 +192,9 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
     <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
-      <p style="margin-right:30px;" id="partner-summary-{{i}}"></p>
-      <div style="margin-right:30px'" id="partner-div-{{i}}"></div>
-      <div style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
+      <p class="partner-summary" style="margin-right:30px;" id="partner-summary-{{i}}"></p>
+      <div class="partner-div" style="margin-right:30px'" id="partner-div-{{i}}"></div>
+      <div class="partner-buttons" style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
   {% endfor %}
   <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
@@ -366,12 +366,17 @@ function changeClasses(val) {
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#toggle-'+(i+1)); q.html(''); q.hide(); }
   const i = togglerIndex();
   const c = i ? studentClasses[i-1] : '';
+  const oldlength = studentClasses.length;
   studentClasses = [...v];
-  if ( c ) {
-    const j = studentClasses.indexOf(c);
-    if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
+  if ( v.length > oldlength ) {
+    togglerIndex(v.length);
   } else {
-    togglerIndex(0);
+    if ( c ) {
+      const j = studentClasses.indexOf(c);
+      if ( j >= 0 ) togglerIndex(j+1); else togglerIndex(i <= studentClasses.length ? i : i-1);
+    } else {
+      togglerIndex(0);
+    }
   }
   setPartnerPanes();
 }
@@ -444,7 +449,7 @@ function setPartnerPanes() {
         const tg = g > 1 ? "one of the " + g + " pset groups that have" : "the one pset group that has";
         let msg = `There are ${s} students who have ${c} listed on pset partners. `;
         if ( sg ) {
-          msg += `Currently ${sg} of these students are memebers of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += `Currently ${sg} of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
@@ -462,13 +467,12 @@ function setPartnerPanes() {
             } else if ( classData[c].status == 4 ) {
               msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
             }
-            console.log("Unreachable code in setPartnerPanes!");
           } else {
-            msg += '<br><br>To find a pset partner, click any of the highlighted join links or one of the highlighted action links. ';
+            msg += '<br><br>To find a pset partner, click any of the action buttons below. ';
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
-          if ( c in classData && classData[c].status in [2,3,4] ) {
+          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
               msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
@@ -476,12 +480,11 @@ function setPartnerPanes() {
             } else if ( classData[c].status == 4 ) {
               msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
             }
-            console.log("Unreachable code in setPartnerPanes!");
           } else {
             msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
           }
         }
-        msg += 'Each link will tell you what is going to happen and ask for a confirmation before proceeding.';
+        msg += 'Each button will tell you exactly what is going to happen and ask for confirmation before proceeding, so you click confidently!';
         $('#partner-summary-'+(i+1)).html(msg);
         $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
       }
@@ -495,11 +498,13 @@ function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#
 function pending() { return ! $('#cancel').is(':disabled'); }
 
 function showConfirm(msg) { // msg should be html that defines a submit button with the id="confirm"
-  $('label.paction').hide(); $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
+  $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
+  $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
   $('#confirm').focusout(hideConfirm); $('#confirm').focus();
 }
 function hideConfirm() {
-  $('#partner-confirm').html(''); $('label.paction').show(); $('button[type="submit"]').show();
+  $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
+  $('.partner-buttons').show(); $('button[type="submit"]').show();
 }
 
 function confirmJoin(e, gid) {
@@ -528,15 +533,15 @@ function confirmLeave(e, gid) {
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
   const c = studentClasses[i-1];
-  const g = allGroups[c].find(x => x[0] == gid);
+  const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  let msg = `<p>You are about to leave the group <i>${g[1]}</i>. Existing members of this group will be notified. `;
-  if ( g[7] != '2' && g[7] != '3' && g[5] != '1') msg += ' This is a private group, so you will need an invitation to rejoin. ';
-  if ( g[5] =='1' ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
+  let msg = `<p>You are about to leave the group <i>${g.group_name}</i>. Existing members of this group will be notified. `;
+  if ( g.visibility < 2 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
+  if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g['group_name']}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -550,7 +555,7 @@ function confirmPool(e, c) {
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `<p>You are about to be put in the match pool for ${c}. `;
   msg += `On ${d} the system will attempt to put you in a pset group that matches your availability and preferences. `;
-  msg += 'This may be accomplished either by forming a new group with other students in the pool, or bv adding you to an existing private group that is open to new members. ';
+  msg += 'This may be accomplished either by forming a new group with other students in the pool, or by adding you to an existing private group that is open to new members. ';
   let val = "pool " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
@@ -643,7 +648,9 @@ function applyPreferences() {
 
 function htogglerMakeActive(e) {
     if ( e.classList.contains('htoggler-active') ) return;
+    $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
+    e.classList.remove("htoggler-inactive");
     e.classList.add("htoggler-active");
     if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
     if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
@@ -671,12 +678,9 @@ function togglerCaption() {
 }
 
 function saveErrorMessage() {
-  if ( document.getElementById('preferred_name').value.trim() === '' )
-    return 'Please enter your preferred name.';
-  if ( $('#hours input:checkbox:checked').length < 6 )
-    return 'Please select at least 6 hours when you are available to collaborate.';
-  if ( ! validURL(document.getElementById('homepage').value) )
-    return 'Please correct or delete the invalid URL listed for your homepage.';
+  if ( document.getElementById('preferred_name').value.trim() === '' ) return 'Please enter your preferred name.';
+  if ( $('#hours input:checkbox:checked').length < 6 ) return 'Please select at least 6 hours when you are available to collaborate.';
+  //if ( ! validURL(document.getElementById('homepage').value) ) return 'Please correct or delete the invalid URL listed for your homepage.';
   return '';
 }
 
@@ -725,7 +729,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text(''); return; } // if ajax response is slow, we might not have counts
+  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -757,7 +761,10 @@ function checkChanges (e) {
   if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
 }
 
+var submitting = false;
+
 function submitStudentForm (value) {
+  submitting = true;
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   const i = togglerIndex();
   $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
@@ -837,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
       htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header'));
     }
   });
-  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-nav.htoggler-active').focus(); }});
+  $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-active').focus(); }});
   $('.toggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
       const n = studentClasses.length+1;
@@ -849,10 +856,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
   if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
+  else  htogglerMakeActive(document.getElementById('partner-header'));
 
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
+  window.onbeforeunload = function (e) { return (pending() && !submitting) ? true : undefined; };
   console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 </script>
