@@ -32,11 +32,9 @@
 const kerb_re = new RegExp('^([a-z0-9]+)$')
 function validateKerb(kerb) {
   if ( kerb_re.test(kerb) && kerb.length >= 3 ) {
-    console.log(kerb+" valid");
     $('#login').prop('disabled',false);
     $('#badid').hide();
   } else {
-    console.log(kerb+" invalid");
     $('#login').prop('disabled',true);
     if ( kerb_re.test(kerb) ) $('#badid').hide(); else $('#badid').show();
   }
