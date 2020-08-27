@@ -821,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
   );
   makeMultiSelect('classes',
     classesOptions,
-    { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
+    { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, autocomplete: true, onLimit: classesLimit }
   );
   if ( ! $('#timezone').val() ) {
     let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
