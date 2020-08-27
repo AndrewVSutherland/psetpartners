@@ -35,8 +35,7 @@ from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
-    flash_announce ,
-    flash_instruct,
+    flash_announce,
     flash_error,
     process_user_input,
     maxlength,
@@ -235,10 +234,10 @@ def student(context={}):
     if current_user.new:
         flash_announce("""
 Welcome to pset partners!
-To get started, first enter your preferred name and any other personal details you care to share.
-Then select your location and timezone, the math classes you are taking this term, and indicate your hours of availability.
-You can then set preferences if you wish (none are required), both generally and for each class individually.
-Then click the "Partners" tab and click through your classes to see what your options are.
+To begin, enter your preferred name and any other personal details you care to share.
+Then select your location, timezone, the math classes you are taking this term, and your hours of availability
+(include hours of partial availability).  You can then explore your options for finding pset partners using
+the Preferences and Partners buttons.
             """)
     return render_template(
         "student.html",

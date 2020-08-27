@@ -13,6 +13,7 @@
   --shadow-width: 3px;
   --light-gray: #c6c7c8;
   --lighter-gray: #eaebec;
+  --lightest-gray: #f1f2f3;
   --alert-color: #e32f54;
   --info-color: black;
   --select-fill: var(--mit-pink);
@@ -326,9 +327,15 @@ button {
   font-weight: bold;
   font-size: 14px;
   margin: 0 6px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  height: 26px;
+  padding: 2px 6px 3px 6px;
+  border-radius: 8px;
+  height: 24px;
+  min-width: 50px;
+}
+
+button:focus {
+  outline: none;
+  text-shadow: 0.5px 0.5px 1.5px var(--mit-gray);
 }
 
 button:disabled {
@@ -348,6 +355,10 @@ button.confirm {
   background: var(--select-fill);
   color: var(--mit-maroon);
   border: var(--input-border-width) solid var(--input-border-color);
+}
+
+button.confirm:focus {
+  outline: none;
 }
 
 label.confirm {
@@ -398,8 +409,9 @@ p.flash-instruct:before {
 }
 p.flash-error:after, p.flash-announce:after, p.flash-instruct:after {
   color: var(--mit-maroon);
-  font-size: 95%;
-  content:" [Dismiss this message]";
+  font-weight: bold;
+  font-size: 90%;
+  content:"[dismiss]";
   cursor: pointer;
 }
 p.flash-warning::before {
@@ -444,11 +456,15 @@ table.btab td {
 
 label.paction {
   color: var(--mit-maroon);
-  padding: 2px;
   cursor: pointer;
-  font-size: 95%;
+  font-size: 90%;
   font-weight: bold;
+  background: var(--lightest-gray);
+  border-radius: 8px;
+  border-bottom: solid 1.5px var(--light-gray);
+  padding: 0px 8px 1px 8px;
 }
+
 label.paction:hover {
   background: var(--mit-pink);
 }
@@ -459,6 +475,10 @@ label.naction {
   cursor: pointer;
   font-size: 85%;
   font-weight: bold;
+  background: var(--lightest-gray);
+  border-radius: 8px;
+  border-bottom: solid 1.5px var(--light-gray);
+  padding: 0px 8px 1px 8px;
 }
 label.naction:hover {
   background: var(--lighter-gray);
@@ -497,11 +517,11 @@ div.caction p i {
 
 .htoggler-inactive {
   float: right;
-  color: var(--mit-maroon); 
+  color: var(--mit-maroon);
   background: var(--lighter-gray);
   border-radius: 14px;
   border-bottom: solid 4px var(--light-gray);
-  padding: 5px 10px;
+  padding: 4px 8px 3px 8px;
 }
 
 .htoggler-active {

@@ -192,9 +192,9 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
     <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
-      <p style="margin-right:30px;" id="partner-summary-{{i}}"></p>
-      <div style="margin-right:30px'" id="partner-div-{{i}}"></div>
-      <div style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
+      <p class="partner-summary" style="margin-right:30px;" id="partner-summary-{{i}}"></p>
+      <div class="partner-div" style="margin-right:30px'" id="partner-div-{{i}}"></div>
+      <div class="partner-buttons" style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
   {% endfor %}
   <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
@@ -368,8 +368,6 @@ function changeClasses(val) {
   const c = i ? studentClasses[i-1] : '';
   const oldlength = studentClasses.length;
   studentClasses = [...v];
-  console.log(v.length);
-  console.log(oldlength);
   if ( v.length > oldlength ) {
     togglerIndex(v.length);
   } else {
@@ -471,7 +469,7 @@ function setPartnerPanes() {
             }
             console.log("Unreachable code in setPartnerPanes!");
           } else {
-            msg += '<br><br>To find a pset partner, click any of the highlighted join links or one of the highlighted action links. ';
+            msg += '<br><br>To find a pset partner, click any of the action buttons below. ';
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
@@ -488,7 +486,7 @@ function setPartnerPanes() {
             msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
           }
         }
-        msg += 'Each link will tell you what is going to happen and ask for a confirmation before proceeding.';
+        msg += 'Each button will tell you exactly what is going to happen and ask for confirmation before proceeding, so you click confidently!';
         $('#partner-summary-'+(i+1)).html(msg);
         $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
       }
@@ -502,11 +500,13 @@ function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#
 function pending() { return ! $('#cancel').is(':disabled'); }
 
 function showConfirm(msg) { // msg should be html that defines a submit button with the id="confirm"
-  $('label.paction').hide(); $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
+  $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
+  $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
   $('#confirm').focusout(hideConfirm); $('#confirm').focus();
 }
 function hideConfirm() {
-  $('#partner-confirm').html(''); $('label.paction').show(); $('button[type="submit"]').show();
+  $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
+  $('.partner-buttons').show(); $('button[type="submit"]').show();
 }
 
 function confirmJoin(e, gid) {
@@ -535,15 +535,15 @@ function confirmLeave(e, gid) {
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
   const c = studentClasses[i-1];
-  const g = allGroups[c].find(x => x[0] == gid);
+  const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  let msg = `<p>You are about to leave the group <i>${g[1]}</i>. Existing members of this group will be notified. `;
-  if ( g[7] != '2' && g[7] != '3' && g[5] != '1') msg += ' This is a private group, so you will need an invitation to rejoin. ';
-  if ( g[5] =='1' ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
+  let msg = `<p>You are about to leave the group <i>${g.group_name}</i>. Existing members of this group will be notified. `;
+  if ( g.visibility < 2 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
+  if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g['group_name']}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -731,7 +731,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text(''); return; } // if ajax response is slow, we might not have counts
+  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -763,7 +763,10 @@ function checkChanges (e) {
   if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
 }
 
+var submitting = false;
+
 function submitStudentForm (value) {
+  submitting = true;
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   const i = togglerIndex();
   $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
@@ -829,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.htoggler-nav').click(function(e) { console.log('click'); e.preventDefault(); htogglerMakeActive(e.target); return false; });
+  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); return false; });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
   togglerIndex(0);
 
@@ -860,6 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
+  window.onbeforeunload = function (e) { return (pending() && !submitting) ? true : undefined; };
   console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 </script>
