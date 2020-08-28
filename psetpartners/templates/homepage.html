@@ -206,7 +206,7 @@
 </footer>
 
 <script>
-function ack(msgid) { $.ajax({url: '/_acknowledge', data: {'msgid': msgid}, dataType: 'json' }); }
+function ack(msgid) { $.ajax({url: '/_acknowledge', data: {'msgid': msgid} }); }
 
 document.addEventListener('DOMContentLoaded', function() {
   $("#content").fadeIn(0);

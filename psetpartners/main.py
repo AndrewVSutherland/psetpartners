@@ -219,6 +219,13 @@ def acknoledge():
     msgid = request.args.get('msgid')
     return current_user.acknowledge(msgid)
 
+@app.route("/_toggle")
+@login_required
+def update_toggle():
+    toggle = request.args.get('id')
+    state = request.args.get('state')
+    return current_user.update_toggle(toggle, state)
+
 @app.route("/_counts")
 @login_required
 def counts():

@@ -14,12 +14,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
 <div class="profile-toggler">
-  <label id="personal-profile-caption" >Personal profile</label>
-  <label class="profile-toggler-toggle" tabindex="1"
-    onclick="$('#personal-profile-caption').text((this.textContent.trim()=='collapse' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); toggleProfile(this,'personal-profile');">{% if user.preferred_name %}collapse{% else %}expand{% endif %}</label>
+  <label id="pp-caption" >Personal profile</label>
+  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1"
+    onclick="$('#pp-caption').text((this.textContent.trim()=='contract' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); profileToggle(this);" return false;>{% if user.preferred_name %}contract{% else %}expand{% endif %}</label>
 </div>
 <div style="clear:both;"></div>
-<div id="personal-profile">
+<div id="pp">
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
@@ -72,11 +72,11 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 </div>
 
 <div class="profile-toggler">
-  <label id="term-profile-caption">Profile for {{current_term_pretty}}</label>
-  <label class="profile-toggler-toggle" tabindex="8" onclick="toggleProfile(this, 'term-profile');">collapse</label>
+  <label id="tp-caption">Profile for {{current_term_pretty}}</label>
+  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);">contract</label>
 </div>
 <div style="clear:both;"></div>
-<div id="term-profile">
+<div id="tp">
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
@@ -256,10 +256,11 @@ const classData = {{ user.class_data|tojson|safe }};
 const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
+const toggles = {{ user.toggles|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
 /* global yearShort, startShort, forumShort, togetherShort */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
@@ -271,18 +272,24 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
 
-function toggleProfile(e, id) {
-  console.log(e.textContent);
-  console.log(e.textContent.length);
-  e.textContent = e.textContent.trim() == 'expand' ? 'collapse': 'expand';
-  console.log(e.textContent);
+function profileToggle(e) {
+  e.textContent = e.textContent.trim() == 'expand' ? 'contract': 'expand';
+  const id = e.id.split('-')[0];
   if ( $('#'+id+' input.required').filter(function(){return this.value.trim()==="";}).length ) {
     $('#'+id+' tr.profile-optional').toggle();
   } else {
-    if ( $('#'+id).is(':visible') && e.textContent == 'collapse' ) $('#'+id+' tr.profile-optional').show();
+    if ( $('#'+id).is(':visible') && e.textContent == 'contract' ) $('#'+id+' tr.profile-optional').show();
     else $('#'+id).toggle('fast','linear');
   }
+  $.ajax({url: '/_toggle', data: { 'id': id, 'state': e.textContent } });
 }
+
+function setProfileToggle(id, state) {
+  const e = document.getElementById(id+'-toggler');
+  if ( !e ) return;
+  if ( (e.textContent == 'expand' && state == 'contract') || (e.textContent == 'contract' && state == 'expand') ) profileToggle(e);
+}
+
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
@@ -440,7 +447,7 @@ function partnerActionButtons(c) {
 
 function unpartnerActionButtons(gid) {
   let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
-  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group<label></td>`;
+  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
   btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
   return btab;
 }
@@ -880,6 +887,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
   if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
+  if ( 'pp' in toggles ) setProfileToggle ('pp', toggles.pp);
+  if ( 'tp' in toggles ) setProfileToggle ('tp', toggles.tp);
   else  htogglerMakeActive(document.getElementById('partner-header'));
 
   showAffinityPreferences();

@@ -360,6 +360,8 @@ def cleanse_student_data(data):
         data['preferences'] = {}
     if data['strengths'] is None:
         data['strengths'] = {}
+    if data['toggles'] is None:
+        data['toggles'] = {}
     for pref in list(data["preferences"]):
         if not pref in student_preferences:
             app.logger.warning("Ignoring unknown preference %s for student %s"%(pref,kerb))
@@ -477,6 +479,13 @@ class Student(UserMixin):
     def create_group(self, group_id, public=True):
         with DelayCommit(self):
             return self._create_group(group_id, public=public)
+
+    def update_toggle(self, toggle, state):
+        if not toggle:
+            return "no"
+        self.toggles[toggle] = state;
+        self._db.students.update({'id': self.id}, {'toggles': self.toggles})
+        return "ok"
 
     def _reload(self):
         """ This function should be called after any updates to classlist or grouplist related this student """

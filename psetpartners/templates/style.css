@@ -335,7 +335,7 @@ button {
 
 button:focus {
   outline: none;
-  text-shadow: 0.5px 0.5px 1.5px var(--mit-gray);
+  outline: 1px solid var(--mit-maroon);
 }
 
 button:disabled {
@@ -353,7 +353,7 @@ button:hover:disabled {
 
 button.confirm {
   background: var(--select-fill);
-  color: var(--mit-maroon);
+  color: var(--mit-maroon);           
   border: var(--input-border-width) solid var(--input-border-color);
 }
 
@@ -508,7 +508,6 @@ div.caction p i {
 
 .htoggler:focus, .profile-toggler-toggle:focus {
   outline: none;
-  text-shadow: 1px 1px 1px var(--mit-gray);
 }
 
 .htoggler-after {
@@ -521,9 +520,12 @@ div.caction p i {
   float: right;
   color: var(--mit-maroon);
   background: var(--lighter-gray);
-  border-radius: 14px;
-  border-bottom: solid 4px var(--light-gray);
-  padding: 1px 8px;
+  border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: 11px;
+  //border-bottom: solid 4px var(--light-gray);
+  padding: 1px 6px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .htoggler-active {
