@@ -555,7 +555,7 @@ function confirmJoin(e, gid) {
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value; console.log('joining!');">Join ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value; console.log('joining!');">Join ${g[1]}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
