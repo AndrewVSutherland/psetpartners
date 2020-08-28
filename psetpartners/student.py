@@ -393,7 +393,6 @@ class Student(UserMixin):
             data["kerb"] = kerb
             data["id"] = -1
             data["new"] = True
-            print("new")
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", welcome)
         else:
@@ -447,7 +446,6 @@ class Student(UserMixin):
         return lambda: getattr(self, 'kerb', None)
 
     def flash_pending(self):
-        print("flashing pending for "+self.kerb)
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
             print(msg)
             flash_announce("%s:%s" % (msg['id'], msg['content']))
@@ -480,11 +478,12 @@ class Student(UserMixin):
         with DelayCommit(self):
             return self._create_group(group_id, public=public)
 
-    def update_toggle(self, toggle, state):
-        if not toggle:
+    def update_toggle(self, name, value):
+        if not name:
             return "no"
-        self.toggles[toggle] = state;
-        self._db.students.update({'id': self.id}, {'toggles': self.toggles})
+        print("updated toggle " + name + " to " + value);
+        self.toggles[name] = value;
+        self._db.students.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
         return "ok"
 
     def _reload(self):

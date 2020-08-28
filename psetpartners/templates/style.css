@@ -456,7 +456,7 @@ table.btab td {
   padding: 0 0 0 30px;
 }
 
-label.paction {
+label.paction, label.naction {
   color: var(--mit-maroon);
   cursor: pointer;
   font-size: 90%;
@@ -471,19 +471,8 @@ label.paction:hover {
   background: var(--mit-pink);
 }
 
-label.naction {
-  color: var(--mit-maroon);
-  padding: 2px;
-  cursor: pointer;
-  font-size: 85%;
-  font-weight: bold;
-  background: var(--lightest-gray);
-  border-radius: 8px;
-  border-bottom: solid 1.5px var(--light-gray);
-  padding: 0px 8px 1px 8px;
-}
 label.naction:hover {
-  background: var(--lighter-gray);
+  background: var(--light-gray);
 }
 
 div.caction p {

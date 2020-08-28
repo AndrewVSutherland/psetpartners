@@ -212,8 +212,6 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   </div>
 
   <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
-  <input class="ctx" type="hidden" name="ctx-currentClass" value="" />
-  <input class="ctx" type="hidden" name="ctx-htogglerId" value="" />
   <input class="ctx" type="hidden" name="ctx-submit" value="" />
 
   <div style="display:inline-block;">
@@ -282,7 +280,7 @@ function profileToggle(e) {
     if ( $('#'+id).is(':visible') && e.textContent == 'contract' ) $('#'+id+' tr.profile-optional').show();
     else $('#'+id).toggle('fast','linear');
   }
-  $.ajax({url: '/_toggle', data: { 'id': id, 'state': e.textContent } });
+  ajaxToggle(id, e.textContent);
 }
 
 function setProfileToggle(id, state) {
@@ -535,23 +533,17 @@ function showConfirm(msg, value, caption) {
   msg += '<td><button type="button" class="submit" id="nevermind" onclick="hideConfirm();">nevermind</button></td>';
   msg += '</tr></tbody></table>';
   // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
+  // Enter means confirm, escape means nevermind, all other keys will be ignored (including tab, otherwise it gets confusing)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
   $('button.submit.default').hide(); $('#partner-confirm').html(msg);
-  $('#confirm').keydown(function(e){
-    e.preventDefault(); if (e.which == 9) $('#nevermind').focus(); if (e.which == 27) $('#nevermind').click(); if (e.which==13) e.target.click(); return false;
-  });
-  $('#nevermind').keydown(function(e){
-    e.prerventDefault(); if (e.which == 9) $('confirm').focus(); if (e.which == 27 || e.which == 13) e.target.click(); return false;
-  });
+  $('#confirm').keydown(function(e){ e.preventDefault(); if ( e.which == 13) $('#confirm').click(); if (e.which == 27) $('#nevermind').click(); });
   $('#confirm').focusout(hideConfirm);
   $('#confirm').focus();
 }
 function hideConfirm() {
-  console.log('in hide confirm');
   if ( $('#confirm:hover').length ) { console.log ("Ignoring focusout because hover"); return false; }
   $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
   $('.partner-buttons').show(); $('button.submit.default').show();
-  console.log('hidden');
 }
 
 function confirmJoin(e, gid) {
@@ -679,13 +671,15 @@ function applyPreferences() {
 }
 
 function htogglerMakeActive(e) {
-    if ( e.classList.contains('htoggler-active') ) return;
+    if ( e.classList.contains('htoggler-active') ) return false;
     $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
     e.classList.remove("htoggler-inactive");
     e.classList.add("htoggler-active");
     if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
     if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
+    ajaxToggle('ht', e.id); 
+    return true;
 }
 
 function togglerIndex(i) {
@@ -693,6 +687,9 @@ function togglerIndex(i) {
     const id = $('.toggler-nav.toggler-active').attr('id');
     return id ? parseInt(id.split('-')[1]) : null;
   }
+  if ( i < 0 ) i = 0;
+  if ( i > studentClasses.length ) i = studentClasses.length;
+  ajaxToggle('ct', i?studentClasses[i-1]:'');
   const id = 'toggle-' + i;
   const oldid = $('.toggler-nav.toggler-active').attr('id');
   if ( id === oldid ) return;
@@ -761,7 +758,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp;'); return; } // if ajax response is slow, we might not have counts
+  if ( !currentCounts ) { $('#hours-compatible').html('&nbsp;'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -780,7 +777,7 @@ function updateHoursCompatible(e) {
   showHoursCompatible();
 }
 
-function checkChanges (e) {
+function checkChanges(e) {
   if ( ! e.target.name ) return;
   // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
@@ -795,13 +792,9 @@ function checkChanges (e) {
 
 var submitting = false;
 
-function submitStudentForm (value) {
-  console.log('submitStdentForm: '+value);
+function submitStudentForm(value) {
   submitting = true;
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
-  const i = togglerIndex();
-  $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
-  $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
   $('input[name="ctx-submit"]').val(value);
   // clear the names of inputs we don't need to send back
   if ( value === "cancel" ) {
@@ -809,16 +802,26 @@ function submitStudentForm (value) {
   } else {
     for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
   }
-  console.log('submitting '+value);
   document.getElementById('student').submit();
 }
 
-function alertInfo(q,msg) {
+function alertInfo(q, msg) {
   const content = $(q).html();
   $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(3000, function() { $(q).html(content).show(); });
 }
 
-function ajaxErrorHandler(xmlhttpreq, textstatus, message) {
+function ajaxToggle(name, value) {
+  ajaxToggle[name] = value;
+  if ( ajaxToggle[name+'Pending'] ) return false;
+  ajaxToggle[name+'Pending'] = true;
+  window.setTimeout(function(){
+    $.ajax({url: '/_toggle', data: { 'name': name, 'value': ajaxToggle[name] }});
+    ajaxToggle[name+'Pending'] = false;
+    }, 1000);
+  return true;
+}
+
+function ajaxErrorHandler (xmlhttpreq, textstatus, message) {
   console.log(`ajacErrorHandler called for URL="${this.url}", textstatus="${textstatus}", message="${message}`);
 }
 
@@ -868,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); return false; });
+  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
   togglerIndex(0);
 
@@ -891,13 +894,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-active').focus(); }});
-  if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
-  if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
+  if ( 'ht' in toggles ) htogglerMakeActive (document.getElementById(toggles.ht));
+  else  htogglerMakeActive(document.getElementById('partner-header'));
+  if ( 'ct' in toggles ) togglerIndex (toggles.ct?studentClasses.indexOf(toggles.ct)+1:0);
+  else togglerIndex (studentClasses.length);
   if ( 'pp' in toggles ) setProfileToggle ('pp', toggles.pp);
   if ( 'tp' in toggles ) setProfileToggle ('tp', toggles.tp);
-  else  htogglerMakeActive(document.getElementById('partner-header'));
-
+  
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
