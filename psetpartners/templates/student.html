@@ -534,8 +534,10 @@ function showConfirm(msg) { // msg should be html that defines a submit button w
   $('#confirm').focusout(hideConfirm); $('#confirm').focus();
 }
 function hideConfirm() {
-  $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
-  $('.partner-buttons').show(); $('button[type="submit"]').show();
+  setTimeout(function(){
+    $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
+    $('.partner-buttons').show(); $('button[type="submit"]').show();
+  },100);
 }
 
 function confirmJoin(e, gid) {
