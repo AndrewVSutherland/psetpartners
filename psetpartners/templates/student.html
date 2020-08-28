@@ -534,9 +534,8 @@ function showConfirm(msg) { // msg should be html that defines a submit button w
   $('#confirm').focusout(hideConfirm); $('#confirm').focus();
 }
 function hideConfirm() {
-  setTimeout(function(){
   $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
-  $('.partner-buttons').show(); $('button[type="submit"]').show();},100);
+  $('.partner-buttons').show(); $('button[type="submit"]').show();
 }
 
 function confirmJoin(e, gid) {
@@ -555,7 +554,7 @@ function confirmJoin(e, gid) {
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value; console.log('joining!');">Join ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -573,7 +572,7 @@ function confirmLeave(e, gid) {
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -595,7 +594,7 @@ function confirmPool(e, c) {
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -617,7 +616,7 @@ function confirmMatch(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -635,7 +634,7 @@ function confirmPublicGroup(e, c) {
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -653,7 +652,7 @@ function confirmPrivateGroup(e, c) {
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
