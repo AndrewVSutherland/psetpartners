@@ -11,7 +11,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
+<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student">
 
 <div class="profile-toggler">
   <label id="pp-caption" >Personal profile</label>
@@ -214,12 +214,13 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
   <input class="ctx" type="hidden" name="ctx-currentClass" value="" />
   <input class="ctx" type="hidden" name="ctx-htogglerId" value="" />
+  <input class="ctx" type="hidden" name="ctx-submit" value="" />
 
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
-      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>save</button></td>
-      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>reset</button></td>
+      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save');" disabled>save</button></td>
+      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel');" disabled>reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
       <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
     </tr>
@@ -228,7 +229,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <div style="display:inline-block; float:right;">
 <table class="submit">
   <tr><td>
-  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
+  <button type="button" class="confirm" id="apply-prefs" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
 </td></tr>
 </table></div>
   </form>
@@ -528,16 +529,29 @@ function setPartnerPanes() {
 function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
 function pending() { return ! $('#cancel').is(':disabled'); }
 
-function showConfirm(msg) { // msg should be html that defines a submit button with the id="confirm"
+function showConfirm(msg, value, caption) {
+  msg += '<table class="ctab"><tbody><tr>';
+  msg += `<td><button type="button" class="confirm" id="confirm" onclick="submitStudentForm('${value}');">${caption}</button></td>`;
+  msg += '<td><button type="button" class="submit" id="nevermind" onclick="hideConfirm();">nevermind</button></td>';
+  msg += '</tr></tbody></table>';
+  // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
-  $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
-  $('#confirm').focusout(hideConfirm); $('#confirm').focus();
+  $('button.submit.default').hide(); $('#partner-confirm').html(msg);
+  $('#confirm').keydown(function(e){
+    e.preventDefault(); if (e.which == 9) $('#nevermind').focus(); if (e.which == 27) $('#nevermind').click(); if (e.which==13) e.target.click(); return false;
+  });
+  $('#nevermind').keydown(function(e){
+    e.prerventDefault(); if (e.which == 9) $('confirm').focus(); if (e.which == 27 || e.which == 13) e.target.click(); return false;
+  });
+  $('#confirm').focusout(hideConfirm);
+  $('#confirm').focus();
 }
 function hideConfirm() {
-  setTimeout(function(){
-    $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
-    $('.partner-buttons').show(); $('button[type="submit"]').show();
-  },100);
+  console.log('in hide confirm');
+  if ( $('#confirm:hover').length ) { console.log ("Ignoring focusout because hover"); return false; }
+  $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
+  $('.partner-buttons').show(); $('button.submit.default').show();
+  console.log('hidden');
 }
 
 function confirmJoin(e, gid) {
@@ -554,11 +568,9 @@ function confirmJoin(e, gid) {
     msg += 'Existing members of this group will be notified. ';
   }
   let val = "join " + gid;
-  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = 'save ' + val; }
+  msg += '</p>';
+  showConfirm (msg, val, 'Join ' + g[1]);
 }
 
 function confirmLeave(e, gid) {
@@ -573,10 +585,8 @@ function confirmLeave(e, gid) {
   if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Leave ' + g.group_name);
 }
 
 function confirmPool(e, c) {
@@ -595,10 +605,8 @@ function confirmPool(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, `Put me in the ${d} match pool for ${c}`);
 }
 
 function confirmMatch(e, c) {
@@ -614,13 +622,10 @@ function confirmMatch(e, c) {
   msg += isLive ? '. ' : ' (in the sandbox no emails will be sent). ';
   let val = "match " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
   if ( Object.values(res).find(r => r.strength == '5') )
-    msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+    msg += '<br><br>You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
+  msg += '</p>';
+  showConfirm (msg, val, 'Find me a pset group for' + c);
 }
 
 function confirmPublicGroup(e, c) {
@@ -634,11 +639,8 @@ function confirmPublicGroup(e, c) {
   msg += `This group will be visisble to all students in ${c} using pset partners.  Anyone can join your group. up to the size limit indicated in your preferences (if any).  You will be emailed whenever new students join or leave the group. `;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Create a new public group for' + c);
 }
 
 function confirmPrivateGroup(e, c) {
@@ -652,11 +654,8 @@ function confirmPrivateGroup(e, c) {
   msg += `This group will not be visisble to students using pset partners, but you can email others a link that will let them join your group.  If you indicate that your group is open to new members, the system may contact you when students with compatible availability and preferences are looking for pset partners. `;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Create a new private group for' + c);
 }
 
 function showApplyPreferences() {
@@ -785,7 +784,7 @@ function checkChanges (e) {
   if ( ! e.target.name ) return;
   // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
-  $('#student :submit').prop('disabled',!change);
+  $('#student button.submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
   if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' ) 
@@ -797,15 +796,21 @@ function checkChanges (e) {
 var submitting = false;
 
 function submitStudentForm (value) {
+  console.log('submitStdentForm: '+value);
   submitting = true;
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   const i = togglerIndex();
   $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
   $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
-  if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
-  console.log("submitting!");
-  for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
-  return true;
+  $('input[name="ctx-submit"]').val(value);
+  // clear the names of inputs we don't need to send back
+  if ( value === "cancel" ) {
+    $('input:not(.ctx)').attr('name','');
+  } else {
+    for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
+  }
+  console.log('submitting '+value);
+  document.getElementById('student').submit();
 }
 
 function alertInfo(q,msg) {
@@ -816,7 +821,6 @@ function alertInfo(q,msg) {
 function ajaxErrorHandler(xmlhttpreq, textstatus, message) {
   console.log(`ajacErrorHandler called for URL="${this.url}", textstatus="${textstatus}", message="${message}`);
 }
-
 
 document.addEventListener('DOMContentLoaded', function() {
   function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }

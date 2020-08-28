@@ -224,6 +224,9 @@ def flash_warning(msg):
     flash(msg, "warning")
 
 def flash_error(msg):
+    from .app import app
+
+    app.logger.error("flashing error to user %s: %s" %(current_user.kerb,msg))
     flash(msg, "error")
 
 def show_input_errors(errmsgs):
