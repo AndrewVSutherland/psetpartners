@@ -282,10 +282,12 @@ PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 def save_student():
     raw_data = request.form
     session["ctx"] = { x[4:] : raw_data[x] for x in raw_data if x.startswith("ctx-") } # return ctx-XXX values to
-    submit = [x for x in raw_data.get("submit").split(' ') if x];
+    if not 'submit' in session["ctx"]:
+        flash_error("Invalid operation, no submit value (please report this as a bug).")
+    submit = [x for x in session["ctx"]["submit"].split(' ') if x];
     if not submit:
-        flash_error("Unrecognized submit command, no changes made.")
-        return redirect(url_for(".studnet"))
+        flash_error("Unrecognized submit value, no changes made (please report this as a bug).")
+        return redirect(url_for(".student"))
     if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
@@ -340,7 +342,7 @@ def save_student():
                 raise
             flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
     else:
-        flash_error("Unrecognized submit command.")
+        flash_error("Unrecognized submit command: " + submit[0]);
     return redirect(url_for(".student"))
 
 def save_changes(raw_data):
