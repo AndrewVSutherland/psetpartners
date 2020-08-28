@@ -534,8 +534,9 @@ function showConfirm(msg) { // msg should be html that defines a submit button w
   $('#confirm').focusout(hideConfirm); $('#confirm').focus();
 }
 function hideConfirm() {
+  setTimeout(function(){
   $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
-  $('.partner-buttons').show(); $('button[type="submit"]').show();
+  $('.partner-buttons').show(); $('button[type="submit"]').show();},100);
 }
 
 function confirmJoin(e, gid) {
@@ -554,7 +555,7 @@ function confirmJoin(e, gid) {
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value; console.log('joining!');">Join ${g[1]}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -760,7 +761,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp'); return; } // if ajax response is slow, we might not have counts
+  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp;'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -801,6 +802,7 @@ function submitStudentForm (value) {
   $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
   $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
   if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
+  console.log("submitting!");
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
   return true;
 }
