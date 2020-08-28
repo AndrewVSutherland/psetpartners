@@ -222,8 +222,8 @@ def acknoledge():
 @app.route("/_toggle")
 @login_required
 def update_toggle():
-    toggle = request.args.get('id')
-    state = request.args.get('state')
+    toggle = request.args.get('name')
+    state = request.args.get('value')
     return current_user.update_toggle(toggle, state)
 
 @app.route("/_counts")
