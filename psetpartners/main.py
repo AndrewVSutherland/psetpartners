@@ -30,12 +30,12 @@ from .student import (
     is_admin,
     get_counts,
     class_groups,
+    send_message,
     )
 from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
-    flash_announce,
     flash_error,
     process_user_input,
     maxlength,
@@ -192,6 +192,15 @@ def testemal():
     else:
         return "You are not authorized to perform this operation."
 
+@app.route("/testmessage/<kerb>")
+@login_required
+def testmessage(kerb):
+    if current_user.is_admin:
+        send_message(current_user.kerb, kerb, "test", "This is a test message from %s to %s" % (current_user.kerb, kerb))
+        return "message sent."
+    else:
+        return "You are not authorized to perform this operation."
+
 @app.route("/testlog")
 def testlog():
     from .utils import domain
@@ -202,6 +211,20 @@ def testlog():
 
 allowed_copts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
 allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
+
+
+@app.route("/_acknowledge")
+@login_required
+def acknoledge():
+    msgid = request.args.get('msgid')
+    return current_user.acknowledge(msgid)
+
+@app.route("/_toggle")
+@login_required
+def update_toggle():
+    toggle = request.args.get('id')
+    state = request.args.get('state')
+    return current_user.update_toggle(toggle, state)
 
 @app.route("/_counts")
 @login_required
@@ -226,19 +249,11 @@ def counts_groups():
     return json.dumps({'counts': get_counts(classes, copts if copts else allowed_copts),
                        'groups': {c: class_groups(c, gopts if gopts else allowed_gopts) for c in classes}})
 
-
 @app.route("/student")
 def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
-    if current_user.new:
-        flash_announce("""
-Welcome to pset partners!
-To begin, enter your preferred name and any other personal details you care to share.
-Then select your location, timezone, the math classes you are taking this term, and your hours of availability
-(include hours of partial availability).  You can then explore your options for finding pset partners using
-the Preferences and Partners buttons.
-            """)
+    current_user.flash_pending()
     return render_template(
         "student.html",
         options=template_options(),

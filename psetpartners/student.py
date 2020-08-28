@@ -9,12 +9,22 @@ from .utils import (
     current_year,
     current_term,
     hours_from_default,
+    flash_announce
     )
 from .group import generate_group_name
 from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
+
+welcome = """
+<b>Welcome to pset partners!</b>
+To begin, enter your preferred name and any other personal details you care to share.
+Then select your location, timezone, the math classes you are taking this term, and your hours of availability
+(include hours of partial availability).  You can then explore your options for finding pset partners using
+the Preferences and Partners buttons.
+"""
+
 
 # Note that these also appear in static/options.js, you need to update both!
 
@@ -232,6 +242,10 @@ def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
 
+def send_message(sender, recipient, typ, content):
+    db = getdb()
+    db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}])
+
 def next_match_date(class_id):
     import datetime
 
@@ -337,8 +351,6 @@ def class_groups(class_number, opts, year=current_year(), term=current_term(), v
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
-    if not data.get('preferred_name'):
-        data['preferred_name'] = kerb
     for col in student_options:
         if data.get(col):
             if not data[col] in [r[0] for r in student_options[col]]:
@@ -348,6 +360,8 @@ def cleanse_student_data(data):
         data['preferences'] = {}
     if data['strengths'] is None:
         data['strengths'] = {}
+    if data['toggles'] is None:
+        data['toggles'] = {}
     for pref in list(data["preferences"]):
         if not pref in student_preferences:
             app.logger.warning("Ignoring unknown preference %s for student %s"%(pref,kerb))
@@ -379,6 +393,9 @@ class Student(UserMixin):
             data["kerb"] = kerb
             data["id"] = -1
             data["new"] = True
+            print("new")
+            if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
+                send_message("", kerb, "welcome", welcome)
         else:
             data["new"] = False
         cleanse_student_data(data)
@@ -429,12 +446,15 @@ class Student(UserMixin):
     def get_id(self):
         return lambda: getattr(self, 'kerb', None)
 
-    def _reload(self):
-        """ This function should be called after any updates to classlist or grouplist related this student """
-        self.class_data = self._class_data()
-        self.classes = sorted(list(self.class_data))
-        self.group_data = self._group_data()
-        self.groups = sorted(list(self.group_data))
+    def flash_pending(self):
+        print("flashing pending for "+self.kerb)
+        for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
+            print(msg)
+            flash_announce("%s:%s" % (msg['id'], msg['content']))
+
+    def acknowledge(self, msgid):
+        self._db.messages.update({'id': msgid},{'read':True})
+        return "ok"
 
     def save(self):
         with DelayCommit(self):
@@ -459,6 +479,20 @@ class Student(UserMixin):
     def create_group(self, group_id, public=True):
         with DelayCommit(self):
             return self._create_group(group_id, public=public)
+
+    def update_toggle(self, toggle, state):
+        if not toggle:
+            return "no"
+        self.toggles[toggle] = state;
+        self._db.students.update({'id': self.id}, {'toggles': self.toggles})
+        return "ok"
+
+    def _reload(self):
+        """ This function should be called after any updates to classlist or grouplist related this student """
+        self.class_data = self._class_data()
+        self.classes = sorted(list(self.class_data))
+        self.group_data = self._group_data()
+        self.groups = sorted(list(self.group_data))
 
     def _save(self):
         if self.new:
@@ -737,6 +771,7 @@ def generate_test_population(num_students=300,max_classes=6):
     if not choice or choice[0] != 'y':
         print("No changes made.")
         return
+    db.test_messages.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
     db.test_groups.delete({}, resort=False)
     db.test_classlist.delete({}, resort=False)

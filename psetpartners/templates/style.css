@@ -335,7 +335,7 @@ button {
 
 button:focus {
   outline: none;
-  text-shadow: 0.5px 0.5px 1.5px var(--mit-gray);
+  outline: 1px solid var(--mit-maroon);
 }
 
 button:disabled {
@@ -353,7 +353,7 @@ button:hover:disabled {
 
 button.confirm {
   background: var(--select-fill);
-  color: var(--mit-maroon);
+  color: var(--mit-maroon);           
   border: var(--input-border-width) solid var(--input-border-color);
 }
 
@@ -374,9 +374,9 @@ label.confirm::before {
 .alertinfo {
   padding-left: 6px;
   font-size: 75%;
-  font-weight: bold;
+  font-weight: bold!important;
   font-style: italic;
-  color: var(--alert-color);
+  color: var(--alert-color)!important;
   vertical-align: middle;
 }
 
@@ -407,12 +407,14 @@ p.flash-instruct:before {
   font-size:100%;
   content: "💡";
 }
-p.flash-error:after, p.flash-announce:after, p.flash-instruct:after {
+.flash-after {
   color: var(--mit-maroon);
   font-weight: bold;
-  font-size: 90%;
-  content:"[dismiss]";
+  font-size: 95%;
   cursor: pointer;
+}
+.flash-after:hover {
+  background-color: var(--mit-pink);
 }
 p.flash-warning::before {
   font-size:120%;
@@ -451,7 +453,7 @@ table.btab {
   margin: 10px auto;
 }
 table.btab td {
-  padding: 0 30px;
+  padding: 0 0 0 30px;
 }
 
 label.paction {
@@ -492,21 +494,20 @@ div.caction p i {
 }
 
 /* BEGIN htoggler */
-.htoggler {
-  margin: 20px 0 0 0;
-  padding-left: 2px;
+.htoggler, .profile-toggler {
+  margin: 15px 0 0 0;
+  padding-left: 0;
   font-size: 110%;
   font-weight: bold;
   width: 100%;
 }
 
 .htoggler-nav {
-  margin: -8px 0 0 0;
+  margin: 0 0 0 0;
 }
 
-.htoggler:focus {
+.htoggler:focus, .profile-toggler-toggle:focus {
   outline: none;
-  text-shadow: 1px 1px 2px var(--mit-gray);
 }
 
 .htoggler-after {
@@ -515,13 +516,16 @@ div.caction p i {
   color: black; 
 }
 
-.htoggler-inactive {
+.htoggler-inactive, .profile-toggler-toggle {
   float: right;
   color: var(--mit-maroon);
   background: var(--lighter-gray);
-  border-radius: 14px;
-  border-bottom: solid 4px var(--light-gray);
-  padding: 4px 8px 3px 8px;
+  border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: 11px;
+  //border-bottom: solid 4px var(--light-gray);
+  padding: 1px 6px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .htoggler-active {
@@ -530,7 +534,7 @@ div.caction p i {
   color: black;
 }
 
-.htoggler-inactive:hover {
+.htoggler-inactive:hover, .profile-toggler-toggle:hover {
   background: var(--select-fill);
   cursor: pointer;
 }

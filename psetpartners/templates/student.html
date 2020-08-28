@@ -11,29 +11,34 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-  <form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
+<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
 
-  <h3>Personal profile</h3>
-
+<div class="profile-toggler">
+  <label id="pp-caption" >Personal profile</label>
+  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1"
+    onclick="$('#pp-caption').text((this.textContent.trim()=='contract' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); profileToggle(this);" return false;>{% if user.preferred_name %}contract{% else %}expand{% endif %}</label>
+</div>
+<div style="clear:both;"></div>
+<div id="pp">
   <table class="input">
     <tr>
       <td class="caption">Preferred name</td>
-      <td class="value"><input class="value" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="this is required" maxlength="{{maxlength['preferred_name']}}" 
-       oninput="$('#preferred_name_info').html(this.value?'required':'<b style=&quot;color:var(--alert-color);&quot;>required</b>');"/></td>
-      <td class="forminfo" id="preferred_name_info">required</td>
+      <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
+       oninput="if (this.value.trim()) $('#preferred_name_info').removeClass('alertinfo'); else $('#preferred_name_info').addClass('alertinfo');"/></td>
+      <td class="forminfo {% if user.preferred_name == '' %}alertinfo{% endif %}" id="preferred_name_info">required</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo">optional</td>
     </tr>
-    <!--<tr>
+    <!--<tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Homepage</td>
       <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
         oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
       <td class="forminfo" id="homepage_info">optional</td>
     </tr>-->
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Department(s)</td>
       <td class="value">
         <span class="select" id="select-departments" tabindex="4"></span>
@@ -41,7 +46,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       </td>
       <td class="forminfo" id="departments_info">optional</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Current year</td>
       <td class="value">
         <span class="select" id="select-year" tabindex="5"></span>
@@ -49,7 +54,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       </td>
     <td class="forminfo">optional</td>
     </tr>
-    <tr>
+    <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Gender identity</td>
       <td class="value">
         <span class="select" id="select-gender" tabindex="6"></span>
@@ -64,8 +69,14 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </tr>
     #}
   </table>
+</div>
 
-  <h3>Profile for the {{current_upcoming}} term ({{current_term_pretty}})</h3>
+<div class="profile-toggler">
+  <label id="tp-caption">Profile for {{current_term_pretty}}</label>
+  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);">contract</label>
+</div>
+<div style="clear:both;"></div>
+<div id="tp">
   <table class="input" style="margin-bottom:0px;">
     <tr>
       <td class="caption">Location</td>
@@ -114,7 +125,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     {% endfor %}
   </table>
   <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
-
+</div>
   <div class="htoggler" tabindex="12">
     <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
     <label class="htoggler-after"></label>
@@ -245,10 +256,11 @@ const classData = {{ user.class_data|tojson|safe }};
 const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
+const toggles = {{ user.toggles|tojson|safe }};
 
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx */ // from template (ignored above)
+/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
 /* global yearShort, startShort, forumShort, togetherShort */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
@@ -259,6 +271,25 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
+
+function profileToggle(e) {
+  e.textContent = e.textContent.trim() == 'expand' ? 'contract': 'expand';
+  const id = e.id.split('-')[0];
+  if ( $('#'+id+' input.required').filter(function(){return this.value.trim()==="";}).length ) {
+    $('#'+id+' tr.profile-optional').toggle();
+  } else {
+    if ( $('#'+id).is(':visible') && e.textContent == 'contract' ) $('#'+id+' tr.profile-optional').show();
+    else $('#'+id).toggle('fast','linear');
+  }
+  $.ajax({url: '/_toggle', data: { 'id': id, 'state': e.textContent } });
+}
+
+function setProfileToggle(id, state) {
+  const e = document.getElementById(id+'-toggler');
+  if ( !e ) return;
+  if ( (e.textContent == 'expand' && state == 'contract') || (e.textContent == 'contract' && state == 'expand') ) profileToggle(e);
+}
+
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
@@ -416,7 +447,7 @@ function partnerActionButtons(c) {
 
 function unpartnerActionButtons(gid) {
   let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
-  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group<label></td>`;
+  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
   btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
   return btab;
 }
@@ -523,7 +554,7 @@ function confirmJoin(e, gid) {
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -541,7 +572,7 @@ function confirmLeave(e, gid) {
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Leave ${g['group_name']}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -563,7 +594,7 @@ function confirmPool(e, c) {
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -585,7 +616,7 @@ function confirmMatch(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -603,7 +634,7 @@ function confirmPublicGroup(e, c) {
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -621,7 +652,7 @@ function confirmPrivateGroup(e, c) {
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
   msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onclick="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
+  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
   msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
   showConfirm(msg);
 }
@@ -729,7 +760,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp'); return; } // if ajax response is slow, we might not have counts
+  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp;'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -770,6 +801,7 @@ function submitStudentForm (value) {
   $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
   $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
   if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
+  console.log("submitting!");
   for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
   return true;
 }
@@ -797,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
   );
   makeMultiSelect('classes',
     classesOptions,
-    { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, onLimit: classesLimit }
+    { placeholder: studentPlaceholders.classes, shortTags: true, limit: maxlength.classes, autocomplete: true, onLimit: classesLimit }
   );
   if ( ! $('#timezone').val() ) {
     let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -856,6 +888,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
   if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
+  if ( 'pp' in toggles ) setProfileToggle ('pp', toggles.pp);
+  if ( 'tp' in toggles ) setProfileToggle ('tp', toggles.tp);
   else  htogglerMakeActive(document.getElementById('partner-header'));
 
   showAffinityPreferences();
