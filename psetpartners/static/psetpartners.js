@@ -37,7 +37,7 @@ function makeSingleSelect(id, available, config) {
     else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
     else if ( evt.which === 27 || evt.which === 33 ) s.close();
     else if ( evt.which === 34 ) s.open();
-    else if ( evt.which === 13 ) s.toggle();
+    else if ( evt.which === 13 ) { s.toggle(); evt.preventDefault(); }
   });
  
   e.value = s.value();
