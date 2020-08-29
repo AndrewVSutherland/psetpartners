@@ -7,6 +7,8 @@
 
 /* globals SelectPure */
 
+function isAlphaNumeric(code) { return ( (code > 47 && code < 58) || (code > 64 || code < 91) || (code > 96 && code < 123) ); }
+
 function makeSingleSelect(id, available, config) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw 'No input element with id ' + id;
@@ -21,12 +23,23 @@ function makeSingleSelect(id, available, config) {
     placeholder: config.placeholder,
     notes: config.notes,
   });
+  // TODO move this event handling into select-pure.js
+  if ( config.autocomplete ) {
+    s._autocomplete.addEventListener('keydown', function(evt) {
+      if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
+    });
+    se.addEventListener('keypress', function(evt) { s.open(); });
+  } else {
+    se.addEventListener('focusout', function(evt) { s.close(); });
+  }
   se.addEventListener('keydown', function(evt) {
-    if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); }
-    else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); }
-    else if ( evt.which === 27 ) s.close();
+    if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); evt.preventDefault(); }
+    else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
+    else if ( evt.which === 27 || evt.which === 33 ) s.close();
+    else if ( evt.which === 34 ) s.open();
+    else if ( evt.which === 13 ) s.toggle();
   });
-  se.addEventListener('focusout', function(evt) { s.close(); });
+ 
   e.value = s.value();
   jQuery(e).data('select',s);
   return s;
@@ -68,14 +81,15 @@ function makeMultiSelect(id, available, config) {
     shortTags: config.shortTags,
     notes: config.notes,
   });
+  // TODO move this event handling into select-pure.js
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {
       if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
     });
   } else {
     se.addEventListener('keydown', function(evt) {
-      if ( evt.which === 39 || evt.which === 40 ) s.open();
-      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 ) s.close();
+      if ( evt.which === 39 || evt.which === 40 || evt.which === 34 ) s.open();
+      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 || evt.which == 33 ) s.close();
     });
     se.addEventListener('focusout', function(evt) { s.close(); });
   }
@@ -147,4 +161,42 @@ function showURLtest(id, test_id, test_anchor, errmsg) {
 function makeURLtester(id, test_id, test_anchor, errmsg) {
   $('#'+id).keyup(function(evt) { evt.preventDefault(); showURLtest(id, test_id, test_anchor, errmsg);});
   showURLtest(id, test_id, test_anchor, errmsg);
+}
+
+function flashAnnounce(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-info'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashInstruct(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-instruct'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashError(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-error'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashInfo(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-info'); p.appendChild(t);
+  document.getElementById('flash-bottom').appendChild(p);
+  jQuery(p).fadeOut(5000);
+}
+
+function flashWarning(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-warning'); p.appendChild(t);
+  document.getElementById('flash-bottom').appendChild(p);
+  jQuery(p).fadeOut(10000);
+}
+
+function copyToClipboard(msg) {
+  const q = $('#clipboard');  // should be an input with class hidden (but not type hidden)
+  q.val(msg); q.select();
+  return document.execCommand('copy');
 }

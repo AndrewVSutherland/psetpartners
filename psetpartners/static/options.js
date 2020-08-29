@@ -186,9 +186,9 @@ const studentOptions = {
 };
 
 const studentPlaceholders = {
-  departments: 'select department to enable affinity preference',
-  year: 'select year to enable affinity preference',
-  gender: 'select gender to enable affinity preference',
+  departments: 'select up to three departments (optional)',
+  year: 'select year (optional)',
+  gender: 'select gender (optional)',
   classes: 'select your classes',
   start: 'how long before the due date',
   together: 'collaboration style',
@@ -202,3 +202,5 @@ const studentPlaceholders = {
   commitment_affinity: 'commitment affinity',
   confidence_affinity: 'knowledge affinity',
 };
+
+const profileOptions = [ "expand", "contract" ]

@@ -11,26 +11,25 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student" onsubmit="return submitStudentForm(this.submitted);">
+<form action="{{ url_for('.save_student') }}" method="post" name="student" id="student">
 
 <div class="profile-toggler">
   <label id="pp-caption" >Personal profile</label>
-  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1"
-    onclick="$('#pp-caption').text((this.textContent.trim()=='contract' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); profileToggle(this);" return false;>{% if user.preferred_name %}contract{% else %}expand{% endif %}</label>
+  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1" onclick="profileToggle(this);"></label>
 </div>
 <div style="clear:both;"></div>
 <div id="pp">
   <table class="input">
     <tr>
-      <td class="caption">Preferred name</td>
+      <td class="caption">Preferred name<b style="color:var(--alert-color);">*</b></td>
       <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
-       oninput="if (this.value.trim()) $('#preferred_name_info').removeClass('alertinfo'); else $('#preferred_name_info').addClass('alertinfo');"/></td>
-      <td class="forminfo {% if user.preferred_name == '' %}alertinfo{% endif %}" id="preferred_name_info">required</td>
+       oninput="if (this.value.trim()) $('#preferred_name_info').hide(); else $('#preferred_name_info').show();"/></td>
+      <td class="alertinfo" id="preferred_name_info">{% if user.preferred_name == '' %}required{% endif %}</td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     <!--<tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Homepage</td>
@@ -44,7 +43,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-departments" tabindex="4"></span>
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
-      <td class="forminfo" id="departments_info">optional</td>
+      <td class="forminfo" id="departments_info"></td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Current year</td>
@@ -52,7 +51,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-year" tabindex="5"></span>
         <input type="hidden" name="year" id="year" value="{{user.year|blanknone}}"/>
       </td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Gender identity</td>
@@ -60,7 +59,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-gender" tabindex="6"></span>
         <input type="hidden" name="gender" id="gender" value="{{user.gender|blanknone}}"/>
       </td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     {#
     <tr>
@@ -73,7 +72,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <div class="profile-toggler">
   <label id="tp-caption">Profile for {{current_term_pretty}}</label>
-  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);">contract</label>
+  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);"></label>
 </div>
 <div style="clear:both;"></div>
 <div id="tp">
@@ -84,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-location" tabindex="8"></span>
         <input type="hidden" name="location" id="location" value="{{user.location}}"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
     <tr>
       <td class="caption">Time zone</td>
@@ -92,7 +91,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-timezone" tabindex="9"></span>
         <input type="hidden" name="timezone" id="timezone" value="{{user.timezone}}" onchange="showTimezoneOffset()"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
     <tr>
       <td class="caption">Classes</td>
@@ -100,9 +99,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
-    <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
+    <tr>
+      <td class="caption" colspan="3" style="padding-top:10px;">
+        <label id="tzcaption">Times available for collaboration (in your time zone)</label><b style="color:var(--alert-color);">*</b>
+    </td>
   </table>
   <br>
   <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
@@ -126,10 +128,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   </table>
   <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
 </div>
-  <div class="htoggler" tabindex="12">
-    <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
+  <div class="htoggler">
+    <label class="htoggler-nav htoggler-active" id="pref-header" tabindex="0">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav htoggler-inactive" id="partner-header">Partners</label>
+    <label class="htoggler-nav htoggler-inactive" id="partner-header" tabindex="12">Partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -211,15 +213,14 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
   </div>
 
-  <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
-  <input class="ctx" type="hidden" name="ctx-currentClass" value="" />
-  <input class="ctx" type="hidden" name="ctx-htogglerId" value="" />
+  <input class="ctx" type="hidden" name="ctx-scrollTop" />
+  <input class="ctx" type="hidden" name="ctx-submit" />
 
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
-      <td><button type="submit" name="submit" id="save" value="save" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>save</button></td>
-      <td><button type="submit" name="submit" id="cancel" value="cancel" tabindex="-1" onclick="this.form.submitted=this.value;" disabled>reset</button></td>
+      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save');" disabled>save</button></td>
+      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel');" disabled>reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
       <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
     </tr>
@@ -228,9 +229,11 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <div style="display:inline-block; float:right;">
 <table class="submit">
   <tr><td>
-  <button class="confirm" id="apply-prefs" tabindex="-1" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
+  <button type="button" class="confirm" id="apply-prefs" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
 </td></tr>
 </table></div>
+  <input class="hidden" type="text" id="clipboard" />
+
   </form>
 
 <!-- jshint ignore:end -->
@@ -261,9 +264,9 @@ const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
 
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
-/* global yearShort, startShort, forumShort, togetherShort */ // options.js
+/* global yearShort, startShort, forumShort, togetherShort, profileOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
-/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashAnnounce, copyToClipboard */ // in psetpartners.js
 
 function classLabel(v) { return classesOptions.find(x => x.value == v).label; }
 
@@ -272,24 +275,42 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
 
-function profileToggle(e) {
-  e.textContent = e.textContent.trim() == 'expand' ? 'contract': 'expand';
+let loaded = false;
+
+function profileToggle(e, state) {
+  if ( typeof(e) == 'string' ) e = document.getElementById(e+'-toggler');
+  state = parseInt(state || (e.textContent.trim() == profileOptions[0] ? 1 : 0));
   const id = e.id.split('-')[0];
-  if ( $('#'+id+' input.required').filter(function(){return this.value.trim()==="";}).length ) {
-    $('#'+id+' tr.profile-optional').toggle();
+  const q = '#' + id;
+  const qo = q + ' tr.profile-optional';
+  const speed = loaded ? 100 : 0;
+  if ( state ) {
+    if ( $(q).is(':visible') ) {
+      $(qo).fadeIn(speed);
+    } else {
+      $(qo).show();
+      $(q).fadeIn(speed);
+    }
   } else {
-    if ( $('#'+id).is(':visible') && e.textContent == 'contract' ) $('#'+id+' tr.profile-optional').show();
-    else $('#'+id).toggle('fast','linear');
+    if ( $(q + ' input.required').filter(function(){return this.value.trim()==="";}).length ) {
+      $(q).show();  $(qo).fadeOut(speed, 'linear');
+    } else {
+      $(q).fadeOut(speed);
+    }
   }
-  $.ajax({url: '/_toggle', data: { 'id': id, 'state': e.textContent } });
+  e.textContent = profileOptions[state];
+  ajaxToggle(id, state);
+  if ( id == 'pp' ) ppCaption(state);
 }
 
-function setProfileToggle(id, state) {
-  const e = document.getElementById(id+'-toggler');
-  if ( !e ) return;
-  if ( (e.textContent == 'expand' && state == 'contract') || (e.textContent == 'contract' && state == 'expand') ) profileToggle(e);
+function ppCaption (state) {
+  let cap = 'Personal profile';
+  if ( !state ) {
+    const name = $('#preferred_name').val().trim();
+    if ( name !== '' ) cap += ' for ' + name;
+  }
+  document.getElementById('pp-caption').textContent = cap;
 }
-
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
@@ -396,7 +417,7 @@ function changeClasses(val) {
   }
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#toggle-'+(i+1)); q.html(''); q.hide(); }
   const i = togglerIndex();
-  const c = i ? studentClasses[i-1] : '';
+  const c = studentClasses[i-1] || '';
   const oldlength = studentClasses.length;
   studentClasses = [...v];
   if ( v.length > oldlength ) {
@@ -426,10 +447,10 @@ function gtabHead() {
   return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
 }
 function gtabRow(g) {
-  let start = g[2] ? parseInt(g[2]) : 0;  start = ( start > 0 && start < startShort.length ) ? startShort[start] : "-";
-  let together = g[3] ? parseInt(g[3]) : 0;  together = ( together > 0 && together < togetherShort.length ) ? togetherShort[together] : "-";
+  const start = startShort[parseInt(g[2]) || 0] || "-";
+  const together = togetherShort[parseInt(g[3]) || 0] || "-";
   let row = `<tr><td>${g[1]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
-  row += `<td align="center">${g[4]?g[4]:"-"}</td><td>${g[5]}</td><td>${g[6]?g[6]:"-"}</td>`;
+  row += `<td align="center">${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
   row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
   return row;
 }
@@ -445,10 +466,11 @@ function partnerActionButtons(c) {
   return btab;
 }
 
-function unpartnerActionButtons(gid) {
-  let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
-  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
-  btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
+function partneredActionButtons(c, gid) {
+  let btab = '<table style="min-width: 100%;" class="btab">\n<tbody><tr>';
+  btab += `<td style="min-width: 100%; margin:0; padding:0;"><label class="paction" style="margin-left: 390px;" onclick="copyInvitation(this,'${c}')">create an invitation link</label>`;
+  btab += `<label class="naction" style="float:right;" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
+  btab += '</tr>\n</tbody></table>';
   return btab;
 }
 
@@ -470,17 +492,17 @@ function setPartnerPanes() {
         $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(mtab);
-        $('#partner-buttons-'+(i+1)).html(unpartnerActionButtons(g.id));        
+        $('#partner-buttons-'+(i+1)).html(partneredActionButtons(c,g.id));
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
         for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
         const w = v[2]+v[3];
-        const wt = w ? (w==1?"one is":w+" are") : "none are";
-        const tg = g > 1 ? "one of the " + g + " pset groups that have" : "the one pset group that has";
-        let msg = `There are ${s} students who have ${c} listed on pset partners. `;
+        const wt = w ? (w==1?"one is":"<b>"+w+"</b> are") : "none are";
+        const tg = g > 1 ? "one of the <b>" + g + "</b> pset groups that have" : "the one pset group that has";
+        let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
         if ( sg ) {
-          msg += `Currently ${sg} of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
@@ -492,30 +514,30 @@ function setPartnerPanes() {
           }
           if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to join or create a group or request a more urgent match by clinking on one of the links below. `;
+              msg += `<br><br>You are currently in the pool for <b>${c}</b> to be matched on <b>${allCounts[c].next_match_date}</b> but are free to join or create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
             } else if ( classData[c].status == 4 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
             }
           } else {
-            msg += '<br><br>To find a pset partner, click any of the action buttons below. ';
+            msg += '<br><br>To find a pset partner, click any of the bold action links. ';
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
           if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to create a group or request a more urgent match by clinking on one of the links below. `;
+              msg += `<br><br>You are currently in the pool for <b>${c}</b> to be matched on <b>${allCounts[c].next_match_date}</b> but are free to create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly. `;
             } else if ( classData[c].status == 4 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
             }
           } else {
-            msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
+            msg += '<br><br>To find a pset partner, click any of the bold action links. ';
           }
         }
-        msg += 'Each button will tell you exactly what is going to happen and ask for confirmation before proceeding, so you click confidently!';
+        msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding, so click with confidence!';
         $('#partner-summary-'+(i+1)).html(msg);
         $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
       }
@@ -524,18 +546,34 @@ function setPartnerPanes() {
     }
   }
 }
+function copyInvitation(e, c) {
+  const g = groupData[c];
+  if ( ! g ) { console.log('Could not find any group for student in class' + c); return; }
+  if ( copyToClipboard(groupData[c].invite) )
+    flashInfo('An invitation link for the group ' + groupData[c].group_name + ' was copied to your clipboard.');
+  else flashAnnounce('Unable to copy invitation link ' + groupData[c].invite + ' to clipboard, but you can copy it here (and then click ok to dismiss this message).');
+}
 
 function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
 function pending() { return ! $('#cancel').is(':disabled'); }
 
-function showConfirm(msg) { // msg should be html that defines a submit button with the id="confirm"
+function showConfirm(msg, value, caption) {
+  msg += '<table class="ctab"><tbody><tr>';
+  msg += `<td><button type="button" class="confirm" id="confirm" onclick="submitStudentForm('${value}');">${caption}</button></td>`;
+  msg += '<td><button type="button" class="submit" id="nevermind" onclick="hideConfirm();">nevermind</button></td>';
+  msg += '</tr></tbody></table>';
+  // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
+  // Enter means confirm, escape means nevermind, all other keys will be ignored (including tab, otherwise it gets confusing)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
-  $('button[type="submit"]').hide(); $('#partner-confirm').html(msg);
-  $('#confirm').focusout(hideConfirm); $('#confirm').focus();
+  $('button.submit.default').hide(); $('#partner-confirm').html(msg);
+  $('#confirm').keydown(function(e){ e.preventDefault(); if ( e.which == 13) $('#confirm').click(); if (e.which == 27) $('#nevermind').click(); });
+  $('#confirm').focusout(hideConfirm);
+  $('#confirm').focus();
 }
 function hideConfirm() {
+  if ( $('#confirm:hover').length ) { console.log ("Ignoring focusout because hover"); return false; }
   $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
-  $('.partner-buttons').show(); $('button[type="submit"]').show();
+  $('.partner-buttons').show(); $('button.submit.default').show();
 }
 
 function confirmJoin(e, gid) {
@@ -552,11 +590,9 @@ function confirmJoin(e, gid) {
     msg += 'Existing members of this group will be notified. ';
   }
   let val = "join " + gid;
-  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Join ${g[1]}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = 'save ' + val; }
+  msg += '</p>';
+  showConfirm (msg, val, 'Join ' + g[1]);
 }
 
 function confirmLeave(e, gid) {
@@ -571,10 +607,8 @@ function confirmLeave(e, gid) {
   if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Leave ${g.group_name}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Leave ' + g.group_name);
 }
 
 function confirmPool(e, c) {
@@ -593,10 +627,8 @@ function confirmPool(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Put me in the ${d} match pool for ${c}</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, `Put me in the ${d} match pool for ${c}`);
 }
 
 function confirmMatch(e, c) {
@@ -612,13 +644,10 @@ function confirmMatch(e, c) {
   msg += isLive ? '. ' : ' (in the sandbox no emails will be sent). ';
   let val = "match " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
   if ( Object.values(res).find(r => r.strength == '5') )
-    msg += 'You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Find me a pset group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+    msg += '<br><br>You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
+  msg += '</p>';
+  showConfirm (msg, val, 'Find me a pset group for ' + c);
 }
 
 function confirmPublicGroup(e, c) {
@@ -632,11 +661,8 @@ function confirmPublicGroup(e, c) {
   msg += `This group will be visisble to all students in ${c} using pset partners.  Anyone can join your group. up to the size limit indicated in your preferences (if any).  You will be emailed whenever new students join or leave the group. `;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new public group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Create a new public group for ' + c);
 }
 
 function confirmPrivateGroup(e, c) {
@@ -650,11 +676,8 @@ function confirmPrivateGroup(e, c) {
   msg += `This group will not be visisble to students using pset partners, but you can email others a link that will let them join your group.  If you indicate that your group is open to new members, the system may contact you when students with compatible availability and preferences are looking for pset partners. `;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '<br><br>';
-  msg += `</p><table class="ctab"><tbody><tr>`;
-  msg += `<td><button class="confirm" type="submit" name="submit" id="confirm" value="${val}" onmousedown="this.form.submitted=this.value;">Create a new private group for ${c}!</button></td>`;
-  msg += `<td><button class="submit" onclick="hideConfirm()">nevermind</button></td></tr></tbody></table>`;
-  showConfirm(msg);
+  msg += '</p>';
+  showConfirm (msg, val, 'Create a new private group for' + c);
 }
 
 function showApplyPreferences() {
@@ -677,14 +700,21 @@ function applyPreferences() {
   $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
 }
 
-function htogglerMakeActive(e) {
-    if ( e.classList.contains('htoggler-active') ) return;
+function htogglerActivate(e) {
+    if ( typeof(e) == 'string' ) e = document.getElementById(e);
+    if ( e.classList.contains('htoggler-active') ) return false;
+    const i = $('.htoggler-inactive').attr('tabindex');
     $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
     e.classList.remove("htoggler-inactive");
     e.classList.add("htoggler-active");
     if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
     if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
+    $('.htoggler-active').attr('tabindex',0);
+    $('.htoggler-inactive').attr('tabindex',i);
+    $('.htoggler-inactive').focus();
+    ajaxToggle('ht', e.id); 
+    return true;
 }
 
 function togglerIndex(i) {
@@ -692,6 +722,9 @@ function togglerIndex(i) {
     const id = $('.toggler-nav.toggler-active').attr('id');
     return id ? parseInt(id.split('-')[1]) : null;
   }
+  if ( i < 0 ) i = 0;
+  if ( i > studentClasses.length ) i = studentClasses.length;
+  ajaxToggle('ct', studentClasses[i-1] || '');
   const id = 'toggle-' + i;
   const oldid = $('.toggler-nav.toggler-active').attr('id');
   if ( id === oldid ) return;
@@ -760,7 +793,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( ! currentCounts ) { $('#hours-compatible').text('&nbsp;'); return; } // if ajax response is slow, we might not have counts
+  if ( !currentCounts ) { $('#hours-compatible').html('&nbsp;'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;
@@ -779,11 +812,11 @@ function updateHoursCompatible(e) {
   showHoursCompatible();
 }
 
-function checkChanges (e) {
+function checkChanges(e) {
   if ( ! e.target.name ) return;
   // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
-  $('#student :submit').prop('disabled',!change);
+  $('#student button.submit').prop('disabled',!change);
   showSaveErrorMessage();
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
   if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' ) 
@@ -794,27 +827,38 @@ function checkChanges (e) {
 
 var submitting = false;
 
-function submitStudentForm (value) {
+function submitStudentForm(value) {
   submitting = true;
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
-  const i = togglerIndex();
-  $('input[name="ctx-currentClass"]').val(i?studentClasses[i-1]:'');
-  $('input[name="ctx-htogglerId"]').val($(".htoggler-active").attr('id'));
-  if ( value === "cancel" ) { $('input:not(.ctx)').attr('name',''); return true; }
-  console.log("submitting!");
-  for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
-  return true;
+  $('input[name="ctx-submit"]').val(value);
+  // clear the names of inputs we don't need to send back
+  if ( value === "cancel" ) {
+    $('input:not(.ctx)').attr('name','');
+  } else {
+    for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
+  }
+  document.getElementById('student').submit();
 }
 
-function alertInfo(q,msg) {
+function alertInfo(q, msg) {
   const content = $(q).html();
   $(q).html('<b style="color:var(--alert-color);">' + msg + '</b>'); $(q).fadeOut(3000, function() { $(q).html(content).show(); });
 }
 
-function ajaxErrorHandler(xmlhttpreq, textstatus, message) {
-  console.log(`ajacErrorHandler called for URL="${this.url}", textstatus="${textstatus}", message="${message}`);
+function ajaxToggle(name, value) {
+  ajaxToggle[name] = value;
+  if ( ajaxToggle[name+'Pending'] ) return false;
+  ajaxToggle[name+'Pending'] = true;
+  window.setTimeout(function(){
+    $.ajax({url: '/_toggle', data: { 'name': name, 'value': ajaxToggle[name] }});
+    ajaxToggle[name+'Pending'] = false;
+    }, 1000);
+  return true;
 }
 
+function ajaxErrorHandler (xmlhttpreq, textstatus, message) {
+  console.log(`ajacErrorHandler called for URL="${this.url}", textstatus="${textstatus}", message="${message}`);
+}
 
 document.addEventListener('DOMContentLoaded', function() {
   function classesLimit (n) { alertInfo('#classes_info', 'At most ' + maxlength.classes + ' classes permitted!'); }
@@ -838,13 +882,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
   }
   makeSingleSelect('location', studentOptions.location, {});
-  makeSingleSelect('timezone', timezoneOptions, {});
+  makeSingleSelect('timezone', timezoneOptions, { autocomplete: true });
   const sp = studentPlaceholders;
   makeSingleSelect('year', studentOptions.year, { placeholder: sp.year });
   makeSingleSelect('gender', studentOptions.gender, { placeholder: sp.gender });
   for (const pref of studentPreferences) {
     for ( let i = 0 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref], notes: prefNotes(pref, allCounts[i?studentClasses[i-1]:'']) });
+      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref], notes: prefNotes(pref, allCounts[studentClasses[i-1]||'']) });
   }
   for (const pref of studentClassPreferences) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
@@ -852,7 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   for (const prop of studentClassAffinities) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: sp[prop], notes: prefNotes(prop, allCounts[i?studentClasses[i-1]:'']) });
+      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: sp[prop], notes: prefNotes(prop, allCounts[studentClasses[i-1]||'']) });
   }
 
   makeCheckboxGrid();
@@ -862,18 +906,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); return false; });
+  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerActivate(e.target); });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
+
   togglerIndex(0);
 
   $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
   $('#student').data('initial',$('#student').serialize());
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
-
+  $('.profile-toggler-toggle').keydown(function(e){ if ( e.which == 13 || (e.which >= 32 && e.which <= 40) ) profileToggle(e.target); });
   $('.htoggler').keydown(function(e){
-    if ( e.which === 37 || e.which === 39 ) {
-      htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header'));
+    if ( e.which == 13 || (e.which >= 32 && e.which <= 40) ) {
+      htogglerActivate($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header');
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-active').focus(); }});
@@ -885,17 +930,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-active').focus(); }});
-  if ( ctx.currentClass ) togglerIndex(studentClasses.indexOf(ctx.currentClass)+1);
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
-  if ( ctx.htogglerId ) htogglerMakeActive(document.getElementById(ctx.htogglerId));
-  if ( 'pp' in toggles ) setProfileToggle ('pp', toggles.pp);
-  if ( 'tp' in toggles ) setProfileToggle ('tp', toggles.tp);
-  else  htogglerMakeActive(document.getElementById('partner-header'));
+  profileToggle ('pp', toggles.pp || ( $('input[name="preferred_name"]').val().trim() ? 1 : 0));
+  profileToggle ('tp', toggles.tp || 1);
+  htogglerActivate (toggles.ht || 'partner-header');
+  togglerIndex (studentClasses.indexOf(toggles.ct)+1 || studentClasses.length);
 
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
   window.onbeforeunload = function (e) { return (pending() && !submitting) ? true : undefined; };
+  loaded = true;
   console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 </script>
