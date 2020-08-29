@@ -15,22 +15,21 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <div class="profile-toggler">
   <label id="pp-caption" >Personal profile</label>
-  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1"
-    onclick="$('#pp-caption').text((this.textContent.trim()=='contract' && $('#preferred_name').val().trim()!='') ? 'Personal profile for ' + $('#preferred_name').val() : 'Personal profile'); profileToggle(this);" return false;>{% if user.preferred_name %}contract{% else %}expand{% endif %}</label>
+  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1" onclick="profileToggle(this);" return false;></label>
 </div>
 <div style="clear:both;"></div>
 <div id="pp">
   <table class="input">
     <tr>
-      <td class="caption">Preferred name</td>
+      <td class="caption">Preferred name<b style="color:var(--alert-color);">*</b></td>
       <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
-       oninput="if (this.value.trim()) $('#preferred_name_info').removeClass('alertinfo'); else $('#preferred_name_info').addClass('alertinfo');"/></td>
-      <td class="forminfo {% if user.preferred_name == '' %}alertinfo{% endif %}" id="preferred_name_info">required</td>
+       oninput="if (this.value.trim()) $('#preferred_name_info').hide(); else $('#preferred_name_info').show();"/></td>
+      <td class="alertinfo" id="preferred_name_info">{% if user.preferred_name == '' %}required{% endif %}</td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Preferred pronouns</td>
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     <!--<tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Homepage</td>
@@ -44,7 +43,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-departments" tabindex="4"></span>
         <input type="hidden" name="departments" id="departments" value="{{user.departments}}" />
       </td>
-      <td class="forminfo" id="departments_info">optional</td>
+      <td class="forminfo" id="departments_info"></td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Current year</td>
@@ -52,7 +51,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-year" tabindex="5"></span>
         <input type="hidden" name="year" id="year" value="{{user.year|blanknone}}"/>
       </td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Gender identity</td>
@@ -60,7 +59,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-gender" tabindex="6"></span>
         <input type="hidden" name="gender" id="gender" value="{{user.gender|blanknone}}"/>
       </td>
-    <td class="forminfo">optional</td>
+    <td class="forminfo"></td>
     </tr>
     {#
     <tr>
@@ -73,7 +72,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <div class="profile-toggler">
   <label id="tp-caption">Profile for {{current_term_pretty}}</label>
-  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);">contract</label>
+  <label id="tp-toggler" class="profile-toggler-toggle" tabindex="8" onclick="profileToggle(this);"></label>
 </div>
 <div style="clear:both;"></div>
 <div id="tp">
@@ -84,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-location" tabindex="8"></span>
         <input type="hidden" name="location" id="location" value="{{user.location}}"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
     <tr>
       <td class="caption">Time zone</td>
@@ -92,7 +91,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-timezone" tabindex="9"></span>
         <input type="hidden" name="timezone" id="timezone" value="{{user.timezone}}" onchange="showTimezoneOffset()"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
     <tr>
       <td class="caption">Classes</td>
@@ -100,9 +99,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
-      <td class="forminfo">required</td>
+      <td class="forminfo"></td>
     </tr>
-    <tr><td class="caption" colspan="3" style="padding-top:10px;"><label id="tzcaption">Times available for collaboration (in your time zone)</label></td></tr>
+    <tr>
+      <td class="caption" colspan="3" style="padding-top:10px;">
+        <label id="tzcaption">Times available for collaboration (in your time zone)</label><b style="color:var(--alert-color);">*</b>
+    </td>
   </table>
   <br>
   <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
@@ -211,8 +213,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
   </div>
 
-  <input class="ctx" type="hidden" name="ctx-scrollTop" value="" />
-  <input class="ctx" type="hidden" name="ctx-submit" value="" />
+  <input class="ctx" type="hidden" name="ctx-scrollTop" />
+  <input class="ctx" type="hidden" name="ctx-submit" />
 
   <div style="display:inline-block;">
   <table class="submit">
@@ -230,6 +232,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <button type="button" class="confirm" id="apply-prefs" onclick="applyPreferences(); return false;" style="display:none;">apply to all classes</button><label class="confirm" id="apply-prefs-confirm" style="display:none;">Applied! (but not saved)</label>
 </td></tr>
 </table></div>
+  <input class="hidden" type="text" id="clipboard" />
+
   </form>
 
 <!-- jshint ignore:end -->
@@ -260,9 +264,9 @@ const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
 
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
-/* global yearShort, startShort, forumShort, togetherShort */ // options.js
+/* global yearShort, startShort, forumShort, togetherShort, profileOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
-/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashAnnounce, copyToClipboard */ // in psetpartners.js
 
 function classLabel(v) { return classesOptions.find(x => x.value == v).label; }
 
@@ -271,24 +275,43 @@ const strengthOptions = [{% for s in options["strength"] %} "{{s}}", {% endfor %
 /* userClasses acts as an associative array indexed by class_number into user.class_data */
 let studentClasses = [ {% for class_number in user.classes %} "{{class_number}}", {% endfor %} ];  // jshint ignore: line
 
-function profileToggle(e) {
-  e.textContent = e.textContent.trim() == 'expand' ? 'contract': 'expand';
+let loaded = false;
+
+function profileToggle(e, state) {
+  if ( typeof(e) == 'string' ) e = document.getElementById(e+'-toggler');
+  state = parseInt(state || (e.textContent.trim() == profileOptions[0] ? 1 : 0));
   const id = e.id.split('-')[0];
-  if ( $('#'+id+' input.required').filter(function(){return this.value.trim()==="";}).length ) {
-    $('#'+id+' tr.profile-optional').toggle();
+  const q = '#' + id;
+  const qo = q + ' tr.profile-optional';
+  const speed = loaded ? 0 : 0;
+  if ( state ) {
+    if ( $(q).is(':visible') ) {
+      $(qo).fadeIn(speed);
+    } else {
+      $(qo).show();
+      $(q).fadeIn(speed);
+    }
   } else {
-    if ( $('#'+id).is(':visible') && e.textContent == 'contract' ) $('#'+id+' tr.profile-optional').show();
-    else $('#'+id).toggle('fast','linear');
+    if ( $(q + ' input.required').filter(function(){return this.value.trim()==="";}).length ) {
+      $(q).show();  $(qo).fadeOut(speed, 'linear');
+    } else {
+      $(q).fadeOut(speed);
+    }
   }
-  ajaxToggle(id, e.textContent);
+  console.log(id);
+  console.log(state);
+  e.textContent = profileOptions[state];
+  ajaxToggle(id, state);
+  if ( !state && id == 'pp' ) ppCaption();
 }
 
-function setProfileToggle(id, state) {
-  const e = document.getElementById(id+'-toggler');
-  if ( !e ) return;
-  if ( (e.textContent == 'expand' && state == 'contract') || (e.textContent == 'contract' && state == 'expand') ) profileToggle(e);
+function ppCaption() {
+  let cap = 'Personal profile';
+  const name = $('#preferred_name').val().trim();
+  if ( name !== '' ) cap += ' for ' + name;
+  document.getElementById('pp-caption').textContent = cap;
+  console.log(cap);
 }
-
 
 function showTimezoneOffset() {
   const tz = document.getElementById('timezone').value;
@@ -395,7 +418,7 @@ function changeClasses(val) {
   }
   for ( let i = v.length ; i < studentClasses.length ; i++ ) { const q = $('#toggle-'+(i+1)); q.html(''); q.hide(); }
   const i = togglerIndex();
-  const c = i ? studentClasses[i-1] : '';
+  const c = studentClasses[i-1] || '';
   const oldlength = studentClasses.length;
   studentClasses = [...v];
   if ( v.length > oldlength ) {
@@ -425,10 +448,10 @@ function gtabHead() {
   return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
 }
 function gtabRow(g) {
-  let start = g[2] ? parseInt(g[2]) : 0;  start = ( start > 0 && start < startShort.length ) ? startShort[start] : "-";
-  let together = g[3] ? parseInt(g[3]) : 0;  together = ( together > 0 && together < togetherShort.length ) ? togetherShort[together] : "-";
+  const start = startShort[parseInt(g[2]) || 0] || "-";
+  const together = togetherShort[parseInt(g[3]) || 0] || "-";
   let row = `<tr><td>${g[1]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
-  row += `<td align="center">${g[4]?g[4]:"-"}</td><td>${g[5]}</td><td>${g[6]?g[6]:"-"}</td>`;
+  row += `<td align="center">${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
   row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
   return row;
 }
@@ -444,8 +467,9 @@ function partnerActionButtons(c) {
   return btab;
 }
 
-function unpartnerActionButtons(gid) {
+function partneredActionButtons(c, gid) {
   let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
+  btab += `<label class="paction" onclick="copyInvitation(this,'${c}')">create an invitation link</label></td>`;
   btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
   btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
   return btab;
@@ -469,7 +493,7 @@ function setPartnerPanes() {
         $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(mtab);
-        $('#partner-buttons-'+(i+1)).html(unpartnerActionButtons(g.id));        
+        $('#partner-buttons-'+(i+1)).html(partneredActionButtons(c,g.id));
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
@@ -522,6 +546,13 @@ function setPartnerPanes() {
       $('#partner-summary-'+(i+1)).text(`Save your changes to get the latest pset partner data for ${c}.`);
     }
   }
+}
+function copyInvitation(e, c) {
+  const g = groupData[c];
+  if ( ! g ) { console.log('Could not find any group for student in class' + c); return; }
+  if ( copyToClipboard(groupData[c].invite) )
+    flashInfo('An invitation link for the group ' + groupData[c].group_name + ' was copied to your clipboard.');
+  else flashAnnounce('Unable to copy invitation link ' + groupData[c].invite + ' to clipboard, but you can copy it here (and then click ok to dismiss this message).');
 }
 
 function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
@@ -617,7 +648,7 @@ function confirmMatch(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += '<br><br>You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
   msg += '</p>';
-  showConfirm (msg, val, 'Find me a pset group for' + c);
+  showConfirm (msg, val, 'Find me a pset group for ' + c);
 }
 
 function confirmPublicGroup(e, c) {
@@ -632,7 +663,7 @@ function confirmPublicGroup(e, c) {
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '</p>';
-  showConfirm (msg, val, 'Create a new public group for' + c);
+  showConfirm (msg, val, 'Create a new public group for ' + c);
 }
 
 function confirmPrivateGroup(e, c) {
@@ -670,7 +701,8 @@ function applyPreferences() {
   $('#apply-prefs').hide(); $('#apply-prefs-confirm').show(); $('#apply-prefs-confirm').fadeOut(3000);
 }
 
-function htogglerMakeActive(e) {
+function htogglerActivate(e) {
+    if ( typeof(e) == 'string' ) e = document.getElementById(e);
     if ( e.classList.contains('htoggler-active') ) return false;
     $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
@@ -689,7 +721,7 @@ function togglerIndex(i) {
   }
   if ( i < 0 ) i = 0;
   if ( i > studentClasses.length ) i = studentClasses.length;
-  ajaxToggle('ct', i?studentClasses[i-1]:'');
+  ajaxToggle('ct', studentClasses[i-1] || '');
   const id = 'toggle-' + i;
   const oldid = $('.toggler-nav.toggler-active').attr('id');
   if ( id === oldid ) return;
@@ -853,7 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
   makeSingleSelect('gender', studentOptions.gender, { placeholder: sp.gender });
   for (const pref of studentPreferences) {
     for ( let i = 0 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref], notes: prefNotes(pref, allCounts[i?studentClasses[i-1]:'']) });
+      makeSingleSelect('pref-' + pref + '-' + i, studentOptions[pref], { placeholder: sp[pref], notes: prefNotes(pref, allCounts[studentClasses[i-1]||'']) });
   }
   for (const pref of studentClassPreferences) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
@@ -861,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   for (const prop of studentClassAffinities) {
     for ( let i = 1 ; i <= studentClasses.length ; i++ )
-      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: sp[prop], notes: prefNotes(prop, allCounts[i?studentClasses[i-1]:'']) });
+      makeSingleSelect(prop + '-' + i, studentOptions[prop], { placeholder: sp[prop], notes: prefNotes(prop, allCounts[studentClasses[i-1]||'']) });
   }
 
   makeCheckboxGrid();
@@ -871,18 +903,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('input:text').attr('autocomplete','off');
 
-  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerMakeActive(e.target); });
+  $('.htoggler-nav').click(function(e) { e.preventDefault(); htogglerActivate(e.target); });
   $('.toggler-nav').click(function(e) { e.preventDefault(); togglerIndex(parseInt(e.target.id.split('-')[1])); return false; });
+
   togglerIndex(0);
 
   $('input[name="classes"]').data('initial',$('input[name="classes"]').val());
   $('#student').data('initial',$('#student').serialize());
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
-
   $('.htoggler').keydown(function(e){
     if ( e.which === 37 || e.which === 39 ) {
-      htogglerMakeActive(document.getElementById($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header'));
+      htogglerActivate($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header');
     }
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('htoggler-active') ) { $('.htoggler-active').focus(); }});
@@ -895,17 +927,16 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('.toggler-nav').focusin(function(e){ if ( ! e.target.classList.contains('toggler-active') ) { $('.toggler-active').focus(); }});
   if ( ctx.scrollTop ) window.setTimeout(function() { $(window).scrollTop(ctx.scrollTop); }, 0);
-  if ( 'ht' in toggles ) htogglerMakeActive (document.getElementById(toggles.ht));
-  else  htogglerMakeActive(document.getElementById('partner-header'));
-  if ( 'ct' in toggles ) togglerIndex (toggles.ct?studentClasses.indexOf(toggles.ct)+1:0);
-  else togglerIndex (studentClasses.length);
-  if ( 'pp' in toggles ) setProfileToggle ('pp', toggles.pp);
-  if ( 'tp' in toggles ) setProfileToggle ('tp', toggles.tp);
+  profileToggle ('pp', toggles.pp || ( $('input[name="preferred_name"]').val().trim() ? 1 : 0));
+  profileToggle ('tp', toggles.tp || 1);
+  htogglerActivate (toggles.ht || 'partner-header');
+  togglerIndex (studentClasses.indexOf(toggles.ct)+1 || studentClasses.length);
   
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();
   window.onbeforeunload = function (e) { return (pending() && !submitting) ? true : undefined; };
+  loaded = true;
   console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 </script>

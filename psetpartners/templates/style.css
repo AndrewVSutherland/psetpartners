@@ -20,7 +20,7 @@
   --button-fill: #a31f34;
   --slider-fill: var(--mit-maroon);
   --input-border-color: var(--mit-maroon);
-  --input-border-width: 1.5px;
+  --input-border-width: 1.25px;
   font-family: Verdona, Geneva, sans-serif;
 }
 
@@ -28,17 +28,29 @@
 :not(input):not(textarea),
 :not(input):not(textarea)::after,
 :not(input):not(textarea)::before {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    cursor: default;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 ::selection {
-    background: var(--select-fill);
+  background: var(--select-fill);
 }
 ::-moz-selection {
-    background: var(--select-fill);
+  background: var(--select-fill);
+}
+input.hidden {
+  position: absolute;
+  left: -10px;
+  margin: 0;
+  padding: 0;
+  width: 1px;
+  height: 1px;
+  color: white;
+  background-color: white;
+  border: none;
+  outline: none;
 }
 
 html, body {

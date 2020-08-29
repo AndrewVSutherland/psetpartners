@@ -11,7 +11,7 @@
   <p>On the live site your user identifier will automatically be set to your kerberos identifier following touchstone authentication.  Only registered MIT students and staff are able to access the live site, but anyone can play in the sandbox.  Note that all information in the sandbox database is accessible to everyone (just like a real sandbox), so please do not enter any private information.</p>
   <p>The sandbox database is randomly refreshed every few days, so don't get too attached to any of the information you enter.</p>
 
-  <form name="login" action="{{ url_for('.login') }}" method="POST">
+  <form name="login" action="{{ url_for('.login', next=next) }}" method="POST">
     <table>
       <tr>
         <td class="caption" style="width:110px" tabindex="1">User identifier:</td>

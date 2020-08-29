@@ -148,3 +148,41 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
   $('#'+id).keyup(function(evt) { evt.preventDefault(); showURLtest(id, test_id, test_anchor, errmsg);});
   showURLtest(id, test_id, test_anchor, errmsg);
 }
+
+function flashAnnounce(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-info'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashInstruct(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-instruct'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashError(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-error'); p.appendChild(t);
+  document.getElementById('flash-top').appendChild(p);
+}
+
+function flashInfo(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-info'); p.appendChild(t);
+  document.getElementById('flash-bottom').appendChild(p);
+  jQuery(p).fadeOut(5000);
+}
+
+function flashWarning(msg) {
+  const p = document.createElement('P'), t = document.createTextNode(msg);
+  p.classList.add('flash-warning'); p.appendChild(t);
+  document.getElementById('flash-bottom').appendChild(p);
+  jQuery(p).fadeOut(10000);
+}
+
+function copyToClipboard(msg) {
+  const q = $('#clipboard');  // should be an input with class hidden (but not type hidden)
+  q.val(msg); q.select();
+  return document.execCommand('copy');
+}

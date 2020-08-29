@@ -1,6 +1,8 @@
 import re
 from . import app
+from .app import debug_mode
 from .dbwrapper import getdb, students_in_class, students_in_group, count_rows
+from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
 from .utils import (
@@ -11,6 +13,7 @@ from .utils import (
     hours_from_default,
     flash_announce
     )
+from .token import generate_timed_token
 from .group import generate_group_name
 from psycodict import DelayCommit
 
@@ -287,10 +290,10 @@ def student_counts(iter, opts):
             val = str(r.get(opt,""))
             counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
         for opt in pref_opts:
-            val = str(r['preferences'].get(opt,"")) if 'preferences' in r else ""
+            val = str(r['preferences'].get(opt,"")) if r.get('preferences') else ""
             counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
         for opt in prop_opts:
-            val = str(r['properties'].get(opt,"")) if 'properties' in r else ""
+            val = str(r['properties'].get(opt,"")) if r.get('properties') else ""
             counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
         if count_departments:
             for dept in r.get('departments',[]):
@@ -445,9 +448,14 @@ class Student(UserMixin):
     def get_id(self):
         return lambda: getattr(self, 'kerb', None)
 
+    def send_message(self, msg, sender_kerb=None):
+        r = {'content': msg, 'recipient_kerb': self.kerb}
+        if sender_kerb:
+            r['sender_kerb'] = sender_kerb
+        self._db.messages.insert_many([r])
+
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            print(msg)
             flash_announce("%s:%s" % (msg['id'], msg['content']))
 
     def acknowledge(self, msgid):
@@ -478,9 +486,38 @@ class Student(UserMixin):
         with DelayCommit(self):
             return self._create_group(group_id, public=public)
 
+    def accept_invite(self, invite):
+        sid = self._db.students.lookup(invite['kerb'], projection='id')
+        if sid is None:
+            raise ValueError("Unknown student.")
+        g = self._db.groups.lucky({'id': invite['group_id']}, projection=3)
+        if g is None:
+            raise ValueError("Group not found.")
+        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': sid}, projection="id"):
+            raise ValueError("The student who created the invitation is no longer a member of the group.")
+        if g['year'] != current_year() or g['term'] != current_term():
+            raise ValueError("This invitation is from a previous term.")
+        gid = self._db.grouplist.lucky({'class_number': g['class_number'], 'year': g['year'], 'term': g['term'], 'student_id': self.id}, projection='group_id')
+        if gid is not None:
+            if gid != g['id']:
+                raise ValueError("You are currently a mamber of a different group in %s\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
+        if not g['class_number'] in self.classes:
+            self.classes.append(g['class_number'])
+            with DelayCommit(self):
+                self._save()
+        if gid == g['id']:
+            self.send_message("You are already a member of the group %s in %s.  Welcome back!" % (g['group_name'], g['class_number']))
+        else:
+            self.join(g['id'])
+            self.send_message("Welcome to the group %s in %s!" % (g['group_name'], g['class_number']))
+        self.update_toggle('ct', g['class_number'])
+        self.update_toggle('ht', 'partner-header')
+
     def update_toggle(self, name, value):
         if not name:
             return "no"
+        if self.toggles.get(name) == value:
+            return "ok"
         print("updated toggle " + name + " to " + value);
         self.toggles[name] = value;
         self._db.students.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
@@ -513,14 +550,13 @@ class Student(UserMixin):
             r = q.copy()
             r['class_id'] = class_id
             r['class_number'] = class_number
-            r['properties'] = self.class_data[class_number].get('properties',None)
-            if class_number in self.class_data and any([self.class_data[class_number]['preferences'] != self.preferences,
-                self.class_data[class_number]["strengths"] != self.strengths]):
-                r['preferences'] = self.class_data[class_number]['preferences']
-                r['strengths'] = self.class_data[class_number]['strengths']
-            else:
-                r['preferences'] = None
-                r['strengths'] = None
+            r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+            # if user was just added to the class (e.g. via an invitation) we may not have any class_data for it
+            if class_number in self.class_data:
+                r['properties'] = self.class_data[class_number].get('properties', {})
+                if self.class_data[class_number].get('preferences') is not None and any([self.class_data[class_number]['preferences'] != self.preferences, self.class_data[class_number]["strengths"] != self.strengths]):
+                    r['preferences'] = self.class_data[class_number]['preferences']
+                    r['strengths'] = self.class_data[class_number]['strengths']
             S.append(r)
         S = sorted(S, key=lambda x: x['class_id'])
         T = sorted(self._db.classlist.search(q), key=lambda x: x['class_id'])
@@ -654,6 +690,8 @@ class Student(UserMixin):
             members = list(students_in_group(gid))
             g['count'] = len(members)
             g['members'] = sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members])
+            token = generate_timed_token({'kerb':self.kerb, 'group_id': str(g['id'])}, 'invite')
+            g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
             group_data[g['class_number']] = g
         return group_data
 

@@ -212,23 +212,6 @@ def routes():
             links.append((url, str(rule)))
     return sorted(links, key=lambda elt: elt[1])
 
-@app.route("/sitemap")
-def sitemap():
-    """
-    Listing all routes
-    """
-    return (
-        "<ul>"
-        + "\n".join(
-            [
-                '<li><a href="{0}">{1}</a></li>'.format(url, endpoint)
-                if url is not None
-                else "<li>{0}</li>".format(endpoint)
-                for url, endpoint in routes()
-            ]
-        )
-        + "</ul>"
-    )
 
 ##############################
 #       CSS Styling          #
