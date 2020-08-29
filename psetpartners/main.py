@@ -15,8 +15,9 @@ from flask_login import (
     current_user,
     LoginManager,
 )
+from .token import read_timed_token
 from datetime import datetime
-from .app import app, livesite, debug_mode, under_construction, send_email
+from .app import app, livesite, debug_mode, under_construction, send_email, routes
 from .student import (
     Student,
     Instructor,
@@ -45,6 +46,9 @@ from .utils import (
 )
 
 def is_safe_url(target):
+    if debug_mode() and target.startswith('/'):
+        print("Allowing target %s in debug mode" % target)
+        return True
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme == "https" and ref_url.netloc == test_url.netloc
@@ -66,7 +70,7 @@ def load_user(kerb):
         app.logger.warning("load_user failed on kerb=%s" % kerb)
         return None
 
-login_manager.login_view = "student"
+login_manager.login_view = "login"
 login_manager.session_protection = "strong" # Important, this prevents session cookies from being stolen by a rogue
 login_manager.anonymous_user = AnonymousUser
 
@@ -87,6 +91,17 @@ KERB_RE = re.compile(r"^[a-z0-9][a-z0-9][a-z0-9]+$")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    next = request.args.get('next')
+    if next and not is_safe_url(next):
+        return render_template("500.html", message="Unauthorized redirect."), 500
+    if current_user.is_authenticated:
+        next = request.args.get('next')
+        if next:
+            if not is_safe_url(next):
+                return render_template("500.html", message="Unauthorized redirect."), 500
+            else:
+                return redirect(next)
+        return redirect(url_for('.index'))
     if livesite():
         if request.method != "GET":
             return render_template("500.html", message="Invalid login method"), 500
@@ -100,20 +115,15 @@ def login():
         affiliation = affiliation.split("@")[0]
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
-            return render_template("500.html", message="Invalid login method"), 500
+            return render_template("login.html", maxlength=maxlength, next=next)
         kerb = request.form.get("kerb", "").lower()
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
-            return render_template("login.html", maxlength=maxlength)
+            return render_template("login.html", maxlength=maxlength, next=next)
         affiliation = "staff" if is_instructor(kerb) else "student"
 
     if not kerb or not affiliation:
         return render_template("500.html", message="Missing login credentials"), 500
-
-    # We don't currently use next, but we might later, so let's validate now
-    next = request.args.get('next')
-    if next and not is_safe_url(next):
-        return render_template("500.html", message="Unauthorized redirect."), 500
 
     if affiliation == "student":
         user = Student(kerb)
@@ -126,6 +136,8 @@ def login():
     login_user(user, remember=False)
     app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
         (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
+    if next:
+        return redirect(next)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/loginas/<kerb>")
@@ -248,6 +260,25 @@ def counts_groups():
     gopts = [x for x in request.args.get('opts',"").split(",") if x and x in allowed_gopts]
     return json.dumps({'counts': get_counts(classes, copts if copts else allowed_copts),
                        'groups': {c: class_groups(c, gopts if gopts else allowed_gopts) for c in classes}})
+
+@app.route("/accept/<token>")
+@login_required
+def accept_invite(token):
+    from itsdangerous import BadSignature
+    try:
+        invite = read_timed_token(token, 'invite')
+    except ValueError:
+        flash_error("This invitation link has expired.  Please ask the sender to create a new invitation for you.")
+        return redirect(url_for(".student"))
+    except BadSignature:
+        flash_error("Invalid or corrupted invitation link.")
+        return redirect(url_for(".student"))
+    try:
+        current_user.accept_invite(invite)
+    except Exception as err:
+        app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
+        flash_error("Unable to process invitation: %s" % err)
+    return redirect(url_for(".student"))
 
 @app.route("/student")
 def student(context={}):
@@ -437,3 +468,22 @@ def logout():
         resp = make_response(render_template("goodbye.html"))
     resp.set_cookie('sessionID','',expires=0)
     return resp
+
+@app.route("/sitemap")
+@login_required
+def sitemap():
+    """
+    Listing all routes
+    """
+    return (
+        "<ul>"
+        + "\n".join(
+            [
+                '<li><a href="{0}">{1}</a></li>'.format(url, endpoint)
+                if url is not None
+                else "<li>{0}</li>".format(endpoint)
+                for url, endpoint in routes()
+            ]
+        )
+        + "</ul>"
+    )
