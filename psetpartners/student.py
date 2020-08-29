@@ -500,16 +500,16 @@ class Student(UserMixin):
         gid = self._db.grouplist.lucky({'class_number': g['class_number'], 'year': g['year'], 'term': g['term'], 'student_id': self.id}, projection='group_id')
         if gid is not None:
             if gid != g['id']:
-                raise ValueError("You are currently a mamber of a different group in %s\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
+                raise ValueError("You are currently a mamber of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
         if not g['class_number'] in self.classes:
             self.classes.append(g['class_number'])
             with DelayCommit(self):
                 self._save()
         if gid == g['id']:
-            self.send_message("You are already a member of the group %s in %s.  Welcome back!" % (g['group_name'], g['class_number']))
+            self.send_message("You are currently a member of the <b>%s</b> pset group <b>%s</b>.  Welcome back!" % (g['class_number'], g['group_name']))
         else:
             self.join(g['id'])
-            self.send_message("Welcome to the group %s in %s!" % (g['group_name'], g['class_number']))
+            self.send_message("Welcome to the <b>%s</b> pset group <b>%s</b>!" % (g['class_number'], g['group_name']))
         self.update_toggle('ct', g['class_number'])
         self.update_toggle('ht', 'partner-header')
 
@@ -518,7 +518,6 @@ class Student(UserMixin):
             return "no"
         if self.toggles.get(name) == value:
             return "ok"
-        print("updated toggle " + name + " to " + value);
         self.toggles[name] = value;
         self._db.students.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
         return "ok"
@@ -584,7 +583,7 @@ class Student(UserMixin):
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         self._reload()
-        return "Welcome to %s!" % g['group_name']
+        return "Welcome to <b>%s</b>!" % g['group_name']
 
     def _leave(self, group_id):
         g = self._db.groups.lucky({'id': group_id})
@@ -600,7 +599,7 @@ class Student(UserMixin):
             raise ValueError("Group not found in your list of groups for this term.")
         self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id}, resort=False)
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0}, resort=False)
-        msg = "You have been removed from the group %s in %s." % (g['group_name'], c)
+        msg = "You have been removed from the group <b>%s</b> in <b>%s</b>." % (g['group_name'], c)
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
             self._db.groups.delete({'id': group_id}, resort=False)
             self._reload()
@@ -624,7 +623,7 @@ class Student(UserMixin):
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
         d = next_match_date(class_id)
         self._reload()
-        return "You are now in the match pool for %s and will be matched on %s." %(c, d)
+        return "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
 
     def _match(self, class_id):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
@@ -640,7 +639,7 @@ class Student(UserMixin):
             return "We are already working on a match for you in %s, please be patient!" % c
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3}, resort=False)
         self._reload()
-        return "We will start working on a match for you in %s, you should receive an email from us within 24 hours." % c
+        return "We will start working on a match for you in <b>%s</b>, you should receive an email from us within 24 hours." % c
 
     def _create_group(self, class_id, public=True):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
@@ -663,7 +662,7 @@ class Student(UserMixin):
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
         self._reload()
-        return "Created the group %s!" % g['group_name']
+        return "Created the group <b>%s</b>!" % g['group_name']
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}

@@ -104,6 +104,8 @@ class SelectPure {
   reset() { this._setValue(null); }
   open() { return this._open(); }
   close() { return this._close(); }
+  toggle() { return this._state.opened ? this._close() : this._open(); }
+  match(str) { return this._match(str); }
   next() { return this._next(); }
   prev() { return this._prev(); }
   notes(v) { if ( v !== undefined ) { this._setNotes(v); } else return this._getNotes(); }
@@ -181,8 +183,8 @@ class SelectPure {
     this._body.addEventListener("click", this._boundHandleClick);
     this._select.removeEventListener("click", this._boundHandleClick);
     // manually implement overflow-y:auto (css won't work in firefox)
-    this._optionsWrapper._node.style.overflowY =
-      this._optionsWrapper._node.scrollHeight <= this._optionsWrapper._node.clientHeight+2 ? 'hidden' : 'scroll';
+    const wrapper = this._optionsWrapper.get();
+    wrapper.style.overflowY = wrapper.scrollHeight <= wrapper.clientHeight+2 ? 'hidden' : 'scroll';
     this._state.opened = true;
     if ( this._autocomplete ) this._autocomplete.focus();
     return true;
@@ -193,15 +195,24 @@ class SelectPure {
       this._select.removeClass(this._config.classNames.selectOpen);
       this._body.removeEventListener("click", this._boundHandleClick);
       this._select.addEventListener("click", this._boundHandleClick);
+      if ( this._autocomplete ) this._match('');
       this._state.opened = false;
       return true;
+  }
+
+  _match(str) {
+    if ( ! this._autocomplete ) return false;
+    this._autocomplete.get().value = str;
+    this._narrowOptions(str);
+    this._open();
   }
 
   _next() {
     if ( this._config.multiple ) return false;
     let i = this._config.options.findIndex(x => x.value === this._config.value);
     if ( i < 0 ) i = 0;
-    for ( i++ ; i < this._config.options.length && this._config.options[i].disabled ; i++ );
+    for ( i++ ; i < this._config.options.length &&
+                (this._config.options[i].disabled || this._options[i].get().classList.contains(this._config.classNames.optionHidden)) ; i++ );
     if ( i >= this._config.options.length ) return false;
     this._setValue(this._config.options[i].value);
     return true;
@@ -211,7 +222,7 @@ class SelectPure {
     if ( this._config.multiple ) return false;
     let i = this._config.options.findIndex(x => x.value === this._config.value);
     if ( i < 1 ) return false;
-    for ( i-- ; i && this._config.options[i].disabled ; i-- );
+    for ( i-- ; i >= 0 && (this._config.options[i].disabled || this._options[i].get().classList.contains(this._config.classNames.optionHidden)) ; i-- );
     if ( i < 0 ) return false;
     this._setValue(this._config.options[i].value);
     return true;
@@ -318,13 +329,15 @@ class SelectPure {
     this._setValues(newValue);
   }
 
-  _narrowOptions(event) {
-    this._options.forEach(_option => {
-      if ( ! _option.get().textContent.toLowerCase().includes(event.target.value.toLowerCase()) ) {
-        _option.addClass(this._config.classNames.optionHidden);
-        return;
+  _narrowOptions(e) {
+    const s = typeof(e) === 'string' ? e : (e.target.value||'');
+    if ( s ) {
+      for (const _option of this._options) {
+        if ( ! _option.get().textContent.toLowerCase().includes(s.toLowerCase()) ) _option.addClass(this._config.classNames.optionHidden);
+        else _option.removeClass(this._config.classNames.optionHidden);
       }
-      _option.removeClass(this._config.classNames.optionHidden);
-    });
+    } else {
+      for (const _option of this._options) _option.removeClass(this._config.classNames.optionHidden);
+    }
   }
 }

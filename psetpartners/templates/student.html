@@ -15,7 +15,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <div class="profile-toggler">
   <label id="pp-caption" >Personal profile</label>
-  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1" onclick="profileToggle(this);" return false;></label>
+  <label id="pp-toggler" class="profile-toggler-toggle" tabindex="1" onclick="profileToggle(this);"></label>
 </div>
 <div style="clear:both;"></div>
 <div id="pp">
@@ -128,10 +128,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   </table>
   <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
 </div>
-  <div class="htoggler" tabindex="12">
-    <label class="htoggler-nav htoggler-active" id="pref-header">Preferences</label>
+  <div class="htoggler">
+    <label class="htoggler-nav htoggler-active" id="pref-header" tabindex="0">Preferences</label>
     <label class="htoggler-after"></label>
-    <label class="htoggler-nav htoggler-inactive" id="partner-header">Partners</label>
+    <label class="htoggler-nav htoggler-inactive" id="partner-header" tabindex="12">Partners</label>
   </div>
   <div style="clear:both;"></div>
 
@@ -283,7 +283,7 @@ function profileToggle(e, state) {
   const id = e.id.split('-')[0];
   const q = '#' + id;
   const qo = q + ' tr.profile-optional';
-  const speed = loaded ? 0 : 0;
+  const speed = loaded ? 100 : 0;
   if ( state ) {
     if ( $(q).is(':visible') ) {
       $(qo).fadeIn(speed);
@@ -298,19 +298,18 @@ function profileToggle(e, state) {
       $(q).fadeOut(speed);
     }
   }
-  console.log(id);
-  console.log(state);
   e.textContent = profileOptions[state];
   ajaxToggle(id, state);
-  if ( !state && id == 'pp' ) ppCaption();
+  if ( id == 'pp' ) ppCaption(state);
 }
 
-function ppCaption() {
+function ppCaption (state) {
   let cap = 'Personal profile';
-  const name = $('#preferred_name').val().trim();
-  if ( name !== '' ) cap += ' for ' + name;
+  if ( !state ) {
+    const name = $('#preferred_name').val().trim();
+    if ( name !== '' ) cap += ' for ' + name;
+  }
   document.getElementById('pp-caption').textContent = cap;
-  console.log(cap);
 }
 
 function showTimezoneOffset() {
@@ -468,10 +467,10 @@ function partnerActionButtons(c) {
 }
 
 function partneredActionButtons(c, gid) {
-  let btab = '<table class="btab" style="float:right;">\n<tbody><tr><td>';
-  btab += `<label class="paction" onclick="copyInvitation(this,'${c}')">create an invitation link</label></td>`;
-  btab += `<label class="naction" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
-  btab += '</tr>\n</tbody></table><div style="clear:both;"></div>';
+  let btab = '<table style="min-width: 100%;" class="btab">\n<tbody><tr>';
+  btab += `<td style="min-width: 100%; margin:0; padding:0;"><label class="paction" style="margin-left: 390px;" onclick="copyInvitation(this,'${c}')">create an invitation link</label>`;
+  btab += `<label class="naction" style="float:right;" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
+  btab += '</tr>\n</tbody></table>';
   return btab;
 }
 
@@ -499,11 +498,11 @@ function setPartnerPanes() {
         let v = [0,0,0,0];
         for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
         const w = v[2]+v[3];
-        const wt = w ? (w==1?"one is":w+" are") : "none are";
-        const tg = g > 1 ? "one of the " + g + " pset groups that have" : "the one pset group that has";
-        let msg = `There are ${s} students who have ${c} listed on pset partners. `;
+        const wt = w ? (w==1?"one is":"<b>"+w+"</b> are") : "none are";
+        const tg = g > 1 ? "one of the <b>" + g + "</b> pset groups that have" : "the one pset group that has";
+        let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
         if ( sg ) {
-          msg += `Currently ${sg} of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
@@ -515,30 +514,30 @@ function setPartnerPanes() {
           }
           if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to join or create a group or request a more urgent match by clinking on one of the links below. `;
+              msg += `<br><br>You are currently in the pool for <b>${c}</b> to be matched on <b>${allCounts[c].next_match_date}</b> but are free to join or create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
             } else if ( classData[c].status == 4 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
             }
           } else {
-            msg += '<br><br>To find a pset partner, click any of the action buttons below. ';
+            msg += '<br><br>To find a pset partner, click any of the bold action links. ';
           }
         } else {
           msg += 'All of these students are still looking for pset partners! ';
           if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the pool for ${c} to be matched on ${allCounts[c].next_match_date} but are free to create a group or request a more urgent match by clinking on one of the links below. `;
+              msg += `<br><br>You are currently in the pool for <b>${c}</b> to be matched on <b>${allCounts[c].next_match_date}</b> but are free to create a group or request a more urgent match by clinking on one of the links below. `;
             } else if ( classData[c].status == 3 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which will be processed shortly. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly. `;
             } else if ( classData[c].status == 4 ) {
-              msg += `<br><br>You have requested an urgent match for ${c} which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
+              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. `;
             }
           } else {
-            msg += '<br><br>To find a pset partner, click any of the highlighted action links below. ';
+            msg += '<br><br>To find a pset partner, click any of the bold action links. ';
           }
         }
-        msg += 'Each button will tell you exactly what is going to happen and ask for confirmation before proceeding, so you click confidently!';
+        msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding, so click with confidence!';
         $('#partner-summary-'+(i+1)).html(msg);
         $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
       }
@@ -704,12 +703,16 @@ function applyPreferences() {
 function htogglerActivate(e) {
     if ( typeof(e) == 'string' ) e = document.getElementById(e);
     if ( e.classList.contains('htoggler-active') ) return false;
+    const i = $('.htoggler-inactive').attr('tabindex');
     $('.htoggler-active').addClass('htoggler-inactive');
     $('.htoggler-active').removeClass('htoggler-active');
     e.classList.remove("htoggler-inactive");
     e.classList.add("htoggler-active");
     if ( e.id === "pref-header" ) { $('.partner').hide(); $('.pref').show(); }
     if ( e.id === "partner-header" ) { $('.pref').hide(); $('.partner').show(); }
+    $('.htoggler-active').attr('tabindex',0);
+    $('.htoggler-inactive').attr('tabindex',i);
+    $('.htoggler-inactive').focus();
     ajaxToggle('ht', e.id); 
     return true;
 }
@@ -879,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if ( tz != "MIT" && ! $('#location').val() ) $('#location').val('far');
   }
   makeSingleSelect('location', studentOptions.location, {});
-  makeSingleSelect('timezone', timezoneOptions, {});
+  makeSingleSelect('timezone', timezoneOptions, { autocomplete: true });
   const sp = studentPlaceholders;
   makeSingleSelect('year', studentOptions.year, { placeholder: sp.year });
   makeSingleSelect('gender', studentOptions.gender, { placeholder: sp.gender });
@@ -912,8 +915,9 @@ document.addEventListener('DOMContentLoaded', function() {
   $('#student').data('initial',$('#student').serialize());
   $('#student :input').change(checkChanges);
   $('#student :text').keyup(checkChanges);  /* this is overkill but the only way to catch all changes in real time */
+  $('.profile-toggler-toggle').keydown(function(e){ if ( e.which == 13 || (e.which >= 32 && e.which <= 40) ) profileToggle(e.target); });
   $('.htoggler').keydown(function(e){
-    if ( e.which === 37 || e.which === 39 ) {
+    if ( e.which == 13 || (e.which >= 32 && e.which <= 40) ) {
       htogglerActivate($('.htoggler-active').attr('id') === 'pref-header' ? 'partner-header' : 'pref-header');
     }
   });
@@ -931,7 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
   profileToggle ('tp', toggles.tp || 1);
   htogglerActivate (toggles.ht || 'partner-header');
   togglerIndex (studentClasses.indexOf(toggles.ct)+1 || studentClasses.length);
-  
+
   showAffinityPreferences();
   showApplyPreferences();
   computeHoursCompatible();

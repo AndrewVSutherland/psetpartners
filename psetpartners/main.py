@@ -37,7 +37,6 @@ from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
-    flash_announce,
     flash_error,
     process_user_input,
     maxlength,
@@ -277,8 +276,6 @@ def accept_invite(token):
     try:
         current_user.accept_invite(invite)
     except Exception as err:
-        if debug_mode():
-            raise
         app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
         flash_error("Unable to process invitation: %s" % err)
     return redirect(url_for(".student"))

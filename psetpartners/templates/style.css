@@ -469,14 +469,21 @@ table.btab td {
 }
 
 label.paction, label.naction {
-  color: var(--mit-maroon);
   cursor: pointer;
-  font-size: 90%;
+  font-size: 95%;
   font-weight: bold;
-  background: var(--lightest-gray);
-  border-radius: 8px;
-  border-bottom: solid 1.5px var(--light-gray);
+  text-shadow: 0px 1px 1px var(--lighter-gray);
   padding: 1px 8px 2px 8px;
+  white-space: nowrap;
+}
+
+label.paction {
+  color: var(--mit-maroon);
+}
+
+label.naction {
+  font-size: 80%;
+  color: black;
 }
 
 label.paction:hover {
@@ -507,7 +514,7 @@ div.caction p i {
   margin: 0 0 0 0;
 }
 
-.htoggler:focus, .profile-toggler-toggle:focus {
+.htoggler:focus {
   outline: none;
 }
 
@@ -523,16 +530,21 @@ div.caction p i {
   background: var(--lighter-gray);
   border: var(--input-border-width) solid var(--input-border-color);
   border-radius: 11px;
-  //border-bottom: solid 4px var(--light-gray);
   padding: 1px 6px;
   font-size: 14px;
   font-weight: bold;
+  outline: none;
+}
+
+.htoggler-inactive:focus, .profile-toggler-toggle:focus {
+  border: 1.75px solid var(--input-border-color);
 }
 
 .htoggler-active {
   margin: 0;
   float: left;
   color: black;
+  outline:none;
 }
 
 .htoggler-inactive:hover, .profile-toggler-toggle:hover {
@@ -669,11 +681,11 @@ input:-webkit-autofill:active  {
 */
 
 :root {
-  --cbg-cell-height: 13px;
-  --cbg-cell-width: 30px;
-  --cbg-cell-horizontal-spacing: 2px;
-  --cbg-cell-vertical-spacing: 2px;
-  --cbg-font-size: 12px; /* only relevant for captions, which are up to the html to include */
+  --cbg-cell-height: 16px;
+  --cbg-cell-width: 32px;
+  --cbg-cell-horizontal-spacing: 1px;
+  --cbg-cell-vertical-spacing: 0px;
+  --cbg-font-size: 11px; /* only relevant for captions, which are up to the html to include */
   --cbg-border-radius: 3px;
   --cbg-checked-color: var(--mit-maroon);
   --cbg-unchecked-color: var(--light-gray);

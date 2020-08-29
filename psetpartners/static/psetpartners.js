@@ -7,6 +7,8 @@
 
 /* globals SelectPure */
 
+function isAlphaNumeric(code) { return ( (code > 47 && code < 58) || (code > 64 || code < 91) || (code > 96 && code < 123) ); }
+
 function makeSingleSelect(id, available, config) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw 'No input element with id ' + id;
@@ -21,12 +23,23 @@ function makeSingleSelect(id, available, config) {
     placeholder: config.placeholder,
     notes: config.notes,
   });
+  // TODO move this event handling into select-pure.js
+  if ( config.autocomplete ) {
+    s._autocomplete.addEventListener('keydown', function(evt) {
+      if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
+    });
+    se.addEventListener('keypress', function(evt) { s.open(); });
+  } else {
+    se.addEventListener('focusout', function(evt) { s.close(); });
+  }
   se.addEventListener('keydown', function(evt) {
-    if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); }
-    else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); }
-    else if ( evt.which === 27 ) s.close();
+    if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); evt.preventDefault(); }
+    else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
+    else if ( evt.which === 27 || evt.which === 33 ) s.close();
+    else if ( evt.which === 34 ) s.open();
+    else if ( evt.which === 13 ) s.toggle();
   });
-  se.addEventListener('focusout', function(evt) { s.close(); });
+ 
   e.value = s.value();
   jQuery(e).data('select',s);
   return s;
@@ -68,14 +81,15 @@ function makeMultiSelect(id, available, config) {
     shortTags: config.shortTags,
     notes: config.notes,
   });
+  // TODO move this event handling into select-pure.js
   if ( config.autocomplete ) {
     s._autocomplete.addEventListener('keydown', function(evt) {
       if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
     });
   } else {
     se.addEventListener('keydown', function(evt) {
-      if ( evt.which === 39 || evt.which === 40 ) s.open();
-      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 ) s.close();
+      if ( evt.which === 39 || evt.which === 40 || evt.which === 34 ) s.open();
+      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 || evt.which == 33 ) s.close();
     });
     se.addEventListener('focusout', function(evt) { s.close(); });
   }
