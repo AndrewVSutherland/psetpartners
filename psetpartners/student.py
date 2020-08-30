@@ -518,7 +518,8 @@ class Student(UserMixin):
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            flash_announce("%s`%s" % (msg['id'], msg['content']))
+            content = ''.join(msg['content'].split('`')) # remove any backticks since we are using them as a separator
+            flash_announce("%s`%s" % (msg['id'], content))
 
     def acknowledge(self, msgid):
         self._db.messages.update({'id': msgid},{'read':True}, resort=False)
@@ -884,7 +885,8 @@ class Instructor(UserMixin):
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            flash_announce("%s`%s" % (msg['id'], msg['content']))
+            content = ''.join(msg['content'].split('`')) # remove any backticks since we are using them as a separator
+            flash_announce("%s`%s" % (msg['id'], content))
 
 
 class AnonymousUser(AnonymousUserMixin):
