@@ -519,7 +519,7 @@ class Student(UserMixin):
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            flash_announce("%s:%s" % (msg['id'], msg['content']))
+            flash_announce("%s|%s" % (msg['id'], msg['content']))
 
     def acknowledge(self, msgid):
         self._db.messages.update({'id': msgid},{'read':True}, resort=False)
