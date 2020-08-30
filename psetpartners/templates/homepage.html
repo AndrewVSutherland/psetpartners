@@ -164,7 +164,7 @@
         {%- endwith %}
         {% with msgs = get_flashed_messages(category_filter=["announce"]) -%}
           {% for msg in msgs -%}
-            {% set parts = msg.split("|") %}
+            {% set parts = msg.split("`") %}
             <p class="flash-announce">
               {{parts[1]|safe}}<label class="flash-after" onclick="ack({{parts[0]}}); this.parentElement.style.display='none';" > [ok]</label>
             </p>
