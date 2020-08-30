@@ -446,19 +446,16 @@ p.flash-error::before {
 
 table.mtab, table.gtab, table.ctab {
   margin: 0 auto;
+  border-bottom: 1px solid #222;
 }
 
 table.mtab th, table.gtab th {
   padding: 2px;
-  border-bottom: 1px solid black;
+  border-bottom: 1px solid #222;
 }
 
 table.mtab td, table.gtab td, table.ctab td {
   padding: 2.5px 20px;
-}
-
-table.mtab tbody, table.gtab tbody {
-  //* border-bottom: 1px solid black; */
 }
 
 table.btab {

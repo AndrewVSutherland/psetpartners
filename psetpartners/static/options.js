@@ -83,19 +83,19 @@ const locationOptions = [
 
 const startOptions = [
   { label: '', value: '' },
-  { label: 'shortly after the problem set is posted', value: '6', },
-  { label: '3-4 days before the pset is due', value: '4', },
-  { label: '1-2 days before the pset is due', value: '2', },
+  { label: 'early, shortly after the problem set is posted', value: '1', },
+  { label: 'middle, at least 3 days before the pset is due', value: '2', },
+  { label: 'late, a few days before the pset is due', value: '3', },
 ];
-const startShort = ["", "early", "midway", "late"];
+const startShort = ["", "early", "middle", "late"];
 
 const togetherOptions = [
   { label: '', value: '' },
   { label: 'solve the problems together', value: '1', },
-  { label: 'discuss strategies, work together if stuck', value: '2', },
+  { label: 'discuss strategies, help each other when stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
-const togetherShort = ["", "unified", "collegial", "independent"];
+const togetherShort = ["", "together", "collegial", "soloists"];
 
 const forumOptions = [
   { label: '', value: '' },
@@ -141,8 +141,8 @@ const gender_affinityOptions = [
 const commitmentOptions = [
   { label: '', value: '' },
   { label: 'still shopping and/or not taking for credit', value: '1' },
-  { label: 'other courses might be a higher priority', value: '2' },
-  { label: 'This course is a top priority', value: '3' },
+  { label: 'other courses might be higher priority', value: '2' },
+  { label: 'This course is a top priority for me', value: '3' },
 ];
 const confidenceOptions = [
   { label: '', value: '' },
