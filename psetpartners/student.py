@@ -22,10 +22,9 @@ default_strength = "preferred" # only relevant when preference is set to non-emt
 
 student_welcome = """
 <b>Welcome to pset partners!</b>
-To begin, enter your preferred name and any other personal details you care to share.
-Then select your location, timezone, the math classes you are taking this term, and your hours of availability
-(include hours of partial availability).  You can then explore your options for finding pset partners using
-the Preferences and Partners buttons.
+To begin, enter your preferred name and any other personal details you care to share.<br>
+Then select your location, timezone, the math classes you are taking this term, and hours of availability (include partial hours).<br>
+You can then explore your options for finding pset partners using the Preferences and Partners buttons.
 """
 
 instructor_welcome = """
@@ -262,12 +261,13 @@ def is_admin(kerb):
     return db.admins.lucky({'kerb': kerb})
 
 def send_message(sender, recipient, typ, content):
+    print("sending " + content)
     db = getdb()
     db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}], resort=False)
 
-def log_event(kerb, event, detail={}):
+def log_event(kerb, event, detail={}, status=0):
     db = getdb()
-    db.events.insert_many([{'kerb': kerb, 'timestamp': datetime.datetime.now(), 'event': event, 'detail': detail}], resort=False)
+    db.events.insert_many([{'kerb': kerb, 'timestamp': datetime.datetime.now(), 'status': status, 'event': event, 'detail': detail}], resort=False)
 
 def next_match_date(class_id):
     import datetime
@@ -413,15 +413,17 @@ class Student(UserMixin):
         data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None:
             data = { col: None for col in self._db.students.col_type }
-            data["kerb"] = kerb
-            data["id"] = -1
-            data["new"] = True
+            data['kerb'] = kerb
+            data['id'] = -1
+            data['new'] = True
+            data['last_login'] =  datetime.datetime.now()
+            data['last_seen'] = data['last_login']
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", student_welcome)
             log_event (kerb, 'new')
         else:
             data["new"] = False
-            log_event (kerb, 'load', {'student_id': data['id']})
+            log_event (kerb, 'load', detail={'student_id': data['id']})
         cleanse_student_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -486,25 +488,25 @@ class Student(UserMixin):
 
     @property
     def stale_login(self):
+        print(self.new)
         if livesite():
-            return false # we can use this to force new logins if needed
-        else:
+            return False # we can use this to force new logins if needed
+        elif not self.new:
             r = self._db.globals.lookup('sandbox')
             return not self.last_login or self.last_login < r['timestamp']
+        else:
+            return False
 
     def seen(self):
-        print("saw " + self.kerb)
         self._db.students.update({'kerb': self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)
         log_event (self.kerb, 'seen')
 
     def login(self):
-        print("login " + self.kerb)
         self._db.students.update({'kerb': self.kerb},{'last_login':datetime.datetime.now()}, resort=False)
         log_event (self.kerb, 'login')
 
     def send_message(self, sender, typ, content):
         send_message(sender, self.kerb, typ, content)
-        self._db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': self.kerb, 'type': typ, 'content': content}], resort=False)
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
@@ -517,35 +519,36 @@ class Student(UserMixin):
 
     def save(self):
         with DelayCommit(self):
+            log_event (self.kerb, 'save', {'student_id': self.id})
             return self._save()
-        log_event (self.kerb, 'save', {'student_id': self.id})
 
     def join(self, group_id):
         with DelayCommit(self):
+            log_event (self.kerb, 'join''leave', {'group_id': group_id})
             return self._join(group_id)
-        log_event (self.kerb, 'join''leave', {'group_id': group_id})
 
     def leave(self, group_id):
         with DelayCommit(self):
+            log_event (self.kerb, 'leave', {'group_id': group_id})
             return self._leave(group_id)
-        log_event (self.kerb, 'leave', {'group_id': group_id})
 
     def pool(self, class_id):
         with DelayCommit(self):
+            log_event (self.kerb, 'pool', {'class_id': class_id})
             return self._pool(class_id)
-        log_event (self.kerb, 'pool', {'class_id': class_id})
 
     def match(self, class_id):
         with DelayCommit(self):
+            log_event (self.kerb, 'match', {'class_id': class_id})
             return self._match(class_id)
-        log_event (self.kerb, 'match', {'class_id': class_id})
 
     def create_group(self, group_id, public=True):
         with DelayCommit(self):
+            log_event (self.kerb, 'create', detail={'group_id': group_id, 'public':public})
             return self._create_group(group_id, public=public)
-        log_event (self.kerb, 'create', detail={'group_id': group_id, 'public':public})
 
     def accept_invite(self, invite):
+        print("accepting invite")
         sid = self._db.students.lookup(invite['kerb'], projection='id')
         if sid is None:
             raise ValueError("Unknown student.")
@@ -664,7 +667,8 @@ class Student(UserMixin):
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
             self._db.groups.delete({'id': group_id}, resort=False)
             msg += " You were the only member of this group, so it has been disbanded."
-        self._notify_group(group_id, "pset partner notification",
+        else:
+            self._notify_group(group_id, "pset partner notification",
                            "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
         self._reload()
         return msg
@@ -856,12 +860,10 @@ class Instructor(UserMixin):
             return not self.last_login or self.last_login < r['timestamp']
 
     def seen(self):
-        print("saw " + self.kerb)
         self._db.instructors.update({'kerb':self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)
         log_event (self.kerb, 'seen', {'instructor':True})
 
     def login(self):
-        print("login " + self.kerb)
         self._db.instructors.update({'kerb':self.kerb},{'last_login':datetime.datetime.now()}, resort=False)
         log_event (self.kerb, 'login', {'instructor':True})
 
