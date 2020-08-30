@@ -109,6 +109,7 @@ class SelectPure {
   next() { return this._next(); }
   prev() { return this._prev(); }
   notes(v) { if ( v !== undefined ) { this._setNotes(v); } else return this._getNotes(); }
+  selectone() { return this._selectone(); }
 
   // Private methods
   _create(_element) {
@@ -225,6 +226,21 @@ class SelectPure {
     for ( i-- ; i >= 0 && (this._config.options[i].disabled || this._options[i].get().classList.contains(this._config.classNames.optionHidden)) ; i-- );
     if ( i < 0 ) return false;
     this._setValue(this._config.options[i].value);
+    return true;
+  }
+
+  _selectone() {
+    if ( ! this._autocomplete ) return false;
+    if ( ! this._state.opened ) { this._open(); return false; }
+    var _option = null;
+    for ( let i = 0 ; i < this._config.options.length ; i++ ) {
+      if ( this._config.options[i].disabled || this._options[i].get().classList.contains(this._config.classNames.optionHidden) ) continue;
+      if ( _option ) return false;
+      _option = this._options[i];
+    }
+    _option.get().click();
+    this._match('');
+    if ( ! this._config.multiple || this._config.value.length >= this._config.limit ) this._close();
     return true;
   }
 

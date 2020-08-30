@@ -899,7 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   makeMultiSelect('departments', 
     studentOptions.departments,
-    { placeholder: studentPlaceholders.departments, limit: maxlength.departments, onLimit: departmentsLimit}
+    { placeholder: studentPlaceholders.departments, limit: maxlength.departments,  autocomplete: true, onLimit: departmentsLimit}
   );
   makeMultiSelect('classes',
     classesOptions,
