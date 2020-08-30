@@ -27,11 +27,15 @@ Then select your location, timezone, the math classes you are taking this term, 
 You can then explore your options for finding pset partners using the Preferences and Partners buttons.
 """
 
-instructor_welcome = """
+old_instructor_welcome = """
+<b>Welcome to pset partners!</b>
+"""
+
+new_instructor_welcome = """
 <b>Welcome to pset partners!</b>
 You are not currently registered as a pset partners instructor for fall 2020.
 If you are an instructor for a class in course 18 (or one cross-listed with course 18)
-that is <a href="https://math.mit.edu/academics/classes.php target="_blank">offered this term</a>,
+that is <a href="https://math.mit.edu/academics/classes.php" target="_blank">offered this term</a>,
 please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> to have
 your kerberos id added to the system.<br><br>
 
@@ -793,10 +797,12 @@ class Instructor(UserMixin):
             data["id"] = -1
             data["new"] = True
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
-                send_message("", kerb, "welcome", instructor_welcome)
+                send_message("", kerb, "welcome", new_instructor_welcome)
             log_event (kerb, 'load', {'instructor_id': data['id']})
         else:
             data["new"] = False
+            if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
+                send_message("", kerb, "welcome", old_instructor_welcome)
             log_event (kerb, 'new', {'instructor':True})
         cleanse_instructor_data(data)
         self.__dict__.update(data)
