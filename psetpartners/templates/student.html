@@ -441,7 +441,7 @@ function mtabHead() { return "<thead><tr><th>name</th><th>course</th><th>year</t
 function mtabRow(s) {
   let name = s[0] ? s[0] : s[4];
   if ( s[0] && s[1] ) name += "(" + s[1] + ")";
-  let year = s[3] ? parseInt(s[2]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
+  let year = s[3] ? parseInt(s[3]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
   console.log(s)
   const depts = s[2].split(' ').join(',');
   return `<tr><td>${name}</td><td align="center">${depts}</td><td align="center">${year}</td><td><a href="mailto:${s[4]}@mit.edu">${s[4]}@mit.edu</a></td></tr>`;
