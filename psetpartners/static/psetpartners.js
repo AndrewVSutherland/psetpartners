@@ -35,8 +35,8 @@ function makeSingleSelect(id, available, config) {
   se.addEventListener('keydown', function(evt) {
     if ( evt.which === 39 || evt.which === 40 ) { if ( ! s.next() ) s.open(); evt.preventDefault(); }
     else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
-    else if ( evt.which === 27 || evt.which === 33 ) s.close();
-    else if ( evt.which === 34 ) s.open();
+    else if ( evt.which === 27 || evt.which === 33 ) { s.close(); evt.preventDefault(); }
+    else if ( evt.which === 34 ) { s.open(); evt.preventDefault(); }
     else if ( evt.which === 13 ) { s.toggle(); evt.preventDefault(); }
   });
  
@@ -86,13 +86,14 @@ function makeMultiSelect(id, available, config) {
     s._autocomplete.addEventListener('keydown', function(evt) {
       if ( evt.which == 9 || evt.which == 27 ) { s.close(); se.focus(); }
     });
+    se.addEventListener('keypress', function(evt) { s.open(); });
   } else {
-    se.addEventListener('keydown', function(evt) {
-      if ( evt.which === 39 || evt.which === 40 || evt.which === 34 ) s.open();
-      else if ( evt.which === 37 || evt.which === 38 || evt.which === 27 || evt.which == 33 ) s.close();
-    });
     se.addEventListener('focusout', function(evt) { s.close(); });
   }
+  se.addEventListener('keydown', function(evt) {
+    if ( evt.which == 34 | evt.which === 39 || evt.which === 40 || evt.which === 34 ) { s.open();  evt.preventDefault(); }
+    else if ( evt.which == 33 || evt.which === 37 || evt.which === 38 || evt.which === 27 || evt.which == 33 ) { s.close();  evt.preventDefault(); }
+  });
   //e.value = s.value();
   jQuery(e).data('select',s);
   return s;

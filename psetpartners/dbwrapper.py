@@ -20,7 +20,7 @@ def getdb():
     return _db
 
 # list of tablenames X we want to redirect to test_X
-test_redirects = ['students', 'groups', 'classlist', 'grouplist', 'messages']
+test_redirects = ['instructors', 'students', 'groups', 'classlist', 'grouplist', 'messages', 'events']
 
 def test_redirect(str):
     return 'test_'+str if str in test_redirects else str

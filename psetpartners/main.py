@@ -210,7 +210,7 @@ def testemal():
 @login_required
 def testmessage(kerb):
     if current_user.is_admin:
-        send_message(current_user.kerb, kerb, "test", "This is a test message from %s to %s" % (current_user.kerb, kerb))
+        send_message(current_user.kerb, "test", "This is a test message from %s to %s" % (current_user.kerb, kerb))
         return "message sent."
     else:
         return "You are not authorized to perform this operation."
