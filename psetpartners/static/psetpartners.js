@@ -22,6 +22,7 @@ function makeSingleSelect(id, available, config) {
     autocomplete: config.autocomplete,
     placeholder: config.placeholder,
     notes: config.notes,
+    classNames: config.classNames,
   });
   // TODO move this event handling into select-pure.js
   if ( config.autocomplete ) {
@@ -49,7 +50,7 @@ function updateSingleSelect(id, notes) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
   const s = jQuery(e).data('select');
-  if ( !s ) throw 'Select attribute not set for in put ' + id;
+  if ( !s ) throw 'Select attribute not set for input ' + id;
   if ( e.value ) s.value(e.value); else s.reset();
   if ( notes ) s.notes(notes);
 }
@@ -57,7 +58,7 @@ function updateSingleSelect(id, notes) {
 /*
   available should be a list of { 'label': label, 'value': value } where none of the values contain commas
 */
-function makeMultiSelect(id, available, config) {
+function makeMultiSelect(id, available, config, selectClass="sp-select") {
   if ( available.find(e => e.value.includes(",")) ) throw "available values cannot contain commas";
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
@@ -80,6 +81,8 @@ function makeMultiSelect(id, available, config) {
     placeholder: config.placeholder,
     shortTags: config.shortTags,
     notes: config.notes,
+    select: selectClass,
+    classNames: config.classNames,
   });
   // TODO move this event handling into select-pure.js
   if ( config.autocomplete ) {
@@ -250,3 +253,8 @@ function copyToClipboard(msg) { return Clipboard.copy(msg); }
   q.val(msg); q.select();
   return document.execCommand('copy');*/
 
+jQuery.extend(jQuery.expr[':'], {
+    focusable: function(el, index, selector){
+    return $(el).is('a, button, :input, [tabindex]');
+    }
+});
