@@ -260,13 +260,14 @@ const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
 const toggles = {{ user.toggles|tojson|safe }};
-
 // jshint ignore:end
 
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
 /* global yearShort, startShort, forumShort, togetherShort, profileOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
-/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashAnnounce, copyToClipboard */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashError, flashAnnounce, copyToClipboard */ // in psetpartners.js
+
+var membersTable = {}; // filled in at load time
 
 function classLabel(v) { return classesOptions.find(x => x.value == v).label; }
 
@@ -385,8 +386,10 @@ function changeClasses(val) {
     for (let c in r.counts) {
       allCounts[c] = r.counts[c];
       if ( c ) { const i = studentClasses.indexOf(c); setPrefs(classesPrefs[c], i+1, allCounts[c]); setProps(classesProps[c], i+1, allCounts[c]); }
+
     }
     for (let c in r.groups) allGroups[c] = r.groups[c];
+    for (const c in allGroups) for (const g of allGroups[c]) membersTable[g[0]] = g[8];
     setPartnerPanes();
   }
   if ( vnew.length ) $.ajax({url: '/_counts_groups', data: {'classes': vnew}, dataType: 'json', success: updateCounts });
@@ -442,6 +445,30 @@ function mtabRow(s) {
   return `<tr><td>${name}</td><td align="center">${year}</td><td><a href="mailto:${s[3]}@mit.edu">${s[3]}@mit.edu</a></td></tr>`;
 }
 
+function memberOneline(m) {
+  const name = '<b>' + (m[0] || m[3]) + '</b>';
+  const year = m[2] ? yearShort[parseInt(m[2])] : '';
+  const depts = m[4].split(' ').join(', ');
+  // let email = m[3] + '@mit.edu';
+  // email = '<a href="mailto:' + email + '">' + email + '</a>';
+  // return year ? (name + ' (' + year + (depts ? ', course ' + depts:'') + ', ' + email + ')') : (depts ? name + ' (course ' + depts + ', ' + email + ')' : name + ' (' + email + ')');
+  return year ? (name + ' (' + year + (depts ? ', course ' + depts:'') + ')') : (depts ? name + ' (course ' + depts + ')' : name);
+}
+
+function gtabMembers(e, gid) {
+  const members = membersTable[gid];
+  const thisRow = e.parentElement.parentElement;
+  if ( thisRow.nextElementSibling && thisRow.nextElementSibling.classList.contains("group-members") )
+    { jQuery(thisRow.nextElementSibling).toggle(100); return; }
+  const mRow = document.createElement('tr');
+  mRow.classList.add("group-members");
+  thisRow.parentElement.insertBefore(mRow,thisRow.nextSibling);
+  let s = '<td colspan="7"><ul class="group-members">';
+  for (let m of members) s += '<li>' + memberOneline(m) + '</li>';
+  s += '</ul</td>';
+  $(s).appendTo(jQuery(mRow));
+}
+
 // group record should be an array [group_id, group_name, start, together, forum, size, max, ...] (entries after max will be ignored here)
 function gtabHead() {
   return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
@@ -449,7 +476,8 @@ function gtabHead() {
 function gtabRow(g) {
   const start = startShort[parseInt(g[2]) || 0] || "-";
   const together = togetherShort[parseInt(g[3]) || 0] || "-";
-  let row = `<tr><td>${g[1]}</td><td align="center">${start}</td><td align="center">${together}</td>`;
+  let group_label = `<label class="group-label" onclick="gtabMembers(this,${g[0]});">${g[1]}</label>`;
+  let row = `<tr><td>${group_label}</td><td align="center">${start}</td><td align="center">${together}</td>`;
   row += `<td align="center">${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
   row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
   return row;
@@ -866,6 +894,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $.ajaxSetup({error:ajaxErrorHandler}); // use this rather than ajexError so "this" is defined
   addChosenBy(allCounts);
+
+  for (const c in allGroups) for (const g of allGroups[c]) membersTable[g[0]] = g[8];
 
   makeMultiSelect('departments', 
     studentOptions.departments,

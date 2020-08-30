@@ -1,6 +1,6 @@
-import re
+import re, datetime
 from . import app
-from .app import debug_mode
+from .app import debug_mode, livesite, send_email
 from .dbwrapper import getdb, students_in_class, students_in_group, count_rows
 from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
@@ -28,6 +28,7 @@ Then select your location, timezone, the math classes you are taking this term, 
 the Preferences and Partners buttons.
 """
 
+signature = "<br><br>Your friends at psetparterners@mit.edu.<br>"
 
 # Note that these also appear in static/options.js, you need to update both!
 
@@ -219,6 +220,8 @@ CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
 COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
 
 def _str(s):
+    if isinstance(s,list):
+        return ' '.join([str(t) for t in s])
     return str(s) if s is not None else ""
 
 def course_number_key(s):
@@ -247,7 +250,7 @@ def is_admin(kerb):
 
 def send_message(sender, recipient, typ, content):
     db = getdb()
-    db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}])
+    db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}], resort=False)
 
 def next_match_date(class_id):
     import datetime
@@ -348,9 +351,9 @@ def class_groups(class_number, opts, year=current_year(), term=current_term(), v
         p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
         r = [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
         if 'members' in opts and (g['visibility'] == 3 or instructor_view):
-            r.append(sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members]))
+            r.append(sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb','departments']] for s in members]))
         G.append(r)
-    return sorted(G,key=lambda x: x[0])
+    return sorted(G,key=lambda r: r[1])
 
 def cleanse_student_data(data):
     kerb = data.get('kerb', "")
@@ -448,18 +451,48 @@ class Student(UserMixin):
     def get_id(self):
         return lambda: getattr(self, 'kerb', None)
 
+    @property
+    def pretty_name(self):
+        if not self.preferred_name:
+            return self.kerb
+        if not self.preferred_pronouns:
+            return self.preferred_name
+        return "%s (%s)" % (self.preferred_name, self.preferred_pronouns)
+
+    @property
+    def email_address(self):
+        if not self.email:
+            return self.kerb + "@mit.edu"
+        return self.email
+
+    @property
+    def stale_login(self):
+        if livesite():
+            return True # we can use this to force new logins if needed
+        else:
+            r = self._db.globals.lookup('sandbox')
+            return not self.last_login or self.last_login < r['timestamp']
+
+    def seen(self):
+        print("saw " + self.kerb)
+        self._db.students.update({'kerb':self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)
+
+    def login(self):
+        print("login " + self.kerb)
+        self._db.students.update({'kerb':self.kerb},{'last_login':datetime.datetime.now()}, resort=False)
+
     def send_message(self, msg, sender_kerb=None):
         r = {'content': msg, 'recipient_kerb': self.kerb}
         if sender_kerb:
             r['sender_kerb'] = sender_kerb
-        self._db.messages.insert_many([r])
+        self._db.messages.insert_many([r], resort=False)
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
             flash_announce("%s:%s" % (msg['id'], msg['content']))
 
     def acknowledge(self, msgid):
-        self._db.messages.update({'id': msgid},{'read':True})
+        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
         return "ok"
 
     def save(self):
@@ -582,6 +615,8 @@ class Student(UserMixin):
         r = { k: g[k] for k in  ['class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
+        self._notify_group(group_id, "Say hello to your new pset partner!",
+                           "%s has joined your pset group %s in %s!<br>You can contact your new partner at %s." % (self.pretty_name, g['group_name'], g['class_number'], self.email_address))
         self._reload()
         return "Welcome to <b>%s</b>!" % g['group_name']
 
@@ -602,8 +637,9 @@ class Student(UserMixin):
         msg = "You have been removed from the group <b>%s</b> in <b>%s</b>." % (g['group_name'], c)
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
             self._db.groups.delete({'id': group_id}, resort=False)
-            self._reload()
             msg += " You were the only member of this group, so it has been disbanded."
+        self._notify_group(group_id, "pset partner notification",
+                           "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
         self._reload()
         return msg
 
@@ -663,6 +699,17 @@ class Student(UserMixin):
         self._db.grouplist.insert_many([r], resort=False)
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
+
+    def _notify_group(self, group_id, subject, message):
+        def email(s):
+            return s['email'] if s.get('email') else s['kerb'] + '@mit.edu'
+
+        S = [s for s in students_in_group(group_id) if s['id'] != self.id]
+        self._db.messages.insert_many([{'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
+        if livesite():
+            send_email([email(s) for s in S], subject, message + signature)
+        else: #TODO: remove this once we go live
+            send_email([email(s) for s in S], subject, message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
@@ -768,6 +815,15 @@ class AnonymousUser(AnonymousUserMixin):
     def get_id(self):
         return None
 
+def sandbox_message():
+    from . import db
+
+    r = db.globals.lookup('sandbox')
+    if not r:
+        return ''
+    return "The sandbox was refreshed at %s (MIT time) with a new population of %s students." % (r['timestamp'].strftime("%Y-%m-%d %H:%M:%S"), r['value'].get('students'))
+
+
 test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", "US/Alaska", "US/Pacific", "US/Mountain",
                   "US/Central", "US/Eastern", "Brazil/East", "Canada/Newfoundland", "Brazil/DeNoronha", "Atlantic/Cape_Verde", "Iceland",
                   "Europe/London", "Europe/Paris", "Europe/Athens", "Asia/Dubai", "Asia/Baghdad", "Asia/Jerusalem", "Asia/Tehran",
@@ -781,6 +837,14 @@ big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
 
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
+    from . import db
+
+    with DelayCommit(db):
+        _generate_test_population(num_students, max_classes)
+        db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
+    print("Done!")
+
+def _generate_test_population(num_students=300,max_classes=6):
     from random import randint
     from . import db
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
@@ -919,7 +983,7 @@ def generate_test_population(num_students=300,max_classes=6):
                     prefs[pa] = rand(student_preferences[pa]['options'])[0]
                     strengths[pa] = randint(1,5)
             c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'kerb': s['kerb'], 'class_number': classes[i]['class_number'],
-                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props }
+                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props, 'status': 0 }
             S.append(c)
     db.test_classlist.insert_many(S, resort=False)
     S = []
@@ -935,7 +999,8 @@ def generate_test_population(num_students=300,max_classes=6):
             creator = rand(kerbs)
             if creator in creators:
                 continue
-            s = db.test_students.lookup(creator,projection=["preferences", "strengths"])
+            s = db.test_students.lookup(creator, projection=['id','preferences', 'strengths'])
+            db.test_classlist.update({'class_id': c['id'], 'student_id': s['id']}, {'status': 1}, resort=False)
             prefs = { k: s['preferences'][k] for k in s.get('preferences',{}) if not k.endswith('affinity') }
             strengths = { k: s['strengths'][k] for k in s.get('strengths',{}) if not k.endswith('affinity') }
             maxsize = max_size_from_prefs(prefs)
@@ -954,10 +1019,11 @@ def generate_test_population(num_students=300,max_classes=6):
                 sid = db.test_students.lookup(k,projection="id")
                 S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 members.append(student_id)
+                db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1}, resort=False)
             while True:
                 if g['max'] and len(members) >= g['max']:
                     break
-                s = rand(list(db.test_classlist.search({'class_id': cid},projection=["student_id", "kerb"])))
+                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': {'$ne':1}},projection=["student_id", "kerb"])))
                 if s['student_id'] in members:
                     break
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
