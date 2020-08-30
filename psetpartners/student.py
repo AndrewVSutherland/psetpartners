@@ -131,15 +131,15 @@ student_options = {
 }
 
 start_options = [
-    (1, "early, soon after the problem set is posted"),
-    (2, "midway, at least 3 days before the pset is due"),
-    (3, "late, a few days before the pset is due"),
+    ("1", "early, soon after the problem set is posted"),
+    ("2", "midway, at least 3 days before the pset is due"),
+    ("3", "late, a few days before the pset is due"),
     ]
 
 style_options = [
-    (1, "solve the problems style"),
-    (2, "discuss strategies, work style if stuck"),
-    (3, "work independently but check answers"),
+    ("1", "solve the problems together"),
+    ("2", "discuss strategies, help each other when stuck"),
+    ("3", "work independently but check answers"),
     ]
 
 forum_options = [
@@ -149,71 +149,71 @@ forum_options = [
     ]
 
 size_options = [
-    (2, "2 students"),
-    (3, "3-4 students"),
-    (5, "5-8 students"),
-    (8, "more than 8 students"),
+    ("2", "2 students"),
+    ("3", "3-4 students"),
+    ("5", "5-8 students"),
+    ("9", "more than 8 students"),
     ]
 
 commitment_options = [
-    (1, "I'm still shopping and/or not registered"),
-    (2, "Other courses might be a higher priority"),
-    (3, "This course is a top priority for me"),
+    ("1", "I'm still shopping and/or not registered"),
+    ("2", "Other courses might be a higher priority"),
+    ("3", "This course is a top priority for me"),
     ]
 
 confidence_options = [
-    (1, "This will be all new for me"),
-    (2, "I have seen some of this material before"),
-    (3, "I am quite comfortable with this material"),
+    ("1", "This will be all new for me"),
+    ("2", "I have seen some of this material before"),
+    ("3", "I am quite comfortable with this material"),
     ]
 
 departments_affinity_options = [
-    (1, "someone else in one of my departments"),
-    (2, "only students in one of my departments"),
-    (3, "students in many departments"),
+    ("1", "someone else in one of my departments"),
+    ("2", "only students in one of my departments"),
+    ("3", "students in many departments"),
     ]
 
 year_affinity_options = [
-    (1, "someone else in my year"),
-    (2, "only students in my year"),
-    (3, "students in multiple years"),
+    ("1", "someone else in my year"),
+    ("2", "only students in my year"),
+    ("3", "students in multiple years"),
     ]
 
 gender_affinity_options = [
-    (1, "someone else with my gender identity"),
-    (2, "only students with my gender identity"),
-    (3, "a diversity of gender identities"),
+    ("1", "someone else with my gender identity"),
+    ("2", "only students with my gender identity"),
+    ("3", "a diversity of gender identities"),
     ]
 
 commitment_affinity_options = [
-    (1, "someone else with my level of commitment"),
-    (2, "only students with my level of commitment"),
+    ("1", "someone else with my level of commitment"),
+    ("2", "only students with my level of commitment"),
     ]
 
 confidence_affinity_options = [
-    (1, "someone else at my comfort level"),
-    (2, "only students at my comfort level"),
-    (3, "a diversity of comfort levels"),
+    ("1", "someone else at my comfort level"),
+    ("2", "only students at my comfort level"),
+    ("3", "a diversity of comfort levels"),
     ]
 
 student_preferences = {
-    'start': { 'type': "posint", 'options': start_options },
-    'style': { 'type': "posint", 'options': style_options },
-    'forum': { 'type': "text", 'options': forum_options },
-    'size': { 'type': "posint", 'options': size_options },
-    'departments_affinity': { 'type': "posint", 'options': departments_affinity_options },
-    'year_affinity': { 'type': "posint", 'options': year_affinity_options },
-    'gender_affinity': { 'type': "posint", 'options': gender_affinity_options },
-    'commitment_affinity': { 'type': "posint", 'options': commitment_affinity_options },
-    'confidence_affinity': { 'type': "posint", 'options': confidence_affinity_options },
+    'start': start_options,
+    'style': style_options,
+    'forum': forum_options,
+    'size': size_options,
+    'departments_affinity': departments_affinity_options,
+    'year_affinity': year_affinity_options,
+    'gender_affinity': gender_affinity_options,
+    'commitment_affinity': commitment_affinity_options ,
+    'confidence_affinity': confidence_affinity_options,
 }
 
 student_affinities = [ 'departments', 'year', 'gender' ]
 student_class_affinities = [ 'commitment', 'confidence' ]
 
 student_class_properties = {
-    "commitment" : { 'type': "posint", 'options': commitment_options },
-    "confidence" : { 'type': "posint", 'options': confidence_options },
+    "commitment" : commitment_options,
+    "confidence" : confidence_options,
 }
 
 countable_options = [
@@ -286,7 +286,7 @@ def next_match_date(class_id):
 def max_size_from_prefs(prefs):
     if not 'size' in prefs:
         return None
-    bigger = [o[0] for o in size_options if o[0] > prefs['size']]
+    bigger = [int(o[0]) for o in size_options if int(o[0]) > int(prefs['size'])]
     if not bigger:
         return None
     return bigger[0]-1
@@ -399,7 +399,7 @@ def cleanse_student_data(data):
         else:
             if not data['preferences'][pref]:
                 data['preferences'].pop(pref)
-            elif not data["preferences"][pref] in [r[0] for r in student_preferences[pref]["options"]]:
+            elif not data["preferences"][pref] in [k[0] for k in student_preferences[pref]]:
                 app.logger.warning("Ignoring invalid preference %s = %s for student %s"%(pref,data["preferences"][pref],kerb))
                 data['preferences'].pop(pref)
     for pref in list(data['strengths']):
@@ -551,10 +551,10 @@ class Student(UserMixin):
             log_event (self.kerb, 'match', {'class_id': class_id})
             return self._match(class_id)
 
-    def create_group(self, group_id, public=True):
+    def create_group(self, group_id, options=None, public=True):
         with DelayCommit(self):
             log_event (self.kerb, 'create', detail={'group_id': group_id, 'public':public})
-            return self._create_group(group_id, public=public)
+            return self._create_group(group_id, options=options, public=public)
 
     def accept_invite(self, invite):
         sid = self._db.students.lookup(invite['kerb'], projection='id')
@@ -717,7 +717,7 @@ class Student(UserMixin):
         self._reload()
         return "We will start working on a match for you in <b>%s</b>, you should receive an email from us within 24 hours." % c
 
-    def _create_group(self, class_id, public=True):
+    def _create_group(self, class_id, options=None, public=True):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
         if not c:
             raise ValueError("Class not found among your classes.")
@@ -728,12 +728,31 @@ class Student(UserMixin):
             app.logger.warning("User %s tried to create a group in class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
         c = self.class_data[c]
-        prefs = { k: c['preferences'][k] for k in c.get('preferences',{}) if not k.endswith('affinity') }
-        strengths = { k: c['strengths'][k] for k in c.get('strengths',{}) if not k.endswith('affinity') }
+        if options is None:
+            prefs = { k: c['preferences'][k] for k in c.get('preferences',{}) if not k.endswith('affinity') }
+            visibility = 3 if public else 0
+            editors = [] if public else [self.kerb]
+        else:
+            def get_option(prefs, input, k):
+                val = input.get(k,'').strip()
+                if not val:
+                    return
+                if not [True for v in student_preferences[k] if v[0] == val]:
+                    raise ValueError("Invalid option %s for %s " % (val,k))
+                prefs[k] = val
+
+            prefs = {}
+            for k in ['start', 'style', 'forum', 'size']:
+                get_option(prefs, options, k)
+            visibility = 3 if public else (1 if options.get('open','').strip() else 0)
+            editors = [self.kerb] if options.get('editors','').strip() == '1' else []
+            print("visibility: %s" %visibility)
+            print("editors: %s" % editors)
+        strengths = {} # Groups don't have preference strengths right now
         maxsize = max_size_from_prefs(prefs)
         name = generate_group_name()
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
-             'visibility': 2 if public else 1, 'preferences': prefs, 'strengths': strengths, 'editors': [], 'max': maxsize }
+             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'editors': editors, 'max': maxsize }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
@@ -1029,15 +1048,16 @@ def _generate_test_population(num_students=300,max_classes=6):
         for p in student_preferences:
             if not p.endswith("_affinity"):
                 if randint(0,2):
-                    prefs[p] = rand(student_preferences[p]['options'])[0]
+                    prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
                     if p == "forum" and p in prefs and prefs[p] == "in-person":
                         prefs[p] = "video";
             else:
                 q = p.split('_')[0]
                 if q in student_affinities and s[q] and randint(0,1):
-                    prefs[p] = rand(student_preferences[p]['options'])[0]
+                    prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
+        print(prefs)
         s['preferences'] = prefs
         s['strengths'] = strengths
         S.append(s)
@@ -1061,11 +1081,11 @@ def _generate_test_population(num_students=300,max_classes=6):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
                 if randint(0,1):
-                    props[p] = rand(student_class_properties[p]['options'])[0]
+                    props[p] = rand(student_class_properties[p])[0]
                     strengths[p] = randint(1,5)
                     if randint(0,1):
                         pa = p + "_affinity"
-                        prefs[pa] = rand(student_preferences[pa]['options'])[0]
+                        prefs[pa] = rand(student_preferences[pa])[0]
                         strengths[pa] = rand_strength()
             for p in student_preferences:
                 if not p.endswith("_affinity"):
@@ -1074,10 +1094,10 @@ def _generate_test_population(num_students=300,max_classes=6):
                             prefs[p] = s['preferences'][p]
                             strengths[p] = s['strengths'][p]
                         else:
-                            prefs[p] = rand(student_preferences[p]['options'])[0]
+                            prefs[p] = rand(student_preferences[p])[0]
                             strengths[p] = rand_strength()
                     elif randint(0,2) == 0:
-                        prefs[p] = rand(student_preferences[p]['options'])[0]
+                        prefs[p] = rand(student_preferences[p])[0]
                         strengths[p] = rand_strength()
             for p in student_affinities:
                 pa = p + "_affinity"
@@ -1085,7 +1105,7 @@ def _generate_test_population(num_students=300,max_classes=6):
                     prefs[p] = s['preferences'][pa]
                     strengths[p] = s['strengths'][pa]
                 elif randint(0,2) == 0:
-                    prefs[pa] = rand(student_preferences[pa]['options'])[0]
+                    prefs[pa] = rand(student_preferences[pa])[0]
                     strengths[pa] = randint(1,5)
             c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'kerb': s['kerb'], 'class_number': classes[i]['class_number'],
                   'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props, 'status': 0 }
@@ -1110,7 +1130,7 @@ def _generate_test_population(num_students=300,max_classes=6):
             strengths = { p: s['strengths'][p] for p in s.get('strengths',{}) if not p.endswith('affinity') }
             for p in ["start", "style", "forum", "size"]:
                 if not p in prefs and randint(0,1):
-                    prefs[p] = rand(student_preferences[p]['options'])[0]
+                    prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = rand_strength()
             maxsize = max_size_from_prefs(prefs)
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],

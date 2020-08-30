@@ -44,7 +44,7 @@ const yearOptions = [
   { label: 'graduate student', value: '5', },
 ];
 
-const yearShort = ["", "first year", "sophomore", "junior", "senior", "graduate"]
+const yearShort = ["", "first year", "sophomore", "junior", "senior", "graduate"];
 
 const genderOptions = [
   { label: '', value: '' },
@@ -91,11 +91,11 @@ const startShort = ["", "early", "middle", "late"];
 
 const styleOptions = [
   { label: '', value: '' },
-  { label: 'solve the problems style', value: '1', },
+  { label: 'solve the problems together', value: '1', },
   { label: 'discuss strategies, help each other when stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
-const styleShort = ["", "style", "collegial", "soloists"];
+const styleShort = ["", "together", "collegial", "soloists"];
 
 const forumOptions = [
   { label: '', value: '' },
@@ -105,14 +105,15 @@ const forumOptions = [
 ];
 const forumShort = ["", "text", "video", "in-person"];
 
-
 const sizeOptions = [
   { label: '', value: '' },
   { label: '2 students', value: '2', },
   { label: '3-4 students', value: '3', },
   { label: '5-8 students', value: '5', },
-  { label: 'more than 8 students', value: '8', },
+  { label: 'more than 8 students', value: '9', },
 ];
+const sizeShort = ["", "2", "3-4", "5-8", "9+"];
+
 const department_affinityOptions = [
   { label: '', value: '' },
   { label: 'someone else in my department', value: '1', },
@@ -162,6 +163,11 @@ const confidence_affinityOptions = [
   { label: 'a diversity of comfort levels', value: '3', },
 ];
 
+const editorOptions = [
+  { label: 'everyone', value: '0' },
+  { label: 'just me', value: '1' },
+];
+
 const studentPreferences = [ "start", "style", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
 const studentAffinities = [ 'departments', 'year', 'gender' ];
 const studentClassPreferences = ["commitment_affinity", "confidence_affinity" ];
@@ -185,6 +191,8 @@ const studentOptions = {
   confidence_affinity: confidence_affinityOptions,
 };
 
+const shortOptions = { start: startShort, style: styleShort, forum: forumShort, size: sizeShort, };
+
 const studentPlaceholders = {
   departments: 'select up to three departments (optional)',
   year: 'select year (optional)',
@@ -203,4 +211,4 @@ const studentPlaceholders = {
   confidence_affinity: 'knowledge affinity',
 };
 
-const profileOptions = [ "expand", "contract" ]
+const profileOptions = [ "expand", "contract" ];

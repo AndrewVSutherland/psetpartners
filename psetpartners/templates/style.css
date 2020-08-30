@@ -4,6 +4,7 @@
   --min-width: 940px;
   --caption-width: 270px;
   --value-width: 390px;
+  --short-value-width: 80px;
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
@@ -39,18 +40,6 @@
 }
 ::-moz-selection {
   background: var(--select-fill);
-}
-input.hidden {
-  position: absolute;
-  left: -10px;
-  margin: 0;
-  padding: 0;
-  width: 1px;
-  height: 1px;
-  color: white;
-  background-color: white;
-  border: none;
-  outline: none;
 }
 
 html, body {
@@ -234,6 +223,21 @@ td.caption {
   vertical-align:middle;
 }
 
+table.short-input {
+  margin: 20px auto;
+}
+
+td.short-caption {
+  margin: 0;
+  padding-right: 1px;
+  padding-left: 12px;
+}
+td.short-value {
+  margin: 0;
+  padding-left: 0px;
+  padding-right: 12px;
+}
+
 td.forminfo, span.forminfo {
    padding-left: 13px;
    font-size: 80%;
@@ -266,7 +270,7 @@ span.forminfo::after {
   font-style: normal;
 }
 
-input, select, textarea {
+input, select, textarea, label.short-checkbox {
   border: var(--input-border-width) solid var(--input-border-color);
   background: var(--mit-white);
   padding-top: 3px;
@@ -278,6 +282,18 @@ input, select, textarea {
   -ms-box-sizing:content-box;
   -moz-box-sizing:content-box;
   -webkit-box-sizing:content-box;
+}
+
+/* TODO: don't hardwire the width/height */
+label.short-checkbox {
+  text-align: center;
+  padding-bottom: 2px;
+  height: 18px;
+  width: 20px;
+  display:block;
+}
+label.short-checkbox:hover {
+  background: var(--mit-pink);
 }
 
 input.value, select.value, textarea.value {
@@ -744,7 +760,7 @@ label.cbg {
   width: var(--cbg-cell-width);
   cursor: pointer;
 }
-/* Hide the default checkbox */
+/* Hide the default checkbox (not really necessary) */
 input.cbg[type=checkbox] {
   display: none;
 }
