@@ -874,6 +874,7 @@ function alertInfo(q, msg) {
 }
 
 function ajaxToggle(name, value) {
+  if ( ! loaded ) return false
   ajaxToggle[name] = value;
   if ( ajaxToggle[name+'Pending'] ) return false;
   ajaxToggle[name+'Pending'] = true;
