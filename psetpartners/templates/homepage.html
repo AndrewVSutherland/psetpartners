@@ -137,7 +137,7 @@
 
 <div class="main-page">
 
-  {% if under_construction %}
+  {% if under_construction and not current_user.is_admin %}
     <div style="padding-top:10%;">
     <img src="{{ url_for('static', filename='under-construction.png') }}" style="display:block; margin:auto; height:25%; width:40%;">
     <br><br>
