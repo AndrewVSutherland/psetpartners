@@ -300,7 +300,7 @@ input.value {
 
 input.value::placeholder {
   font-size: 90%;
-  font-style:italic;
+  font-style: italic;
 }
 
 select.value option {
@@ -339,15 +339,15 @@ button {
   font-weight: bold;
   font-size: 14px;
   margin: 0 6px;
-  padding: 2px 6px 4px 6px;
+  padding: 0px 6px 0px 6px;
   border-radius: 8px;
-  height: 24px;
+  height: 22px;
   min-width: 50px;
 }
 
 button:focus {
   outline: none;
-  outline: 1px solid var(--mit-maroon);
+  border: 2px solid var(--mit-maroon);
 }
 
 button:disabled {
@@ -371,6 +371,7 @@ button.confirm {
 
 button.confirm:focus {
   outline: none;
+  border: 1.5px solid var(--mit-maroon);
 }
 
 label.confirm {
@@ -399,7 +400,7 @@ label.confirm::before {
   color: var(--info-color);
 }
 
-p.flash-info, p.flash-warning {
+p.flash-info, p.flash-warning p.flash-cancel {
   margin-left: 0;
   margin-top: 8px;
   margin-bottom: 0;
@@ -434,6 +435,13 @@ p.flash-warning::before {
   color:#f5ad42;
   margin-bottom: -5px;
 }
+p.flash-cancel::before {
+  content:"🗙";
+  color:#b11;
+  padding-right: 3px;
+  margin-bottom: 0px;
+}
+
 p.flash-error, p.flash-announce, p.flash-instruct {
   margin-left: 0;
 }
@@ -444,7 +452,7 @@ p.flash-error::before {
   padding-right: 3px;
 }
 
-table.mtab, table.gtab, table.ctab {
+table.mtab, table.gtab {
   margin: 0 auto;
   border-bottom: 1px solid #222;
 }
@@ -489,6 +497,15 @@ label.paction:hover {
 
 label.naction:hover {
   background: var(--light-gray);
+}
+
+table.ctab {
+  margin: 0 auto;
+}
+
+div.caction {
+  padding:0 20px;
+  outline: none;
 }
 
 div.caction p {
