@@ -165,42 +165,57 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
   showURLtest(id, test_id, test_anchor, errmsg);
 }
 
-function flashAnnounce(msg) {
+function flashTop(msg, category) {
   const p = document.createElement('p'), pt = document.createTextNode(msg);
-  const l = document.createElement('l'); lt = document.createTextNode(' [ok]');
-  p.classList.add('flash-announce'); p.appendChild(pt); p.appendChild(l);
-  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
+  const l = document.createElement('l'), lt = document.createTextNode(' [ok]');
+  p.classList.add(category); p.appendChild(pt); p.appendChild(l);
+  l.classList.add('flash-after'); l.appendChild(lt);  l.onclick = function(e) { p.remove(); };
   document.getElementById('flash-top').appendChild(p);
 }
+function flashAnnounce(msg) { flashTop(msg, 'announce'); }
+function flashInstruct(msg) { flashTop(msg, 'instructo'); }
+function flashError(msg) { flashTop(msg, 'error'); }
 
-function flashInstruct(msg) {
-  const p = document.createElement('p'), pt = document.createTextNode(msg);
-  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
-  p.classList.add('flash-instruct'); p.appendChild(pt); p.appendChild(l);
-  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
-  document.getElementById('flash-top').appendChild(p);
-}
-
-function flashError(msg) {
-  const p = document.createElement('p'), pt = document.createTextNode(msg);
-  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
-  p.classList.add('flash-error'); p.appendChild(pt); p.appendChild(l);
-  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
-  document.getElementById('flash-top').appendChild(p);
-}
+// TODO: We currently display only one bottom messages of each type at a time, fix this
+// (there is some strange but surely easy to fix jquery issue that prevernts removing, so we reuse)
 
 function flashInfo(msg) {
-  const p = document.createElement('p'), t = document.createTextNode(msg);
-  p.classList.add('flash-info'); p.appendChild(t);
-  document.getElementById('flash-bottom').appendChild(p);
-  jQuery(p).fadeOut(5000);
+  if ( ! flashInfo.p ) {
+    const p = document.createElement('p'), t = document.createTextNode(msg);
+    p.classList.add('flash-info'); p.appendChild(t);
+    document.getElementById('flash-bottom').appendChild(p);
+    flashInfo.p = p;
+  } else {
+    flashInfo.p.firstChild.textContent=msg;
+    jQuery(flashInfo.p).show();
+  }
+  jQuery(flashInfo.p).fadeOut(3000);
 }
 
 function flashWarning(msg) {
-  const p = document.createElement('p'), t = document.createTextNode(msg);
-  p.classList.add('flash-warning'); p.appendChild(t);
-  document.getElementById('flash-bottom').appendChild(p);
-  jQuery(p).fadeOut(10000);
+  if ( ! flashWarning.p ) {
+    const p = document.createElement('p'), t = document.createTextNode(msg);
+    p.classList.add('flash-warning'); p.appendChild(t);
+    document.getElementById('flash-bottom').appendChild(p);
+    flashWarning.p = p;
+  } else {
+    flashWarning.p.firstChild.textContent=msg;
+    jQuery(flashWarning.p).show();
+  }
+  jQuery(flashWarning.p).fadeOut(3000);
+}
+
+function flashCancel(msg) {
+  if ( ! flashCancel.p ) {
+    const p = document.createElement('p'), t = document.createTextNode(msg);
+    p.classList.add('flash-cancel'); p.appendChild(t);
+    document.getElementById('flash-bottom').appendChild(p);
+    flashCancel.p = p;
+  } else {
+    flashCancel.p.firstChild.textContent=msg;
+    jQuery(flashCancel.p).show();
+  }
+  jQuery(flashCancel.p).fadeOut(3000);
 }
 
 window.Clipboard = (function(window, document, navigator) {
@@ -229,6 +244,7 @@ window.Clipboard = (function(window, document, navigator) {
     return { copy: copy };
 })(window, document, navigator);
 
+/* global Clipboard */
 function copyToClipboard(msg) { return Clipboard.copy(msg); }
 /*  const q = $('#clipboard');  // should be an input with class hidden (but not type hidden)
   q.val(msg); q.select();
