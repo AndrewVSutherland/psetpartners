@@ -136,9 +136,9 @@ start_options = [
     (3, "late, a few days before the pset is due"),
     ]
 
-together_options = [
-    (1, "solve the problems together"),
-    (2, "discuss strategies, work together if stuck"),
+style_options = [
+    (1, "solve the problems style"),
+    (2, "discuss strategies, work style if stuck"),
     (3, "work independently but check answers"),
     ]
 
@@ -198,7 +198,7 @@ confidence_affinity_options = [
 
 student_preferences = {
     'start': { 'type': "posint", 'options': start_options },
-    'together': { 'type': "posint", 'options': together_options },
+    'style': { 'type': "posint", 'options': style_options },
     'forum': { 'type': "text", 'options': forum_options },
     'size': { 'type': "posint", 'options': size_options },
     'departments_affinity': { 'type': "posint", 'options': departments_affinity_options },
@@ -218,7 +218,7 @@ student_class_properties = {
 
 countable_options = [
     'hours', 'departments', 'year', 'gender', 'location', 'timezone',
-    'start', 'together', 'forum', 'size', 'commitment', 'confidence',
+    'start', 'style', 'forum', 'size', 'commitment', 'confidence',
     'departments_affinity', 'year_affinity', 'gender_affinity', 'commitment_affinity', 'confidence_affinity',
 ]
 
@@ -361,7 +361,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
     return counts
 
 def group_row(g, n):
-    p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
+    p = [_str(g['preferences'].get(k,"")) for k in ["start", "style", "forum"]] if g.get('preferences') else ["", "", ""]
     return [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
 
 def member_row(s):
@@ -1108,7 +1108,7 @@ def _generate_test_population(num_students=300,max_classes=6):
             db.test_classlist.update({'class_id': c['id'], 'student_id': s['id']}, {'status': 1}, resort=False)
             prefs = { p: s['preferences'][p] for p in s.get('preferences',{}) if not p.endswith('affinity') }
             strengths = { p: s['strengths'][p] for p in s.get('strengths',{}) if not p.endswith('affinity') }
-            for p in ["start", "together", "forum", "size"]:
+            for p in ["start", "style", "forum", "size"]:
                 if not p in prefs and randint(0,1):
                     prefs[p] = rand(student_preferences[p]['options'])[0]
                     strengths[p] = rand_strength()

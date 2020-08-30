@@ -89,13 +89,13 @@ const startOptions = [
 ];
 const startShort = ["", "early", "middle", "late"];
 
-const togetherOptions = [
+const styleOptions = [
   { label: '', value: '' },
-  { label: 'solve the problems together', value: '1', },
+  { label: 'solve the problems style', value: '1', },
   { label: 'discuss strategies, help each other when stuck', value: '2', },
   { label: 'work independently but check answers', value: '3', },
 ];
-const togetherShort = ["", "together", "collegial", "soloists"];
+const styleShort = ["", "style", "collegial", "soloists"];
 
 const forumOptions = [
   { label: '', value: '' },
@@ -162,7 +162,7 @@ const confidence_affinityOptions = [
   { label: 'a diversity of comfort levels', value: '3', },
 ];
 
-const studentPreferences = [ "start", "together", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
+const studentPreferences = [ "start", "style", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
 const studentAffinities = [ 'departments', 'year', 'gender' ];
 const studentClassPreferences = ["commitment_affinity", "confidence_affinity" ];
 const studentClassAffinities = ['commitment', 'confidence' ];
@@ -173,7 +173,7 @@ const studentOptions = {
   gender: genderOptions,
   location: locationOptions,
   start: startOptions,
-  together: togetherOptions,
+  style: styleOptions,
   forum: forumOptions,
   size: sizeOptions,
   commitment: commitmentOptions,
@@ -191,7 +191,7 @@ const studentPlaceholders = {
   gender: 'select gender (optional)',
   classes: 'select your classes',
   start: 'how long before the due date',
-  together: 'collaboration style',
+  style: 'collaboration style',
   forum: 'communication medium',
   size: 'size range',
   commitment: 'commitment level',
