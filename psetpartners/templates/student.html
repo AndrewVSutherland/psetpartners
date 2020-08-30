@@ -210,7 +210,13 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <div class="partner-buttons" style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
   {% endfor %}
-  <div class="caction" id="partner-confirm" style="padding:0 20px;"></div>
+    <div class="caction" id="partner-confirm" style="display:none;">
+      <p id="partner-confirm-message"></p>
+      <table class="ctab"><tbody><tr>
+        <td><button type="button" class="confirm" id="partner-confirm-button" value='' onclick="submitStudentForm(this.value);"></button></td>
+        <td><button type="button" class="submit" id="partner-cancel-button" onclick="hideConfirm();">nevermind</button></td>
+      </tr></tbody></table>
+    </div>
   </div>
 
   <input class="ctx" type="hidden" name="ctx-scrollTop" />
@@ -219,8 +225,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
-      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save');" disabled>save</button></td>
-      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel');" disabled>reset</button></td>
+      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save');" disabled tabindex="40">save</button></td>
+      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel');" disabled tabindex="41">reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
       <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
     </tr>
@@ -265,7 +271,7 @@ const toggles = {{ user.toggles|tojson|safe }};
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
 /* global yearShort, startShort, forumShort, togetherShort, profileOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
-/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashError, flashAnnounce, copyToClipboard */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, copyToClipboard */ // in psetpartners.js
 
 var membersTable = {}; // filled in at load time
 
@@ -442,7 +448,6 @@ function mtabRow(s) {
   let name = s[0] ? s[0] : s[4];
   if ( s[0] && s[1] ) name += "(" + s[1] + ")";
   let year = s[3] ? parseInt(s[3]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
-  console.log(s)
   const depts = s[2].split(' ').join(',');
   return `<tr><td>${name}</td><td align="center">${depts}</td><td align="center">${year}</td><td><a href="mailto:${s[4]}@mit.edu">${s[4]}@mit.edu</a></td></tr>`;
 }
@@ -588,22 +593,33 @@ function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#
 function pending() { return ! $('#cancel').is(':disabled'); }
 
 function showConfirm(msg, value, caption) {
-  msg += '<table class="ctab"><tbody><tr>';
-  msg += `<td><button type="button" class="confirm" id="confirm" onclick="submitStudentForm('${value}');">${caption}</button></td>`;
-  msg += '<td><button type="button" class="submit" id="nevermind" onclick="hideConfirm();">nevermind</button></td>';
-  msg += '</tr></tbody></table>';
   // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
   // Enter means confirm, escape means nevermind, all other keys will be ignored (including tab, otherwise it gets confusing)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
-  $('button.submit.default').hide(); $('#partner-confirm').html(msg);
-  $('#confirm').keydown(function(e){ e.preventDefault(); if ( e.which == 13) $('#confirm').click(); if (e.which == 27) $('#nevermind').click(); });
-  $('#confirm').focusout(hideConfirm);
-  $('#confirm').focus();
+  $('button.submit.default').hide(); $('#partner-confirm-message').html(msg);
+  const b = $('#partner-confirm-button'); b.val(value); b.html(caption);
+  document.addEventListener('click', confirmClick, true);  document.addEventListener('keydown', confirmKeydown, true);
+  $('#partner-confirm').show(); $('#partner-confirm-cancel').focus();
 }
+function confirmKeydown(e) {
+  e.stopPropagation(); e.preventDefault();
+  const choices = ['partner-cancel-button', 'partner-confirm-button'];
+  const i = $(':focus').attr('id') == choices[1] ? 1 : 0;
+  if ( e.which == 9 ) $('#'+choices[1-i]).focus();
+  if ( e.which == 27 ) $('#'+choices[0]).click();
+  if ( e.which == 13 ) $('#'+choices[i]).click();
+  return false;
+}
+function confirmClick(e) {
+  e.stopPropagation(); e.preventDefault();
+  if ( $('#partner-confirm-button:hover').length ) $('#partner-confirm-button').click(); else $('#partner-cancel-button').click();
+}
+
 function hideConfirm() {
-  if ( $('#confirm:hover').length ) { console.log ("Ignoring focusout because hover"); return false; }
-  $('#partner-confirm').html(''); $('.partner-summary').show(); $('.partner-div').show(); 
+  document.removeEventListener('click', confirmClick, true);  document.removeEventListener('keydown', confirmKeydown, true);
+  $('#partner-confirm').hide(); $('.partner-summary').show(); $('.partner-div').show(); 
   $('.partner-buttons').show(); $('button.submit.default').show();
+  flashCancel("Nevermind (no action taken).");
 }
 
 function confirmJoin(e, gid) {
@@ -613,15 +629,14 @@ function confirmJoin(e, gid) {
   const c = studentClasses[i-1];
   const g = allGroups[c].find(x => x[0] == gid);
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  let msg = `<p>You are about to join the public group <i>${g[1]}</i>. `;
+  let msg = `You are about to join the public group <i>${g[1]}</i>. `;
   if ( g[7] == '3' ) {
-    msg += 'Existing members of this group will be notified and your membership will be visible to other students on pset partners. ';
+    msg += 'Existing members of this group will be notified and your membership will be visible to ${c}$ students using pset partners (see FAQ for details). ';
   } else {
     msg += 'Existing members of this group will be notified. ';
   }
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = 'save ' + val; }
-  msg += '</p>';
   showConfirm (msg, val, 'Join ' + g[1]);
 }
 
@@ -632,12 +647,11 @@ function confirmLeave(e, gid) {
   const c = studentClasses[i-1];
   const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  let msg = `<p>You are about to leave the group <i>${g.group_name}</i>. Existing members of this group will be notified. `;
+  let msg = `You are about to leave the group <i>${g.group_name}</i>. Existing members of this group will be notified. `;
   if ( g.visibility < 2 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '</p>';
   showConfirm (msg, val, 'Leave ' + g.group_name);
 }
 
@@ -648,7 +662,7 @@ function confirmPool(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  let msg = `<p>You are about to be put in the match pool for ${c}. `;
+  let msg = `You are about to be put in the match pool for ${c}. `;
   msg += `On ${d} the system will attempt to put you in a pset group that matches your availability and preferences. `;
   msg += 'This may be accomplished either by forming a new group with other students in the pool, or by adding you to an existing private group that is open to new members. ';
   let val = "pool " + cid;
@@ -657,7 +671,6 @@ function confirmPool(e, c) {
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences "required", which will preclude the system from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
   msg += 'Note that you can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
-  msg += '</p>';
   showConfirm (msg, val, `Put me in the ${d} match pool for ${c}`);
 }
 
@@ -668,7 +681,7 @@ function confirmMatch(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  let msg = `<p>You are about to request an urgent match for ${c}. `;
+  let msg = `You are about to request an urgent match for ${c}. `;
   msg += `The system will attempt to put you in one of the existing pset groups. `;
   msg += 'Emails will be sent to existing private groups in this class that are open to new members and not incompatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined a public group in the meantime.<br><br>Please do not use this option lightly, it may generate many emails';
   msg += isLive ? '. ' : ' (in the sandbox no emails will be sent). ';
@@ -676,7 +689,6 @@ function confirmMatch(e, c) {
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += '<br><br>You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
-  msg += '</p>';
   showConfirm (msg, val, 'Find me a pset group for ' + c);
 }
 
@@ -687,11 +699,10 @@ function confirmPublicGroup(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  let msg = `<p>You are about to create a public group based on your preference settings for ${c}. `;
-  msg += `This group will be visisble to all students in ${c} using pset partners.  Anyone can join your group. up to the size limit indicated in your preferences (if any).  You will be emailed whenever new students join or leave the group. `;
+  let msg = `You are about to create a public group based on your preference settings for ${c}. `;
+  msg += `This group and its members will be visisble to ${c} students using pset partners (see FAQ for details).  Anyone can join your group. up to the size limit you have set (if any).  You will be emailed whenever new students join or leave the group. `;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '</p>';
   showConfirm (msg, val, 'Create a new public group for ' + c);
 }
 
@@ -702,11 +713,10 @@ function confirmPrivateGroup(e, c) {
   const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
-  let msg = `<p>You are about to create a private group based on your general preferences. `;
+  let msg = `You are about to create a private group based on your general preferences. `;
   msg += `This group will not be visisble to students using pset partners, but you can email others a link that will let them join your group.  If you indicate that your group is open to new members, the system may contact you when students with compatible availability and preferences are looking for pset partners. `;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  msg += '</p>';
   showConfirm (msg, val, 'Create a new private group for' + c);
 }
 
@@ -876,7 +886,7 @@ function alertInfo(q, msg) {
 }
 
 function ajaxToggle(name, value) {
-  if ( ! loaded ) return false
+  if ( ! loaded ) return false;
   ajaxToggle[name] = value;
   if ( ajaxToggle[name+'Pending'] ) return false;
   ajaxToggle[name+'Pending'] = true;
