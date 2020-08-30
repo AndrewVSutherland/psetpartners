@@ -195,7 +195,7 @@ class SelectPure {
       this._select.removeClass(this._config.classNames.selectOpen);
       this._body.removeEventListener("click", this._boundHandleClick);
       this._select.addEventListener("click", this._boundHandleClick);
-      if ( this._autocomplete ) this._match('');
+      if ( this._autocomplete ) { this._match(''); this._parent.focus(); }
       this._state.opened = false;
       return true;
   }
