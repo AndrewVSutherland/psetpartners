@@ -289,7 +289,6 @@ def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
-        print('stale login')
         return redirect(url_for("logout"))
     current_user.seen()
     current_user.flash_pending()
@@ -308,7 +307,6 @@ def instructor(context={}):
     if not current_user.is_authenticated or not current_user.is_instructor:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
-        print('stale login')
         return redirect(url_for("logout"))
     current_user.seen()
     current_user.flash_pending()

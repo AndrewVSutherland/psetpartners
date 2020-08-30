@@ -128,9 +128,9 @@ student_options = {
 }
 
 start_options = [
-    (6, "shortly after the problem set is posted"),
-    (4, "3-4 days before the pset is due"),
-    (2, "1-2 days before the pset is due"),
+    (1, "early, soon after the problem set is posted"),
+    (2, "midway, at least 3 days before the pset is due"),
+    (3, "late, a few days before the pset is due"),
     ]
 
 together_options = [
@@ -261,7 +261,6 @@ def is_admin(kerb):
     return db.admins.lucky({'kerb': kerb})
 
 def send_message(sender, recipient, typ, content):
-    print("sending " + content)
     db = getdb()
     db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}], resort=False)
 
@@ -358,17 +357,22 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c]['class_id'] = cid
     return counts
 
+def group_row(g, n):
+    p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
+    return [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
+
+def member_row(s):
+    return [_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','departments','year','kerb']]
+
 def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
     db = getdb()
     G = []
     mv = 0 if instructor_view else 2
     for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
         members = list(students_in_group(g['id']))
-        n = len(members)
-        p = [_str(g['preferences'].get(k,"")) for k in ["start", "together", "forum"]] if g.get('preferences') else ["", "", ""]
-        r = [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
+        r = group_row(g, len(members))
         if 'members' in opts and (g['visibility'] == 3 or instructor_view):
-            r.append(sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb','departments']] for s in members]))
+            r.append(sorted([member_row(s) for s in members]))
         G.append(r)
     return sorted(G,key=lambda r: r[1])
 
@@ -404,6 +408,8 @@ def cleanse_student_data(data):
     for pref in data['preferences']:
         if not pref in data['strengths']:
             data['strengths'][pref] = default_strength
+    if data['departments']:
+        data['departments'] = sorted(data['departments'], key=course_number_key)
 
 class Student(UserMixin):
     def __init__(self, kerb):
@@ -488,7 +494,6 @@ class Student(UserMixin):
 
     @property
     def stale_login(self):
-        print(self.new)
         if livesite():
             return False # we can use this to force new logins if needed
         elif not self.new:
@@ -548,7 +553,6 @@ class Student(UserMixin):
             return self._create_group(group_id, public=public)
 
     def accept_invite(self, invite):
-        print("accepting invite")
         sid = self._db.students.lookup(invite['kerb'], projection='id')
         if sid is None:
             raise ValueError("Unknown student.")
@@ -592,6 +596,8 @@ class Student(UserMixin):
         self.groups = sorted(list(self.group_data))
 
     def _save(self):
+        if self.departments:
+            self.departments = sorted(self.departments, key=course_number_key)
         if self.new:
             assert self._db.students.lookup(self.kerb) is None
             rec = {col: getattr(self, col, None) for col in self._db.students.search_cols if col != "id"}
@@ -765,7 +771,7 @@ class Student(UserMixin):
             g['group_id'] = g['id'] # just so we don't get confused
             members = list(students_in_group(gid))
             g['count'] = len(members)
-            g['members'] = sorted([[_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','year','kerb']] for s in members])
+            g['members'] = sorted([member_row(s) for s in members])
             token = generate_timed_token({'kerb':self.kerb, 'group_id': str(g['id'])}, 'invite')
             g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
             group_data[g['class_number']] = g
@@ -928,8 +934,9 @@ big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
 def generate_test_population(num_students=300,max_classes=6):
     """ generates a random student population for testing (destorys existing test data) """
     from . import db
+    mydb = db
 
-    with DelayCommit(db):
+    with DelayCommit(mydb):
         _generate_test_population(num_students, max_classes)
         db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
     print("Done!")
@@ -961,7 +968,7 @@ def _generate_test_population(num_students=300,max_classes=6):
     if not choice or choice[0] != 'y':
         print("No changes made.")
         return
-    db.text_events.delete({}, resort=False)
+    db.test_events.delete({}, resort=False)
     db.test_messages.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
     db.test_groups.delete({}, resort=False)
@@ -977,7 +984,7 @@ def _generate_test_population(num_students=300,max_classes=6):
         firstname = db.names.random()
         name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
         s['preferred_name'] = s['full_name'] = name
-        s['year'] = rand(year_options)[0] if randint(0,9) else None
+        s['year'] = rand(year_options)[0] if randint(0,7) else None
         if ( s['year'] == 1 ):
             departments = [] if randint(0,4) else ['18']
         elif ( s['year'] == 5 ):
@@ -988,7 +995,7 @@ def _generate_test_population(num_students=300,max_classes=6):
             departments.append(wrand(test_departments))
             if randint(0,4) == 2:
                 departments.append(wrand(test_departments))
-        s['departments'] = list(set(departments))
+        s['departments'] = sorted(list(set(departments)), key=course_number_key)
         s['gender'] = db.names.lookup(firstname,projection="gender") if randint(0,1) == 0 else None
         if s['gender']:
             if randint(0,2) == 0:
@@ -1014,14 +1021,14 @@ def _generate_test_population(num_students=300,max_classes=6):
         prefs, strengths = {}, {}
         for p in student_preferences:
             if not p.endswith("_affinity"):
-                if randint(0,1):
+                if randint(0,2):
                     prefs[p] = rand(student_preferences[p]['options'])[0]
                     strengths[p] = randint(1,5)
                     if p == "forum" and p in prefs and prefs[p] == "in-person":
                         prefs[p] = "video";
             else:
                 q = p.split('_')[0]
-                if q in student_affinities and s[q]:
+                if q in student_affinities and s[q] and randint(0,1):
                     prefs[p] = rand(student_preferences[p]['options'])[0]
                     strengths[p] = randint(1,5)
         s['preferences'] = prefs
@@ -1092,8 +1099,12 @@ def _generate_test_population(num_students=300,max_classes=6):
                 continue
             s = db.test_students.lookup(creator, projection=['id','preferences', 'strengths'])
             db.test_classlist.update({'class_id': c['id'], 'student_id': s['id']}, {'status': 1}, resort=False)
-            prefs = { k: s['preferences'][k] for k in s.get('preferences',{}) if not k.endswith('affinity') }
-            strengths = { k: s['strengths'][k] for k in s.get('strengths',{}) if not k.endswith('affinity') }
+            prefs = { p: s['preferences'][p] for p in s.get('preferences',{}) if not p.endswith('affinity') }
+            strengths = { p: s['strengths'][p] for p in s.get('strengths',{}) if not p.endswith('affinity') }
+            for p in ["start", "together", "forum", "size"]:
+                if not p in prefs and randint(0,1):
+                    prefs[p] = rand(student_preferences[p]['options'])[0]
+                    strengths[p] = rand_strength()
             maxsize = max_size_from_prefs(prefs)
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
                  'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': [creator], 'max': maxsize }
@@ -1125,9 +1136,10 @@ def _generate_test_population(num_students=300,max_classes=6):
         db.test_grouplist.insert_many(S, resort=False)
 
     # take instructors from classes table for current term
+    S = []
     for r in db.classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
         if r['instructor_kerbs']:
             for i in range(len(r['instructor_kerbs'])):
                 kerb, name = r['instructor_kerbs'][i], r['instructor_names'][i]
                 S.append({'kerb':kerb,'preferred_name':name,'full_name':name,'departments':['18'],'toggles':{}})
-    db.teet_instructors.insert_many(S, resort=False)             
+    db.test_instructors.insert_many(S, resort=False)             
