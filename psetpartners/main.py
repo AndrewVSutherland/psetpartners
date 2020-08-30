@@ -33,6 +33,7 @@ from .student import (
     class_groups,
     send_message,
     sandbox_message,
+    log_event,
     )
 from .utils import (
     format_input_errmsg,
@@ -342,49 +343,67 @@ def save_student():
             return redirect(url_for(".student"))
         submit = submit[1:]
     if not submit:
-        return redirect(url_for(".student"))    
+        return redirect(url_for(".student"))
     if submit[0] == "join":
         try:
-            flash_info(current_user.join(int(submit[1])))
+            gid = int(submit[1])
+            flash_info(current_user.join(gid))
         except Exception as err:
+            msg = "Error joining group: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'join', status=-1, detail={'group_id': gid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error joining group: {0}{1!r}".format(type(err).__name__, err.args))
+            flash_error(msg)
     elif submit[0] == "leave":
         try:
-            flash_info(current_user.leave(int(submit[1])))
+            gid = int(submit[1])
+            flash_info(current_user.leave(gid))
         except Exception as err:
+            msg = "Error leaving group: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'leave', status=-1, detail={'group_id': gid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error leaving group: {0}{1!r}".format(type(err).__name__, err.args))
+            flash_error(msg)
     elif submit[0] == "pool":
         try:
-            flash_info(current_user.pool(int(submit[1])))
+            cid = int(submit[1])
+            flash_info(current_user.pool(cid))
         except Exception as err:
+            msg = "Error adding you to the match pool: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'pool', status=-1, detail={'class_id': cid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error adding you to the match pool for {0}: {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+            flash_error(msg)
     elif submit[0] == "match":
         try:
-            flash_info(current_user.match(int(submit[1])))
+            cid = int(submit[1])
+            flash_info(current_user.match(cid))
         except Exception as err:
+            msg = "Error submitting match request: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'match', status=-1, detail={'class_id': cid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+            flash_error()
     elif submit[0] == "createprivate":
         try:
-            flash_info(current_user.create_group (int(submit[1]), public=False))
+            cid = int(submit[1])
+            flash_info(current_user.create_group (cid, public=False))
         except Exception as err:
+            msg = "Error creating private group: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'create', status=-1, detail={'class_id': cid, 'public': False, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+            flash_error(msg)
     elif submit[0] == "createpublic":
         try:
-            flash_info(current_user.create_group (int(submit[1]), public=True))
+            cid = int(submit[1])
+            flash_info(current_user.create_group (cid, public=True))
         except Exception as err:
+            msg = "Error creating private group: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'create', status=-1, detail={'class_id': cid, 'public': True, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error("Error submitting match request for {0}:  {1}{2!r}".format(submit[1], type(err).__name__, err.args))
+            flash_error(msg)
     else:
         flash_error("Unrecognized submit command: " + submit[0]);
     return redirect(url_for(".student"))
