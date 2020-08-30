@@ -182,10 +182,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
   <table class="input pref">
 
-    {{PREF("When you like to start working", "start", 14)}}
-    {{PREF("How you like to collaborate", "together", 16)}}
-    {{PREF("How you like to communicate", "forum", 18)}}
-    {{PREF("Your ideal group size", "size", 20)}}
+    {{PREF("When to start working", "start", 14)}}
+    {{PREF("Collaboration style", "style", 16)}}
+    {{PREF("Forum for communication", "forum", 18)}}
+    {{PREF("Preferred group size", "size", 20)}}
     {{CPROP("Commitment to this course", "commitment", 21)}}
     {{CPROP("Knowledge of the material", "confidence", 22)}}
 
@@ -212,7 +212,13 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   {% endfor %}
     <div class="caction" id="partner-confirm" style="display:none;">
       <p id="partner-confirm-message"></p>
-      <table class="ctab"><tbody><tr>
+      <table class="ctab" style="display:none;"><tbody><tr>
+        <td>Start:</td><td><span class="select" id="start-select"></span><input type="hidden" id="start" /></td>
+        <td>Style:</td><td><span class="select" id="style-select"></span><input type="hidden" id="style" /></td>
+        <td>Forum:</td><td><span class="select" id="forum-select"></span><input type="hidden" id="forum" /></td>
+        <td>Size:</td><td><span class="select" id="size"></span><input type="hidden" id="size" /></td>
+      </tr></tbody></table>
+      <table class="ctab" style="display:none;"><tbody><tr>
         <td><button type="button" class="confirm" id="partner-confirm-button" value='' onclick="submitStudentForm(this.value);"></button></td>
         <td><button type="button" class="submit" id="partner-cancel-button" onclick="hideConfirm();">nevermind</button></td>
       </tr></tbody></table>
@@ -269,7 +275,7 @@ const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
 
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */ // from template (ignored above)
-/* global yearShort, startShort, forumShort, togetherShort, profileOptions */ // options.js
+/* global yearShort, startShort, forumShort, styleShort, profileOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */ // options.js
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, copyToClipboard */ // in psetpartners.js
 
@@ -476,15 +482,15 @@ function gtabMembers(e, gid) {
   $(s).appendTo(jQuery(mRow));
 }
 
-// group record should be an array [group_id, group_name, start, together, forum, size, max, ...] (entries after max will be ignored here)
+// group record should be an array [group_id, group_name, start, style, forum, size, max, ...] (entries after max will be ignored here)
 function gtabHead() {
   return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
 }
 function gtabRow(g) {
   const start = startShort[parseInt(g[2]) || 0] || "-";
-  const together = togetherShort[parseInt(g[3]) || 0] || "-";
+  const style = styleShort[parseInt(g[3]) || 0] || "-";
   let group_label = `<label class="group-label" onclick="gtabMembers(this,${g[0]});">${g[1]}</label>`;
-  let row = `<tr><td>${group_label}</td><td align="center">${start}</td><td align="center">${together}</td>`;
+  let row = `<tr><td>${group_label}</td><td align="center">${start}</td><td align="center">${style}</td>`;
   row += `<td align="center">${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
   row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
   return row;

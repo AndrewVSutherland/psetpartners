@@ -224,7 +224,7 @@ def testlog():
     app.logger.info(msg)
     return "The following message was just logged:\n\n"+msg
 
-allowed_copts = ["hours", "start", "together", "forum", "size", "commitment", "confidence"]
+allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence"]
 allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
 
 

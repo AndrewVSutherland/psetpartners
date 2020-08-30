@@ -300,7 +300,7 @@ input.value {
 
 input.value::placeholder {
   font-size: 90%;
-  font-style:italic;
+  font-style: italic;
 }
 
 select.value option {
