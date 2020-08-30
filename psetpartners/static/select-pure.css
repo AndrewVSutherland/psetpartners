@@ -1,10 +1,11 @@
 :root {
+  --short-min-height: 24px;
   --min-height: 32px;
   --max-height: 200px;
   --row-height: 20px;
 }
 
-.sp-placeholder {
+.sp-placeholder, .sp-short-placeholder {
   color: gray;
   font-style: italic;
   font-size: 90%;
@@ -21,13 +22,18 @@
   font-size: 70%;
 }
 
-.select-wrapper {
-  margin: auto;
-  max-width: var(--value-width);
-  width: var(--value-width);
+.sp-short-placeholder::after {
+  content: "▽";
+  font-weight: normal;
+  position: absolute;
+  bottom: 4px;
+  right: 2px;
+  color: var(--mit-maroon);
+  font-style: normal;
+  font-size: 70%;
 }
 
-.sp-select {
+.sp-select ,.sp-short-select {
   align-items: center;
   background-color: var(--mit-white);
   border-radius: 4px;
@@ -47,7 +53,13 @@
   font-family: Verdona, Geneva, sans-serif;
 }
 
-.sp-select:hover {
+.sp-short-select {
+  width: calc(var(--short-value-width) + 7px);
+  min-height: var(--short-min-height);
+  padding: 0px 4px;
+}
+
+.sp-select:hover, .sp-short-select:hover {
   background-color: var(--select-fill);
 }
 
@@ -69,7 +81,7 @@
   overflow-x: hidden;
   overflow-y: auto; /* this does not work in firefox, handled in .js instead */
   position: absolute;
-  width: calc(100% + 3px); /*var(--value-width);*/
+  width: calc(100% + 3px);
   z-index: 5;
 }
 
