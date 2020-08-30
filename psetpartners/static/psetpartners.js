@@ -37,7 +37,7 @@ function makeSingleSelect(id, available, config) {
     else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
     else if ( evt.which === 27 || evt.which === 33 ) { s.close(); evt.preventDefault(); }
     else if ( evt.which === 34 ) { s.open(); evt.preventDefault(); }
-    else if ( evt.which === 13 ) { s.toggle(); evt.preventDefault(); }
+    else if ( evt.which === 13 ) {  evt.preventDefault(); if ( config.autocomplete ) s.selectone(); else s.toggle(); }
   });
  
   e.value = s.value();
@@ -93,6 +93,7 @@ function makeMultiSelect(id, available, config) {
   se.addEventListener('keydown', function(evt) {
     if ( evt.which == 34 | evt.which === 39 || evt.which === 40 || evt.which === 34 ) { s.open();  evt.preventDefault(); }
     else if ( evt.which == 33 || evt.which === 37 || evt.which === 38 || evt.which === 27 || evt.which == 33 ) { s.close();  evt.preventDefault(); }
+    else if ( evt.which === 13 ) {  evt.preventDefault(); if ( config.autocomplete ) s.selectone(); else s.toggle(); }
   });
   //e.value = s.value();
   jQuery(e).data('select',s);
