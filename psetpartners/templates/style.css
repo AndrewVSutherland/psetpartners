@@ -501,6 +501,30 @@ div.caction p i {
   color: var(--mit-maroon);
 }
 
+.group-label {
+  color: var(--mit-maroon);
+  cursor: pointer;
+}
+.group-label:hover {
+  background: var(--mit-pink);
+}
+
+ul.group-members {
+  margin: 0 0 0 40px;
+  padding: 0;
+  list-style: none;
+}
+ul.group-members li {
+  font-size: 95%;
+}
+ul.group-members li::before {
+  content: "●";
+  padding-right: 3px;
+  padding-bottom: 1px;
+  font-size: 90%;
+  color: var(--mit-maroon);
+}
+
 /* BEGIN htoggler */
 .htoggler, .profile-toggler {
   margin: 15px 0 0 0;

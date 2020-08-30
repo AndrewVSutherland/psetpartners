@@ -37,7 +37,7 @@ function makeSingleSelect(id, available, config) {
     else if ( evt.which === 37 || evt.which === 38 ) { if ( ! s.prev() ) s.open(); evt.preventDefault(); }
     else if ( evt.which === 27 || evt.which === 33 ) s.close();
     else if ( evt.which === 34 ) s.open();
-    else if ( evt.which === 13 ) s.toggle();
+    else if ( evt.which === 13 ) { s.toggle(); evt.preventDefault(); }
   });
  
   e.value = s.value();
@@ -164,39 +164,71 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
 }
 
 function flashAnnounce(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
-  p.classList.add('flash-info'); p.appendChild(t);
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [ok]');
+  p.classList.add('flash-announce'); p.appendChild(pt); p.appendChild(l);
+  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashInstruct(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
-  p.classList.add('flash-instruct'); p.appendChild(t);
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
+  p.classList.add('flash-instruct'); p.appendChild(pt); p.appendChild(l);
+  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashError(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
-  p.classList.add('flash-error'); p.appendChild(t);
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
+  p.classList.add('flash-error'); p.appendChild(pt); p.appendChild(l);
+  l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashInfo(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
+  const p = document.createElement('p'), t = document.createTextNode(msg);
   p.classList.add('flash-info'); p.appendChild(t);
   document.getElementById('flash-bottom').appendChild(p);
   jQuery(p).fadeOut(5000);
 }
 
 function flashWarning(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
+  const p = document.createElement('p'), t = document.createTextNode(msg);
   p.classList.add('flash-warning'); p.appendChild(t);
   document.getElementById('flash-bottom').appendChild(p);
   jQuery(p).fadeOut(10000);
 }
 
-function copyToClipboard(msg) {
-  const q = $('#clipboard');  // should be an input with class hidden (but not type hidden)
+window.Clipboard = (function(window, document, navigator) {
+    var textArea, copy;
+
+    function isOS() { return navigator.userAgent.match(/ipad|iphone/i); }
+    function createTextArea(text) {
+        textArea = document.createElement('textArea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+    }
+    function selectText() {
+        if (isOS()) {
+            const range = document.createRange();
+            range.selectNodeContents(textArea);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            textArea.setSelectionRange(0, 999999);
+        } else {
+            textArea.select();
+        }
+    }
+    function _copy() { const sts = document.execCommand('copy'); document.body.removeChild(textArea); return sts; }
+    copy = function(text) { createTextArea(text); selectText(); return _copy(); };
+    return { copy: copy };
+})(window, document, navigator);
+
+function copyToClipboard(msg) { return Clipboard.copy(msg); }
+/*  const q = $('#clipboard');  // should be an input with class hidden (but not type hidden)
   q.val(msg); q.select();
-  return document.execCommand('copy');
-}
+  return document.execCommand('copy');*/
+

@@ -3,6 +3,7 @@ import os
 import time
 import logging
 import getpass
+import datetime
 
 from .config import Configuration
 
@@ -37,6 +38,7 @@ if getpass.getuser() == 'psetpartners':
         SESSION_COOKIE_SAMESITE='Strict',
         REMEMBER_COOKIE_SECURE=True,
         REMEMBER_COOKIE_HTTPONLY=True,
+        REMEMBER_COOKIE_DURATION=datetime.timedelta(days=1),
     )
 
 mail_settings = {
@@ -235,6 +237,14 @@ def css():
 def send_email(to, subject, message):
     from html2text import html2text
 
+    if isinstance(to,str):
+        to = [to]
+
+    # TODO the code below is for testing, remove it once we go live
+    if not livesite() or under_construction():
+        subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
+        to = ['drew@math.mit.edu']
+
     sender = "psetpartnersnoreply@math.mit.edu"
     app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
     mail.send(
@@ -243,7 +253,6 @@ def send_email(to, subject, message):
             html=message,
             body=html2text(message),
             sender=sender,
-            recipients=[to],
+            recipients=to,
         )
     )
-    app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))

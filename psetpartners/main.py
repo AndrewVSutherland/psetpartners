@@ -32,6 +32,7 @@ from .student import (
     get_counts,
     class_groups,
     send_message,
+    sandbox_message,
     )
 from .utils import (
     format_input_errmsg,
@@ -115,11 +116,11 @@ def login():
         affiliation = affiliation.split("@")[0]
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
-            return render_template("login.html", maxlength=maxlength, next=next)
+            return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
         kerb = request.form.get("kerb", "").lower()
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
-            return render_template("login.html", maxlength=maxlength, next=next)
+            return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
         affiliation = "staff" if is_instructor(kerb) else "student"
 
     if not kerb or not affiliation:
@@ -133,6 +134,7 @@ def login():
         return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
     session["kerb"] = kerb
     session["affiliation"] = affiliation
+    user.login()
     login_user(user, remember=False)
     app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
         (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
@@ -171,7 +173,7 @@ def index():
         if livesite():
             return redirect(url_for(".login"))
         else:
-            return render_template("login.html", maxlength=maxlength)
+            return render_template("login.html", sandbox_message=sandbox_message(), maxlength=maxlength)
     assert False
 
 @app.route("/test404")
@@ -281,9 +283,14 @@ def accept_invite(token):
     return redirect(url_for(".student"))
 
 @app.route("/student")
+@login_required
 def student(context={}):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        print('stale login')
+        return redirect(url_for("logout"))
+    current_user.seen()
     current_user.flash_pending()
     return render_template(
         "student.html",
@@ -295,9 +302,15 @@ def student(context={}):
     )
 
 @app.route("/instructor")
+@login_required
 def instructor(context={}):
     if not current_user.is_authenticated or not current_user.is_instructor:
         return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        print('stale login')
+        return redirect(url_for("logout"))
+    current_user.seen()
+    current_user.flash_pending()
     return render_template(
         "instructor.html",
         options=template_options(),
@@ -461,6 +474,7 @@ def save_changes(raw_data):
 @app.route("/logout")
 @login_required
 def logout():
+    session.clear()
     logout_user()
     if not livesite():
         resp = make_response(redirect(url_for(".index")))
