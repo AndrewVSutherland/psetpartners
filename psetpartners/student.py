@@ -35,8 +35,7 @@ new_instructor_welcome = """
 <b>Welcome to pset partners!</b>
 You are not currently registered as a pset partners instructor for fall 2020.
 If you are an instructor for a class in course 18 (or one cross-listed with course 18)
-that is <a href="https://math.mit.edu/academics/classes.php" target="_blank">offered this term</a>,
-please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> to have
+that is offered this term, please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> to have
 your kerberos id added to the system.<br><br>
 
 If you are an instructor or staff member outside of course 18 interested in having
@@ -519,7 +518,8 @@ class Student(UserMixin):
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            flash_announce("%s:%s" % (msg['id'], msg['content']))
+            content = ''.join(msg['content'].split('`')) # remove any backticks since we are using them as a separator
+            flash_announce("%s`%s" % (msg['id'], content))
 
     def acknowledge(self, msgid):
         self._db.messages.update({'id': msgid},{'read':True}, resort=False)
@@ -885,7 +885,8 @@ class Instructor(UserMixin):
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
-            flash_announce("%s:%s" % (msg['id'], msg['content']))
+            content = ''.join(msg['content'].split('`')) # remove any backticks since we are using them as a separator
+            flash_announce("%s`%s" % (msg['id'], content))
 
 
 class AnonymousUser(AnonymousUserMixin):
