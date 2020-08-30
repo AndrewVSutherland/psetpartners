@@ -164,38 +164,38 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
 }
 
 function flashAnnounce(msg) {
-  const p = document.createElement('P'), pt = document.createTextNode(msg);
-  const l = document.createElement('L'); lt = document.createTextNode(' [ok]');
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [ok]');
   p.classList.add('flash-announce'); p.appendChild(pt); p.appendChild(l);
   l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashInstruct(msg) {
-  const p = document.createElement('P'), pt = document.createTextNode(msg);
-  const l = document.createElement('L'); lt = document.createTextNode(' [dismiss]');
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
   p.classList.add('flash-instruct'); p.appendChild(pt); p.appendChild(l);
   l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashError(msg) {
-  const p = document.createElement('P'), pt = document.createTextNode(msg);
-  const l = document.createElement('L'); lt = document.createTextNode(' [dismiss]');
+  const p = document.createElement('p'), pt = document.createTextNode(msg);
+  const l = document.createElement('l'); lt = document.createTextNode(' [dismiss]');
   p.classList.add('flash-error'); p.appendChild(pt); p.appendChild(l);
   l.classList.add('flash-after'); l.appendChild(lt); l.onclick = function(e) { document.getElementById('flash-top').removeChild(p); }
   document.getElementById('flash-top').appendChild(p);
 }
 
 function flashInfo(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
+  const p = document.createElement('p'), t = document.createTextNode(msg);
   p.classList.add('flash-info'); p.appendChild(t);
   document.getElementById('flash-bottom').appendChild(p);
   jQuery(p).fadeOut(5000);
 }
 
 function flashWarning(msg) {
-  const p = document.createElement('P'), t = document.createTextNode(msg);
+  const p = document.createElement('p'), t = document.createTextNode(msg);
   p.classList.add('flash-warning'); p.appendChild(t);
   document.getElementById('flash-bottom').appendChild(p);
   jQuery(p).fadeOut(10000);
