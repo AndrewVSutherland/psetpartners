@@ -170,6 +170,10 @@ def alive():
     app.logger.info(msg)
     return msg
 
+@app.route("/about")
+def about():
+    return render_template("about.html", title="about")
+
 @app.route("/acknowledgments")
 def acknowledgment():
     return render_template("acknowledgments.html", title="acknowledgments")

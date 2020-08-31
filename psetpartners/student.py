@@ -781,6 +781,8 @@ class Student(UserMixin):
             editors = []
         maxsize = max_size_from_prefs(prefs)
         self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': maxsize}, resort=False)
+        self._notify_group(group_id, "pset partner notification",
+                           "%s (kerb=%s) updated the settings for the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
         self._reload()
         return "Updated the group <b>%s</b>!" % g['group_name']
 
