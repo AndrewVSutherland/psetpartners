@@ -763,11 +763,11 @@ function confirmPrivateGroup(e, c) {
   $('.editors').show();  $('.open').show();
 
   let msg = `You are about to create a private group based on your preferences, which you may update below. `;
-  msg += `This group will not be visisble to other students on pset partners, but you can create a link that will let people join your group.  If you indicate that your group is open to new members, the system may contact you in the future when students with compatible availability and preferences are looking for pset partners (you can always decline). By default only you can change the settings for this group, but you can alternativley grant edit permission to all group members.`;
+  msg += `This group will not be visible to other students on pset partners, but you can create a link that will let people join your group.  If you indicate that your group is open to new members, the system may contact you in the future when students with compatible availability and preferences are looking for pset partners (you can always decline). By default only you can change the settings for this group, but you can alternatively grant edit permission to all group members.`;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
-  showConfirm (msg, val, 'Create a new private group for' + c, true);
+  showConfirm (msg, val, 'Create a new private group for ' + c, true);
 }
 
 function confirmEditGroup(e, c) {
@@ -784,7 +784,7 @@ function confirmEditGroup(e, c) {
   let val = 'editgroup ' + g.group_id;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
-  showConfirm (msg, val, 'Create a new private group for' + c, true);
+  showConfirm (msg, val, 'Update settings for ' + g.group_name, true);
 }
 
 function showApplyPreferences() {
