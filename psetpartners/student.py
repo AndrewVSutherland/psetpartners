@@ -857,7 +857,25 @@ class Instructor(UserMixin):
         for col, typ in self._db.instructors.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
+        self.classes = self._class_data()
         assert self.kerb
+
+    def _class_data(self, year=current_year(), term=current_term()):
+        class_data = {}
+        classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
+        for c in classes:
+            c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
+            for s in c['students']:
+                s['group_id'] = self._db.grouplist.lucky({'class_id':c['id'], 'student_id': s['id']}, projection='group_id')
+                if s['group_id']:
+                    s['group_name'] = self._db.groups.lucky({'id':s['group_id']}, projection='group_name')
+            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+        return sorted(classes, key = lambda x: x['class_number'])
+
+    def acknowledge(self, msgid):
+        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
+        log_event (self.kerb, 'ok')
+        return "ok"
 
     @property
     def is_student(self):
