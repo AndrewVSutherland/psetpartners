@@ -122,7 +122,10 @@ def login():
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
-        affiliation = "staff" if is_instructor(kerb) else "student"
+        if kerb == "unknown":
+            affiliation = "staff"
+        else:
+            affiliation = "staff" if is_instructor(kerb) else "student"
 
     if not kerb or not affiliation:
         return render_template("500.html", message="Missing login credentials"), 500

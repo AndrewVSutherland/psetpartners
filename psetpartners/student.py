@@ -33,14 +33,6 @@ old_instructor_welcome = """
 
 new_instructor_welcome = """
 <b>Welcome to pset partners!</b>
-You are not currently registered as a pset partners instructor for fall 2020.
-If you are an instructor for a class in course 18 (or one cross-listed with course 18)
-that is offered this term, please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> to have
-your kerberos id added to the system.<br><br>
-
-If you are an instructor or staff member outside of course 18 interested in having
-your course listed on pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.
-We are planning to expand the site beyond course 18 in the spring.
 """
 
 signature = "<br><br>Your friends at psetparterners@mit.edu.<br>"
@@ -936,7 +928,9 @@ class Instructor(UserMixin):
             return False # we can use this to force new logins if needed
         else:
             r = self._db.globals.lookup('sandbox')
-            return not self.last_login or self.last_login < r['timestamp']
+            if not self.last_login:
+                return False
+            return self.last_login < r['timestamp']
 
     def seen(self):
         self._db.instructors.update({'kerb':self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)

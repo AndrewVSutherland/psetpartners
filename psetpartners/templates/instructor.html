@@ -14,7 +14,11 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <h2>{{user.preferred_name}}</h2>
 
 {% if (user.classes|length) == 0 %}
-<p>You are not listed as the instructor for any of the courses registered with pset partners this term.  Please <a href="mailto:psetpartners@mit.edu">contact us</a> if this is incorrect.
+<p>You do not have access to this site because you are not a student and are not registered as the instructor of one of the classes using the site this term.  For the {{current_term_pretty}} term only classes in course 18 are using pset partners.</p>
+<p>Please <a href="mailto:psetpartners@mit.edu">contact us</a> if this information is incorrect.</p>
+<p>
+If you are an instructor or staff member outside of course 18 interested in using pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.  We plan to expand the site beyond course 18 in the spring.
+</p>
 {% elif (user.classes|length) == 1 %}
 <p align="justify">According to out records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.
 {% else %}
