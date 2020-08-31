@@ -466,7 +466,7 @@ function mtabRow(s) {
   if ( s[0] && s[1] ) name += "(" + s[1] + ")";
   let year = s[3] ? parseInt(s[3]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
   const depts = s[2].split(' ').join(',');
-  return `<tr><td>${name}</td><td align="center">${depts}</td><td align="center">${year}</td><td><a href="mailto:${s[4]}@mit.edu">${s[4]}@mit.edu</a></td></tr>`;
+  return `<tr><td style="text-align:left;">${name}</td><td align="center">${depts}</td><td>${year}</td><td style="text-align:right;"><a href="mailto:${s[4]}@mit.edu">${s[4]}@mit.edu</a></td></tr>`;
 }
 
 function memberOneline(m) {
