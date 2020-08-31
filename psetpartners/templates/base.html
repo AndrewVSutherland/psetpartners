@@ -9,6 +9,10 @@
     <!-- main style sheet -->
     <link id="style_css" href="{{ url_for('css') }}" rel="stylesheet" type="text/css" />
 
+    <!-- apple icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon-180x180.png') }}" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon-180x180.png') }}" />
+
     <!-- static html content we are happy to let the browser cache (e.g. captions and dropdown options) -->
     <script defer src="{{ url_for('static', filename='options.js') }}"></script>
 
