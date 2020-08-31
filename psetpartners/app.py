@@ -81,7 +81,7 @@ def debug_mode():
     return current_app.debug
 
 def under_construction():
-    return livesite() # TODO: change this line when we go live
+    return False # we are live!
 
 ############################
 # Global app configuration #
