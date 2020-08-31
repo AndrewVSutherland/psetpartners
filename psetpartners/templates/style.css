@@ -4,7 +4,7 @@
   --min-width: 940px;
   --caption-width: 270px;
   --value-width: 390px;
-  --short-value-width: 80px;
+  --short-value-width: 84px;
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
@@ -230,12 +230,12 @@ table.short-input {
 td.short-caption {
   margin: 0;
   padding-right: 1px;
-  padding-left: 12px;
+  padding-left: 9px;
 }
 td.short-value {
   margin: 0;
   padding-left: 0px;
-  padding-right: 12px;
+  padding-right: 9px;
 }
 
 td.forminfo, span.forminfo {
@@ -388,6 +388,10 @@ button.confirm {
 button.confirm:focus {
   outline: none;
   border: 1.5px solid var(--mit-maroon);
+}
+
+button.confirm:disabled {
+  color: gray;
 }
 
 label.confirm {
