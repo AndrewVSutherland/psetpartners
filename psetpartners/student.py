@@ -291,6 +291,15 @@ def max_size_from_prefs(prefs):
         return None
     return bigger[0]-1
 
+def get_pref_option(prefs, input, k):
+    val = input.get(k,'').strip()
+    if not val:
+        return
+    if not [True for v in student_preferences[k] if v[0] == val]:
+        raise ValueError("Invalid option %s for %s " % (val, k))
+    prefs[k] = val
+
+
 def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
     count_hours = 'hours' in opts
@@ -551,10 +560,15 @@ class Student(UserMixin):
             log_event (self.kerb, 'match', {'class_id': class_id})
             return self._match(class_id)
 
-    def create_group(self, group_id, options=None, public=True):
+    def create_group(self, group_id, options, public=True):
         with DelayCommit(self):
-            log_event (self.kerb, 'create', detail={'group_id': group_id, 'public':public})
+            log_event (self.kerb, 'create', detail={'group_id': group_id, 'options': options, 'public': public})
             return self._create_group(group_id, options=options, public=public)
+
+    def edit_group(self, group_id, options):
+        with DelayCommit(self):
+            log_event (self.kerb, 'edit', detail={'group_id': group_id, 'options': options})
+            return self._edit_group(group_id, options)
 
     def accept_invite(self, invite):
         sid = self._db.students.lookup(invite['kerb'], projection='id')
@@ -728,26 +742,11 @@ class Student(UserMixin):
             app.logger.warning("User %s tried to create a group in class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
         c = self.class_data[c]
-        if options is None:
-            prefs = { k: c['preferences'][k] for k in c.get('preferences',{}) if not k.endswith('affinity') }
-            visibility = 3 if public else 0
-            editors = [] if public else [self.kerb]
-        else:
-            def get_option(prefs, input, k):
-                val = input.get(k,'').strip()
-                if not val:
-                    return
-                if not [True for v in student_preferences[k] if v[0] == val]:
-                    raise ValueError("Invalid option %s for %s " % (val,k))
-                prefs[k] = val
-
-            prefs = {}
-            for k in ['start', 'style', 'forum', 'size']:
-                get_option(prefs, options, k)
-            visibility = 3 if public else (1 if options.get('open','').strip() else 0)
-            editors = [self.kerb] if options.get('editors','').strip() == '1' else []
-            print("visibility: %s" %visibility)
-            print("editors: %s" % editors)
+        prefs = {}
+        for k in ['start', 'style', 'forum', 'size']:
+            get_pref_option(prefs, options, k)
+        visibility = 3 if public else (1 if options.get('open','').strip() else 0)
+        editors = [self.kerb] if options.get('editors','').strip() == '1' else []
         strengths = {} # Groups don't have preference strengths right now
         maxsize = max_size_from_prefs(prefs)
         name = generate_group_name()
@@ -758,6 +757,32 @@ class Student(UserMixin):
         self._db.grouplist.insert_many([r], resort=False)
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
+
+    def _edit_group(self, group_id, options):
+        g = self._db.groups.lucky({'id': group_id})
+        if not g:
+            app.logger.warning("User %s attempted to leave non-existent group %s" % (self.kerb, group_id))
+            raise ValueError("Group not found in database.")
+        c = g['class_number']
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to leave group %s in class %s not in their class list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in any of your classes for this term.")
+        if not c in self.groups:
+            app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in your list of groups for this term.")
+        prefs = {}
+        for k in ['start', 'style', 'forum', 'size']:
+            get_pref_option(prefs, options, k)
+        visibility = g['visibility']
+        if visibility < 2:
+            visibility = (1 if options.get('open','').strip() else 0)
+        editors = g['editors']
+        if len(editors) and options.get('editors','').strip() != '1':
+            editors = []
+        maxsize = max_size_from_prefs(prefs)
+        self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': maxsize}, resort=False)
+        self._reload()
+        return "Updated the group <b>%s</b>!" % g['group_name']
 
     def _notify_group(self, group_id, subject, message):
         def email(s):
@@ -795,6 +820,7 @@ class Student(UserMixin):
             members = list(students_in_group(gid))
             g['count'] = len(members)
             g['members'] = sorted([member_row(s) for s in members])
+            g['can_edit'] = True if self.kerb in g['editors'] or g['editors'] == [] else False;
             token = generate_timed_token({'kerb':self.kerb, 'group_id': str(g['id'])}, 'invite')
             g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
             group_data[g['class_number']] = g
@@ -1057,7 +1083,6 @@ def _generate_test_population(num_students=300,max_classes=6):
                 if q in student_affinities and s[q] and randint(0,1):
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
-        print(prefs)
         s['preferences'] = prefs
         s['strengths'] = strengths
         S.append(s)
@@ -1133,8 +1158,9 @@ def _generate_test_population(num_students=300,max_classes=6):
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = rand_strength()
             maxsize = max_size_from_prefs(prefs)
+            eds = [creator] if randint(0,1) else []
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': [creator], 'max': maxsize }
+                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': eds, 'max': maxsize }
             creators.add(creator)
             names.add(name)
             S.append(g)

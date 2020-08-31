@@ -399,8 +399,18 @@ def save_student():
             cid = int(submit[1])
             flash_info(current_user.create_group (cid, {k: raw_data.get(k,'').strip() for k in group_options}, public=True))
         except Exception as err:
-            msg = "Error creating private group: {0}{1!r}".format(type(err).__name__, err.args)
+            msg = "Error creating public group: {0}{1!r}".format(type(err).__name__, err.args)
             log_event (current_user.kerb, 'create', status=-1, detail={'class_id': cid, 'public': True, 'msg': msg})
+            if debug_mode():
+                raise
+            flash_error(msg)
+    elif submit[0] == "editgroup":
+        try:
+            gid = int(submit[1])
+            flash_info(current_user.edit_group (gid, {k: raw_data.get(k,'').strip() for k in group_options}))
+        except Exception as err:
+            msg = "Error editing group: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'create', status=-1, detail={'group_id': gid, 'public': True, 'msg': msg})
             if debug_mode():
                 raise
             flash_error(msg)
