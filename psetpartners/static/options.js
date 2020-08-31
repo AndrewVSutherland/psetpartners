@@ -211,4 +211,4 @@ const studentPlaceholders = {
   confidence_affinity: 'knowledge affinity',
 };
 
-const profileOptions = [ "expand", "contract" ];
+const profileOptions = [ "expand", "collapse" ];
