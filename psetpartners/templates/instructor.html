@@ -21,6 +21,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 According to our records, you are an instructor for the following courses this term:
 <ul>
 
+{% if (user.classes|length) > 0 %}
 
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
@@ -32,8 +33,6 @@ The table below lists the students who have entered this course into their pset 
 No matchings have taken place yet, so most students have yet to form groups.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>.
 </p><p>
 Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
-
-
 
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
@@ -49,6 +48,8 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
   </tbody>
 </table>
 {% endfor %}
+
+{% endif %}
 
 {% endif %}
 
