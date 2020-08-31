@@ -786,7 +786,7 @@ function confirmEditGroup(e, c) {
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
   if ( g.editors.length === 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
   if ( g.visibility > 1 ) $('.open').hide(); else $('.open').show();
-  let msg = `You are about to edit the settings for the ${c} pset group ${g.group_name}. `
+  let msg = `You are about to edit the settings for the ${c} pset group ${g.group_name}. `;
   if ( g.members.length > 1 ) msg += `Other members of the group will automatically be notified of your changes. `;
   if ( g.editors.length > 0 ) msg += `Note that changes to the editors setting are irreversible (all other changes can be undone).`;
   let val = 'editgroup ' + g.group_id;
