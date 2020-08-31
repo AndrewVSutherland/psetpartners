@@ -204,8 +204,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <!-- TOOO figure out what is up with the margin-right's below, they should not be needed (or handled in style.css) -->
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
-    <div style="width: 100%; padding:0 20px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
-      <p align="justify" class="partner-summary" style="margin-right:30px;" id="partner-summary-{{i}}"></p>
+    <div style="width: 100%; padding:0 10px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
+      <p align="justify" class="partner-summary" style="margin: 20px 20px 20px 5px;" id="partner-summary-{{i}}"></p>
       <div class="partner-div" style="margin-right:30px'" id="partner-div-{{i}}"></div>
       <div class="partner-buttons" style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
@@ -214,7 +214,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <p align="justify" id="partner-confirm-message"></p>
       <div id="confirm-options" style="display:none;">
         <table class="short-input"><tbody><tr>
-          <td class="short-caption">Start:</td>
+          <td class="short-caption" style="margin-left:0; padding-left:0;">Start:</td>
           <td class="short-value"><span class="short-select" id="select-start"></span><input type="hidden" name="start" id="start" /></td>
           <td class="short-caption">Style:</td>
           <td class="short-value"><span class="short-select" id="select-style"></span><input type="hidden" name="style" id="style" /></td>
@@ -545,20 +545,19 @@ function partneredActionButtons2(c, gid) {
 
 function setPartnerPanes() {
   let cnts = allCounts[''];
-  $('#parnter-summary-0').text(
-    `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${cnts.visibility['2']} are public.`
-  );
+  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${(cnts.visibility['2']||0)+(cnts.visibility['3']||0)} are public.<br><br>`;
   if ( studentClasses.length ) {
-    $('#partner-summary-0').text('Click on a class number to see your pset partnering options for that class.');
+    msg += 'Click on a class number to see your pset partnering options for that class.';
   } else {
-    $('#partner-summary-0').text('Add one or more classes in order see information about how to find pset partners.');
+    msg += 'Add one or more classes in order see information about how to find pset partners.';
   }
+  $('#partner-summary-0').html(msg);
   for ( let i = 0 ; i < studentClasses.length ; i++ ) {
     const c = studentClasses[i];
     if ( c in allCounts ) {
       if ( c in groupData ) {
         const g = groupData[c];
-        $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
+        $('#partner-summary-'+(i+1)).html(`You are a member of the <b>${c}</b> pset group <b>${g.group_name}</b>.`);
         const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
@@ -573,7 +572,7 @@ function setPartnerPanes() {
         const tg = g > 1 ? "one of the <b>" + g + "</b> pset groups that have" : "the one pset group that has";
         let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
         if ( sg ) {
-          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed in the table below`;
+          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
@@ -628,7 +627,7 @@ function copyInvitation(e, c) {
 function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
 function pending() { return ! $('#cancel').is(':disabled'); }
 
-function showConfirm(msg, value, caption, options=false) {
+function showConfirm(msg, value, caption, options=false, disabled=false) {
   // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
   // Enter means confirm, escape means nevermind, all other keys will be ignored (including tab, otherwise it gets confusing)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
@@ -639,6 +638,7 @@ function showConfirm(msg, value, caption, options=false) {
   } else {
     $('#confirm-options').hide();
   }
+  b.prop('disabled', disabled||false);
   document.addEventListener('click', confirmClick, true);
   //document.addEventListener('keydown', confirmKeydown, true);
   $('#partner-confirm').show();
@@ -683,7 +683,7 @@ function confirmJoin(e, gid) {
   }
   let val = "join " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = 'save ' + val; }
-  showConfirm (msg, val, 'Join ' + g[1]);
+  showConfirm (msg, val, 'join ' + g[1]);
 }
 
 function confirmLeave(e, gid) {
@@ -693,12 +693,13 @@ function confirmLeave(e, gid) {
   const c = studentClasses[i-1];
   const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
-  let msg = `You are about to leave the group <i>${g.group_name}</i>. Existing members of this group will be notified. `;
+  let msg = `You are about to leave the group <i>${g.group_name}</i>. `;
+  if ( g.members.length > 1 ) msg += `All Existing members of the group will be notified. `;
   if ( g.visibility < 2 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
-  if ( g.members.length == 1 ) msg += ' You are the only member of this group; it will be disbanded when you leave.';
+  if ( g.members.length == 1 ) msg += ' As you are the only member of this group, it will be disbanded after you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  showConfirm (msg, val, 'Leave ' + g.group_name);
+  showConfirm (msg, val, 'leave ' + g.group_name);
 }
 
 function confirmPool(e, c) {
@@ -709,14 +710,14 @@ function confirmPool(e, c) {
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `You are about to enter the ${d} match pool for ${c}. `;
-  msg += `On that date we will attempt to match you with other members of the pool and existing groups open to new members that match your availability and preferences. `;
+  msg += `On that date we will attempt to match you with other members of the pool, as well as groups open to new members that match your availability and preferences. `;
   let val = "pool " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   msg += '<br><br>';
   if ( Object.values(res).find(r => r.strength == '5') )
-    msg += 'You have marked some preferences "required", which will preclude pset partners from matching you with any students that have not expressed a preference; this may significantly reduce the pool of possible matches for you. ';
-  msg += 'You can change your preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the pool.';
-  showConfirm (msg, val, `Put me in the ${d} match pool for ${c}`);
+    msg += 'You have marked some preferences "required", which will preclude matching you with students with no expressed preference. ';
+  msg += 'You can change your preferences at any time before the match date, and you are also welcome to join or create a group in the meantime; doing so will automatically remove you from the match pool.';
+  showConfirm (msg, val, `put me in the ${d} match pool for ${c}`);
 }
 
 function confirmMatch(e, c) {
@@ -727,13 +728,18 @@ function confirmMatch(e, c) {
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   let msg = `You are about to request an urgent match for ${c}. `;
-  msg += 'Emails will be sent to existing private groups in this class that are open to new members and compatible with your availability or preferences seeking membership (your identity will not be revealed).  As soon as anyone accepts the invitation to add a new member you will be added to that group unless you have joined another group in the meantime.<br><br>Please do not use this option lightly, it may generate many emails';
+  msg += 'Emails will be sent to existing private groups in this class that are open to new members and compatible with your availability or preferences (your identity will not be revealed).  You will be added to the group that accepts the invitation unless you have joined another group in the meantime.';
+  /*
+  msg += '<br><br>Please do not use this option lightly, it may generate many emails';
   msg += isLive ? '. ' : ' (in the sandbox no emails will be sent). ';
+  */
   let val = "match " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   if ( Object.values(res).find(r => r.strength == '5') )
-    msg += '<br><br>You have marked some preferences "required", which will preclude the system from matching you with groups that have not expressed a specific preference; we recommend not marking any preferences as required if you need a match urgently. ';
-  showConfirm (msg, val, 'Find me a pset group for ' + c);
+    msg += '<br><br>You have marked some preferences as required, which will preclude groups that have not expressed a similar preference; you may want to relax your preferences before proceeding. ';
+  msg += '<br><br>This option is currently disabled; it will be enabled only after the first round of matching.';
+
+  showConfirm (msg, val, 'find me a pset group for ' + c, false, true);
 }
 
 function confirmPublicGroup(e, c) {
@@ -745,11 +751,11 @@ function confirmPublicGroup(e, c) {
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('0'); updateSingleSelect('editors');
   $('.editors').show();  $('.open').hide();
-  let msg = `You are about to create a public group based on your preference settings for ${c}. `;
-  msg += `This group and its members will be visisble to ${c} students using pset partners.  Anyone can join your group. subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default any greoup member can change the settings for this group, but you can reserve edit rights to yourself if you wish.`;
+  let msg = `You are about to create a public group whose preferences you may edit below. `;
+  msg += `This group and its members will be visisble to all ${c} students using pset partners.  Anyone can join your group, subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default any group member can change the settings for this group, but you can reserve edit rights to yourself if you wish. `;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  showConfirm (msg, val, 'Create a new public group for ' + c, true);
+  showConfirm (msg, val, 'create a new public group for ' + c, true);
 }
 
 function confirmPrivateGroup(e, c) {
@@ -762,12 +768,12 @@ function confirmPrivateGroup(e, c) {
   $('#editors').val('1'); updateSingleSelect('editors');  $('#open').val('');  $('#checkbox-open').text('');
   $('.editors').show();  $('.open').show();
 
-  let msg = `You are about to create a private group based on your preferences, which you may update below. `;
-  msg += `This group will not be visible to other students on pset partners, but you can create a link that will let people join your group.  If you indicate that your group is open to new members, the system may contact you in the future when students with compatible availability and preferences are looking for pset partners (you can always decline). By default only you can change the settings for this group, but you can alternatively grant edit permission to all group members.`;
+  let msg = `You are about to create a private group whose preferences you may update below. `;
+  msg += `This group will only be visible to members, but you can invite non-members to join.  If you indicate that your group is open, the system may contact you in the future when students with compatible preferences are looking for pset partners. Currently only you can change the settings for this group, but you may grant edit permission to all group members if you wish.`;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
-  showConfirm (msg, val, 'Create a new private group for ' + c, true);
+  showConfirm (msg, val, 'create a new private group for ' + c, true);
 }
 
 function confirmEditGroup(e, c) {
@@ -775,16 +781,18 @@ function confirmEditGroup(e, c) {
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
   console.log(c);
-  g = groupData[c];
+  const g = groupData[c];
   console.log(g);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
-  if ( g.editors.length == 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
+  if ( g.editors.length === 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
   if ( g.visibility > 1 ) $('.open').hide(); else $('.open').show();
-  let msg = g.members.length > 1 ? `All other members of the group will be notified of changes you make to the group properties below.` : '';
+  let msg = `You are about to edit the settings for the ${c} pset group ${g.group_name}. `
+  if ( g.members.length > 1 ) msg += `Other members of the group will automatically be notified of your changes. `;
+  if ( g.editors.length > 0 ) msg += `Note that changes to the editors setting are irreversible (all other changes can be undone).`;
   let val = 'editgroup ' + g.group_id;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
-  showConfirm (msg, val, 'Update settings for ' + g.group_name, true);
+  showConfirm (msg, val, 'update ' + g.group_name, true);
 }
 
 function showApplyPreferences() {
