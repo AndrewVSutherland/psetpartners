@@ -11,8 +11,51 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-  <h3>This page intentionally left blank (but will eventually list classes and groups for instructor {{user.kerb}}).</h3>
+<h2>{{user.preferred_name}}</h2>
+
+{% if (user.classes|length) == 0 %}
+<p>You are not listed as the instructor for any of the courses registered with pset partners this term.  Please <a href="mailto:psetpartners@mit.edu">contact us</a> if this is incorrect.
+{% elif (user.classes|length) == 1 %}
+<p align="justify">According to out records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.
+{% else %}
+According to our records, you are an instructor for the following courses this term:
+<ul>
+
+
+{% for i in range(user.classes|length) %}
+{% set c = user.classes[i] %}
+<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="console.log({{i}}); toggleClass({{i}},{{user.classes|length}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
+{% endfor %}
+</ul>
+{% endif %}
+The table below lists the students who have entered this course into their pset partner profile; this does not necessarily mean that they are registerd for the course.
+No matchings have taken place yet, so most students have yet to form groups.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>.
+</p><p>
+Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
+
+
+
+{% for i in range(user.classes|length) %}
+{% set c = user.classes[i] %}
+<h3 style="text-align:center; {% if i > 0 %} display:none; {% endif %}" class="class-{{i}}"> {{c['class_number'] + " " + c['class_name']}}</h3>
+
+<table class="mtab class-{{i}}" {% if i > 0 %} style="display:none;" {% endif %}>
+  <head><tr><th>name</th><th>depts</th><th>year</th><th>email</th><th>pset group</th></tr></head>
+  <tbody>
+  {% for s in user.classes[i].students %}
+    <tr><td style="text-align:left">{{s['preferred_name']}}</td><td>{{s['departments']|join(",")}}</td><td>{{s['year']}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{s['group_name']}}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
 
 {% endif %}
+
+<script>
+function toggleClass(i,n) {
+    $('.class-'+i).show();
+    for (let j = 0 ; j < n ; j++ ) if ( j != i ) $('.class-'+j).hide();
+}
+</script>
 
 {% endblock %}
