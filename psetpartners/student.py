@@ -791,6 +791,9 @@ class Student(UserMixin):
             return s['email'] if s.get('email') else s['kerb'] + '@mit.edu'
 
         S = [s for s in students_in_group(group_id) if s['id'] != self.id]
+        if len(S) == 0:
+            return
+
         self._db.messages.insert_many([{'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
         if livesite():
             send_email([email(s) for s in S], subject, message + signature)
@@ -861,7 +864,6 @@ class Instructor(UserMixin):
         assert self.kerb
 
     def _class_data(self, year=current_year(), term=current_term()):
-        class_data = {}
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
