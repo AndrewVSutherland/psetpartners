@@ -135,7 +135,7 @@ def login():
     elif affiliation == "staff":
         user = Instructor(kerb)
     else:
-        return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500
+        return render_template("404.html", message="Only current MIT students and instructors are authorized to use this site."), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     user.login()
