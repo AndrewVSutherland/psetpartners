@@ -480,6 +480,7 @@ table.mtab th, table.gtab th {
 
 table.mtab td, table.gtab td, table.ctab td {
   padding: 2.5px 20px;
+  text-align: center;
 }
 
 table.btab {

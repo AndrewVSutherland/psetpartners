@@ -222,8 +222,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
           <td class="short-value"><span class="short-select" id="select-forum"></span><input type="hidden" name="forum" id="forum" /></td>
           <td class="short-caption">Size:</td>
           <td class="short-value"><span class="short-select" id="select-size"></span><input type="hidden" name="size" id="size" /></td>
-          <td class="short-caption">Editors:</td>
-          <td class="short-value"><span class="short-select" id="select-editors"></span><input type="hidden" name="editors" id="editors" /></td>
+          <td class="short-caption editors">Editors:</td>
+          <td class="short-value editors"><span class="short-select" id="select-editors"></span><input type="hidden" name="editors" id="editors" /></td>
           <td class="short-caption open">Open:</td>
           <td class="short-value open"><label class="short-checkbox" id="checkbox-open" data-checkmark="&#x2714;" onclick="if ( this.textContent.length ) { this.textContent = ''; $('#open').val(''); } else { this.textContent = this.dataset.checkmark; $('#open').val('on'); };"/></label>
             <input type="hidden" name="open" id="open" value="" />
@@ -487,7 +487,7 @@ function gtabMembers(e, gid) {
   const mRow = document.createElement('tr');
   mRow.classList.add("group-members");
   thisRow.parentElement.insertBefore(mRow,thisRow.nextSibling);
-  let s = '<td colspan="7"><ul class="group-members">';
+  let s = '<td style="text-align:left;" colspan="7"><ul class="group-members">';
   for (let m of members) s += '<li>' + memberOneline(m) + '</li>';
   s += '</ul</td>';
   $(s).appendTo(jQuery(mRow));
@@ -495,16 +495,26 @@ function gtabMembers(e, gid) {
 
 // group record should be an array [group_id, group_name, start, style, forum, size, max, ...] (entries after max will be ignored here)
 function gtabHead() {
-  return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></thead>\n<tbody>';
+  return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th>type</th></tr></thead>';
 }
 function gtabRow(g) {
   const start = startShort[parseInt(g[2]) || 0] || "-";
   const style = styleShort[parseInt(g[3]) || 0] || "-";
   let group_label = `<label class="group-label" onclick="gtabMembers(this,${g[0]});">${g[1]}</label>`;
-  let row = `<tr><td>${group_label}</td><td align="center">${start}</td><td align="center">${style}</td>`;
-  row += `<td align="center">${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
-  row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}')">join<label></td></tr>` : '<td></td></tr>';
+  let row = `<tr><td style="text-align:left;">${group_label}</td><td>${start}</td><td>${style}</td>`;
+  row += `<td>${g[4]||"-"}</td><td>${g[5]}</td><td>${g[6]||"-"}</td>`;
+  row += ( !g[6] || parseInt(g[5]) < parseInt(g[6]) ) ? `<td><label class="paction" onclick="confirmJoin(this,'${g[0]}');">join</label></td></tr>` : '<td></td></tr>';
   return row;
+}
+function gtabMemberView(g) {
+  let head = `<th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th>type</th>`;
+  const start = startShort[g.preferences.start || 0] || "-";
+  const style = styleShort[g.preferences.style || 0] || "-";
+  const max = g.max ? ''+g.max : '-';
+  let row = `<tr><td style="text-align:left">${g.group_name}</td><td>${start||'-'}</td><td>${style||'-'}</td>`;
+  row += `<td>${g.preferences.forum||'-'}</td><td>${g.members.length}</td><td>${max}</td>`;
+  row += '<td>' + ( g.visibility === 0 ? 'private (closed)' : (g.visibility === 1 ? 'private (open)' : 'public' ) )+ '</td>';
+  return '<table class="gtab"><thead>' + head + '</thead><tbody><tr>' + row+ '</tr></tbody></table>';
 }
 
 function partnerActionButtons(c) {
@@ -518,10 +528,17 @@ function partnerActionButtons(c) {
   return btab;
 }
 
-function partneredActionButtons(c, gid) {
+function partneredActionButtons1(c, gid, edit) {
   let btab = '<table style="min-width: 100%;" class="btab">\n<tbody><tr>';
-  btab += `<td style="min-width: 100%; margin:0; padding:0;"><label class="paction" style="margin-left: 390px;" onclick="copyInvitation(this,'${c}')">create an invitation link</label>`;
-  btab += `<label class="naction" style="float:right;" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
+  if ( edit ) btab += `<td><label class="paction" style="margin-left: 370px;" onclick="confirmEditGroup(this, '${c}');">edit this group</label></label></td>`;
+  btab += `<td><label class="naction" style="float:right;" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
+  btab += '</tr>\n</tbody></table>';
+  return btab;
+}
+
+function partneredActionButtons2(c, gid) {
+  let btab = '<table class="btab">\n<tbody><tr>';
+  btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
@@ -542,9 +559,11 @@ function setPartnerPanes() {
       if ( c in groupData ) {
         const g = groupData[c];
         $('#partner-summary-'+(i+1)).html(`You are currently a member of the pset group <b>${g.group_name}</b>:`);
+        const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
-        $('#partner-div-'+(i+1)).html(mtab);
-        $('#partner-buttons-'+(i+1)).html(partneredActionButtons(c,g.id));
+        $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
+        console.log(c);
+        $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id));
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
@@ -609,14 +628,13 @@ function copyInvitation(e, c) {
 function savable() { if ( $('#submit_alert').text() ) { $('#fixme').show(); $('#fixme').fadeOut(3000); return false; } return true; } 
 function pending() { return ! $('#cancel').is(':disabled'); }
 
-function showConfirm(msg, value, caption, options=false, open=false) {
+function showConfirm(msg, value, caption, options=false) {
   // Put the form in a state where they have to choose between confirm and nevermind (clicking anywhere else means nevermind)
   // Enter means confirm, escape means nevermind, all other keys will be ignored (including tab, otherwise it gets confusing)
   $('.partner-summary').hide(); $('.partner-div').hide();  $('.partner-buttons').hide();
   $('button.submit.default').hide(); $('#partner-confirm-message').html(msg);
   const b = $('#partner-confirm-button'); b.val(value); b.html(caption);
   if ( options ) {
-    if ( open ) $('.open').show(); else $('.open').hide();
     $('#confirm-options').show();
   } else {
     $('#confirm-options').hide();
@@ -659,7 +677,7 @@ function confirmJoin(e, gid) {
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
   let msg = `You are about to join the public group <i>${g[1]}</i>. `;
   if ( g[7] == '3' ) {
-    msg += 'Existing members of this group will be notified and your membership will be visible to ${c}$ students using pset partners (see FAQ for details). ';
+    msg += `Existing members of this group will be notified and your membership will be visible to ${c} students using pset partners (see FAQ for details). `;
   } else {
     msg += 'Existing members of this group will be notified. ';
   }
@@ -722,33 +740,51 @@ function confirmPublicGroup(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
-  const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('0'); updateSingleSelect('editors');
+  $('.editors').show();  $('.open').hide();
   let msg = `You are about to create a public group based on your preference settings for ${c}. `;
   msg += `This group and its members will be visisble to ${c} students using pset partners.  Anyone can join your group. subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default any greoup member can change the settings for this group, but you can reserve edit rights to yourself if you wish.`;
   let val = "createpublic " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
-  showConfirm (msg, val, 'Create a new public group for ' + c, true, false);
+  showConfirm (msg, val, 'Create a new public group for ' + c, true);
 }
 
 function confirmPrivateGroup(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
-  const d = allCounts[c].next_match_date;
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('1'); updateSingleSelect('editors');  $('#open').val('');  $('#checkbox-open').text('');
+  $('.editors').show();  $('.open').show();
+
   let msg = `You are about to create a private group based on your preferences, which you may update below. `;
   msg += `This group will not be visisble to other students on pset partners, but you can create a link that will let people join your group.  If you indicate that your group is open to new members, the system may contact you in the future when students with compatible availability and preferences are looking for pset partners (you can always decline). By default only you can change the settings for this group, but you can alternativley grant edit permission to all group members.`;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
-  showConfirm (msg, val, 'Create a new private group for' + c, true, true);
+  showConfirm (msg, val, 'Create a new private group for' + c, true);
+}
+
+function confirmEditGroup(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  console.log(c);
+  g = groupData[c];
+  console.log(g);
+  for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
+  if ( g.editors.length == 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
+  if ( g.visibility > 1 ) $('.open').hide(); else $('.open').show();
+  let msg = g.members.length > 1 ? `All other members of the group will be notified of changes you make to the group properties below.` : '';
+  let val = 'editgroup ' + g.group_id;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  $('#confirm-group-settings').show();
+  showConfirm (msg, val, 'Create a new private group for' + c, true);
 }
 
 function showApplyPreferences() {
