@@ -859,6 +859,7 @@ class Instructor(UserMixin):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
+            print(c['students'])
             for s in c['students']:
                 s['group_id'] = self._db.grouplist.lucky({'class_id':c['id'], 'student_id': s['id']}, projection='group_id')
                 if s['group_id']:
@@ -986,7 +987,6 @@ def sandbox_message():
     if not r:
         return ''
     return "The sandbox was refreshed at %s (MIT time) with a new population of %s students." % (r['timestamp'].strftime("%Y-%m-%d %H:%M:%S"), r['value'].get('students'))
-
 
 test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", "US/Alaska", "US/Pacific", "US/Mountain",
                   "US/Central", "US/Eastern", "Brazil/East", "Canada/Newfoundland", "Brazil/DeNoronha", "Atlantic/Cape_Verde", "Iceland",
