@@ -251,6 +251,10 @@ def is_instructor(kerb):
     db = getdb()
     return True if db.instructors.lucky({'kerb':kerb},projection="id") else False
 
+def is_whitelisted(kerb):
+    db = getdb();
+    return True if db.whitelist.lookup(kerb) else False
+
 def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})

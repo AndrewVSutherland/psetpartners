@@ -28,6 +28,7 @@ from .student import (
     strength_options,
     current_classes,
     is_instructor,
+    is_whitelisted,
     is_admin,
     get_counts,
     class_groups,
@@ -123,8 +124,10 @@ def login():
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
-        if kerb == "unknown":
+        if kerb == "staff":
             affiliation = "staff"
+        elif kerb == "affiliate":
+            affiliation = "affiliate"
         else:
             affiliation = "staff" if is_instructor(kerb) else "student"
         displayname = ""
@@ -137,8 +140,11 @@ def login():
     elif affiliation == "staff":
         user = Instructor(kerb)
     else:
-        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
-        return render_template("404.html", message='Only current registered students and instructors are authorized to use this site.<br><br>If you are a registered student seeing this message, please email <a href="psetpartners@mit.edu">psetpartners@mit.edu</a>'), 404
+        if is_whitelisted(kerb):
+            user = Student(kerb)
+        else:
+            app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+            return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     session["displayname"] = displayname
