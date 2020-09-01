@@ -14,7 +14,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <h2>{{user.preferred_name}}</h2>
 
 {% if (user.classes|length) == 0 %}
-<p>You do not have access to this site because you are not a student and are not registered as an instructor of one of the classes using the site this term.  For the {{current_term_pretty}} term only classes in course 18 are using pset partners.</p>
+<p>You do not have access to this site because Touchstone has not identified you as a student and you are not listed as an instructor of one of the classes using the site this term.  For the {{current_term_pretty}} term only classes in course 18 are using pset partners.</p>
 <p>Please <a href="mailto:psetpartners@mit.edu">contact us</a> if this information is incorrect.</p>
 <p>
 If you are an instructor or staff member outside of course 18 interested in using pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.  We plan to expand the site beyond course 18 in the spring.
@@ -50,7 +50,9 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
   <tbody>
   {% for s in user.classes[i].students %}
     {% set y = 'G' if s['year'] == 5 else (s['year'] if s['year'] else '-') %}
-    <tr><td style="text-align:left">{{s['preferred_name']}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{s['group_name']}}</td></tr>
+    {% set name = s['full_name'] if s['full_name'] else (s['preferred_name'] if s['preferred_name'] else s['kerb']) %}
+    {% set group = ( s['group_name'] + (' (public)' if s['visibility'] > 1 else ' (private)') ) if s['group_name'] else '' %}
+    <tr><td style="text-align:left">{{name}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{group}}</td></tr>
   {% endfor %}
   </tbody>
 </table>

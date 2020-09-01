@@ -72,10 +72,10 @@ def SQLWrapper(str,map={}):
 def students_in_class(class_id):
     s, c = ("students", "classlist") if livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['id', 'kerb', 'preferred_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
+    cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
     cmd = SQLWrapper(
         """
-SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
+SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
 WHERE {c}.{class_id} = %s
         """,
@@ -86,10 +86,10 @@ WHERE {c}.{class_id} = %s
 def students_in_group(group_id):
     s, g = ("students", "grouplist") if livesite() else ("test_students", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['id', 'kerb', 'preferred_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours']
+    cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours']
     cmd = SQLWrapper(
         """
-SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}
+SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}
 FROM {g} INNER JOIN {s} ON {s}.{id} = {g}.{student_id}
 WHERE {g}.{group_id} = %s
         """,
