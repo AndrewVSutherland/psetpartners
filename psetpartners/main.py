@@ -28,6 +28,7 @@ from .student import (
     strength_options,
     current_classes,
     is_instructor,
+    is_whitelisted,
     is_admin,
     get_counts,
     class_groups,
@@ -123,8 +124,10 @@ def login():
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
-        if kerb == "unknown":
+        if kerb == "staff":
             affiliation = "staff"
+        elif kerb == "affiliate":
+            affiliation = "affiliate"
         else:
             affiliation = "staff" if is_instructor(kerb) else "student"
         displayname = ""
@@ -134,10 +137,14 @@ def login():
 
     if affiliation == "student":
         user = Student(kerb)
+    elif is_whitelisted(kerb):
+        affiliation = "student"
+        user = Student(kerb)
     elif affiliation == "staff":
         user = Instructor(kerb)
     else:
-        return render_template("404.html", message="Only current MIT students and instructors are authorized to use this site."), 404
+        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+        return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     session["displayname"] = displayname
@@ -160,6 +167,7 @@ def loginas(kerb):
     user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
     session["kerb"] = kerb
     session["affiliation"] = "student" if user.is_student else "staff"
+    session["displayname"] = ""
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
@@ -350,6 +358,9 @@ def save_student():
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
     if submit[0] == "save":
+        # update the full_name supplied by Touchstone (in case this changes)
+        if session.get("displayname",""):
+            current_user.full_name = session["displayname"]
         if not save_changes(raw_data):
             if submit != "save":
                 flash_error("The action you requested was not performed.")
