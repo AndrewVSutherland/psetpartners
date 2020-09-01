@@ -863,11 +863,13 @@ class Instructor(UserMixin):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
-            print(c['students'])
             for s in c['students']:
                 s['group_id'] = self._db.grouplist.lucky({'class_id':c['id'], 'student_id': s['id']}, projection='group_id')
                 if s['group_id']:
-                    s['group_name'] = self._db.groups.lucky({'id':s['group_id']}, projection='group_name')
+                    g = self._db.groups.lucky({'id':s['group_id']}, projection=['group_name', 'visibility'])
+                    s['group_name'] = g['group_name']
+                    s['visibility'] = g['visibility']
+
             c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
         return sorted(classes, key = lambda x: x['class_number'])
 
