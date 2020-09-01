@@ -50,7 +50,8 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
   <tbody>
   {% for s in user.classes[i].students %}
     {% set y = 'G' if s['year'] == 5 else (s['year'] if s['year'] else '-') %}
-    <tr><td style="text-align:left">{{s['preferred_name']}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{s['group_name']}}</td></tr>
+    {% set name = s['full_name'] if s['full_name'] else (s['preferred_name'] if s['preferred_name'] else s['kerb']) %}
+    <tr><td style="text-align:left">{{name}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{s['group_name']}}</td></tr>
   {% endfor %}
   </tbody>
 </table>
