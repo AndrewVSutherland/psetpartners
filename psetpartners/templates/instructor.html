@@ -19,10 +19,11 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <p>
 If you are an instructor or staff member outside of course 18 interested in using pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.  We plan to expand the site beyond course 18 in the spring.
 </p>
-{% elif (user.classes|length) == 1 %}
-<p align="justify">According to out records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.
 {% else %}
-According to our records, you are an instructor for the following courses this term:
+{% if (user.classes|length) == 1 %}
+<p align="justify">According to out records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.</p>
+{% else %}
+<p>According to our records, you are an instructor for the following courses this term:
 <ul>
 
 {% if (user.classes|length) > 0 %}
@@ -33,11 +34,13 @@ According to our records, you are an instructor for the following courses this t
 {% endfor %}
 </ul>
 {% endif %}
+{% endif %}
+<p>
 The table below lists the students who have entered this course into their pset partner profile; this does not necessarily mean that they are registerd for the course.
 No matchings have taken place yet, so most students have yet to form groups.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>.
 </p><p>
 Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
-
+</p>
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
 <h3 style="text-align:center; {% if i > 0 %} display:none; {% endif %}" class="class-{{i}}"> {{c['class_number'] + " " + c['class_name']}}</h3>
