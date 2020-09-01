@@ -138,6 +138,7 @@ def login():
     if affiliation == "student":
         user = Student(kerb)
     elif is_whitelisted(kerb):
+        affiliation = "student"
         user = Student(kerb)
     elif affiliation == "staff":
         user = Instructor(kerb)
@@ -166,6 +167,7 @@ def loginas(kerb):
     user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
     session["kerb"] = kerb
     session["affiliation"] = "student" if user.is_student else "staff"
+    session["displayname"] = ""
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
@@ -356,6 +358,9 @@ def save_student():
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
     if submit[0] == "save":
+        # update the full_name supplied by Touchstone (in case this changes)
+        if session.get("displayname",""):
+            current_user.full_name = session["displayname"]
         if not save_changes(raw_data):
             if submit != "save":
                 flash_error("The action you requested was not performed.")
