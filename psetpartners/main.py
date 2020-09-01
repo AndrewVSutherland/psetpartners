@@ -115,6 +115,7 @@ def login():
             return render_template("500.html", message="Touchstone authentication invalid."), 500
         kerb = eppn.split("@")[0]
         affiliation = affiliation.split("@")[0]
+        displayname = request.environ.get("HTTP_DISPLAYNAME", "")
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
@@ -126,6 +127,7 @@ def login():
             affiliation = "staff"
         else:
             affiliation = "staff" if is_instructor(kerb) else "student"
+        displayname = ""
 
     if not kerb or not affiliation:
         return render_template("500.html", message="Missing login credentials"), 500
@@ -138,10 +140,12 @@ def login():
         return render_template("404.html", message="Only current MIT students and instructors are authorized to use this site."), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
+    session["displayname"] = displayname
+    user.full_name = displayname
     user.login()
     login_user(user, remember=False)
-    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
-        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
+    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s,full_name=%s)" %
+        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor,current_user.full_name))
     if next:
         return redirect(next)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
