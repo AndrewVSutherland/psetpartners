@@ -137,14 +137,13 @@ def login():
 
     if affiliation == "student":
         user = Student(kerb)
+    elif is_whitelisted(kerb):
+        user = Student(kerb)
     elif affiliation == "staff":
         user = Instructor(kerb)
     else:
-        if is_whitelisted(kerb):
-            user = Student(kerb)
-        else:
-            app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
-            return render_template("denied.html"), 404
+        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+        return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     session["displayname"] = displayname
