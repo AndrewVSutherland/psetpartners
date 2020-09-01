@@ -657,7 +657,7 @@ class Student(UserMixin):
             app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
             raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1}, resort=False)
-        r = { k: g[k] for k in  ['class_number', 'year', 'term']}
+        r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         self._notify_group(group_id, "Say hello to your new pset partner!",

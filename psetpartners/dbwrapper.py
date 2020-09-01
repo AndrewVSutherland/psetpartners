@@ -4,8 +4,8 @@ from . import db
 from .app import livesite
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
-def count_rows(table, query):
-    _db = getdb()
+def count_rows(table, query, forcelive=False):
+    _db = getdb() if not forcelive else db
     return sum(1 for _ in _db[table].search(query, projection="id"))
 
 _db = None
