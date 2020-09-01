@@ -227,6 +227,12 @@ def testlog():
     app.logger.info(msg)
     return "The following message was just logged:\n\n"+msg
 
+@app.route("/testenviron")
+@login_required
+def testenviron():
+    r = ["%s = %s" %(k, request.environ[k]) for k in request.environ]
+    return '<br>'.join(r)
+
 allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence"]
 allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
 
