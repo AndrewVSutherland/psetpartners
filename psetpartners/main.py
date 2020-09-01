@@ -137,8 +137,8 @@ def login():
     elif affiliation == "staff":
         user = Instructor(kerb)
     else:
-        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kreb, affiliation))
-        return render_template("404.html", message="Only current MIT students and instructors are authorized to use this site."), 404
+        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+        return render_template("404.html", message='Only current registered students and instructors are authorized to use this site.<br><br>If you are a registered student seeing this message, please email <a href="psetpartners@mit.edu">psetpartners@mit.edu</a>'), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     session["displayname"] = displayname
