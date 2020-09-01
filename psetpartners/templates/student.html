@@ -571,6 +571,7 @@ function setPartnerPanes() {
         const wt = w ? (w==1?"one is":"<b>"+w+"</b> are") : "none are";
         const tg = g > 1 ? "one of the <b>" + g + "</b> pset groups that have" : "the one pset group that has";
         let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
+        $('#partner-div-'+(i+1)).html('');
         if ( sg ) {
           msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed below`;
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
@@ -579,8 +580,6 @@ function setPartnerPanes() {
           if ( groups.length ) {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
             $('#partner-div-'+(i+1)).html(gtab);
-          } else {
-            $('#partner-div-'+(i+1)).html('');
           }
           if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
