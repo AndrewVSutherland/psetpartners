@@ -14,7 +14,6 @@ from .utils import (
     flash_announce
     )
 from .token import generate_timed_token
-from .group import generate_group_name
 from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
@@ -253,7 +252,7 @@ def is_instructor(kerb):
 
 def is_whitelisted(kerb):
     db = getdb();
-    return True if db.whitelist.lookup(kerb) else False
+    return True if (db.students.lookup(kerb) or db.whitelist.lookup(kerb)) else False
 
 def is_admin(kerb):
     db = getdb()
@@ -295,6 +294,24 @@ def get_pref_option(prefs, input, k):
         raise ValueError("Invalid option %s for %s " % (val, k))
     prefs[k] = val
 
+def generate_group_name(class_id, year=current_year(), term=current_term()):
+    db = getdb()
+    S = { g for g in db.groups.search({'class_id': class_id}, projection='group_name') }
+    A = { g.split(' ')[0] for g in S }
+    N = { g.split(' ')[1] for g in S }
+    acount = count_rows('positive_adjectives')
+    ncount = count_rows('plural_nouns')
+    while True:
+        a = db.positive_adjectives.random({})
+        if 2*len(A) < acount and a in A:
+            continue
+        n = db.plural_nouns.random({'firstletter':a[0]})
+        if 4*len(N) < ncount and n in N:
+            continue
+        name = a.capitalize() + " " + n.capitalize()
+        if db.groups.lucky({'group_name': name, 'year': year, 'term': term}):
+            continue
+        return name
 
 def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
@@ -551,6 +568,11 @@ class Student(UserMixin):
             log_event (self.kerb, 'pool', {'class_id': class_id})
             return self._pool(class_id)
 
+    def unpool(self, class_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'unpool', {'class_id': class_id})
+            return self._unpool(class_id)
+
     def match(self, class_id):
         with DelayCommit(self):
             log_event (self.kerb, 'match', {'class_id': class_id})
@@ -621,30 +643,45 @@ class Student(UserMixin):
             self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols}, resort=False)
         if len(set(self.classes)) < len(self.classes):
             raise ValueError("Duplicates in class list %s" % self.classes)
-        q = {'student_id':self.id, 'year': current_year(), 'term': current_term()}
-        S = []
+        year = current_year()
+        term = current_term()
+        class_ids = set()
         for class_number in self.classes:
-            query = { 'class_number': class_number, 'year': current_year(), 'term': current_term()}
+            query = { 'class_number': class_number, 'year': year, 'term': term}
             class_id = self._db.classes.lucky(query, projection='id')
             if class_id is None:
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
-            r = q.copy()
-            r['class_id'] = class_id
-            r['class_number'] = class_number
-            r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+            oldr = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id})
+            if oldr:
+                r = oldr.copy()
+                # make sure derived data is up to date (it should be but kerb was not getting set at one point)
+                r['class_number'] = class_number
+                r['year'] = year
+                r['term'] = term
+                r['kerb'] = self.kerb
+            else:
+                r = { 'class_id': class_id, 'student_id': self.id, 'year': year, 'term': term, 'class_number': class_number, 'kerb': self.kerb, 'status': 0 }
             # if user was just added to the class (e.g. via an invitation) we may not have any class_data for it
             if class_number in self.class_data:
                 r['properties'] = self.class_data[class_number].get('properties', {})
-                if self.class_data[class_number].get('preferences') is not None and any([self.class_data[class_number]['preferences'] != self.preferences, self.class_data[class_number]["strengths"] != self.strengths]):
-                    r['preferences'] = self.class_data[class_number]['preferences']
-                    r['strengths'] = self.class_data[class_number]['strengths']
-            S.append(r)
-        S = sorted(S, key=lambda x: x['class_id'])
-        T = sorted(self._db.classlist.search(q), key=lambda x: x['class_id'])
-        if S != T:
-            self._db.classlist.delete(q, resort=False)
-            if S:
-                self._db.classlist.insert_many(S, resort=False)
+                r['preferences'] = self.class_data[class_number].get('preferences', {})
+                r['strengths'] = self.class_data[class_number].get('strengths', {})
+            else: 
+                r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+            if oldr:
+                if r != oldr:
+                    self._db.classlist.update(oldr,r)
+                    log_event (self.kerb, 'edit', detail={'class_id': class_id})
+            else:
+                self._db.classlist.insert_many([r])
+                log_event (self.kerb, 'add', detail={'class_id': class_id})
+            class_ids.add(class_id)
+
+        for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
+            if class_id not in class_ids:
+                self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
+                self._db.grouplist.delete({'class_id': class_id, 'student_id': self.id})
+                log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"
 
@@ -704,12 +741,34 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to join the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
-        if self.class_data[c]['status'] == 4:
-            raise ValueError("We are already working on a match for you in %s, please be patient." % c)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
         d = next_match_date(class_id)
+        if self.class_data[c]['status'] == 4:
+            msg = "We are already working on an urgent match for you in %s and have sent emails to a number of groups. If none respond we will put you in the <b>%s</b> match pool." % (c,d)
+        else:
+            msg = "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
         self._reload()
-        return "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
+        return msg
+
+    def _unpool(self, class_id):
+        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, "class_number")
+        if not c:
+            app.logger.warning("User %s attempted to leave the pool for non-existent class %s" % (self.kerb, class_id))
+            raise ValueError("Class not found in database.")
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to leave the pool for class %s not in their class list" % (self.kerb, class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to leave the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are currrently a member of the group %s in %s, and not in the match pool." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] != 2:
+            app.logger.warning("User %s attempted to leave the pool for class %s but is not in the match pool for that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are and not in the match pool for %s." % c)
+        d = next_match_date(class_id)
+        msg = "You have been removed from the match pool for <b>%s</b> on <b>%s</b>." %(c, d)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 0}, resort=False)
+        self._reload()
+        return msg
 
     def _match(self, class_id):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
@@ -745,12 +804,13 @@ class Student(UserMixin):
         editors = [self.kerb] if options.get('editors','').strip() == '1' else []
         strengths = {} # Groups don't have preference strengths right now
         maxsize = max_size_from_prefs(prefs)
-        name = generate_group_name()
+        name = generate_group_name(class_id)
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
              'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'editors': editors, 'max': maxsize }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1})
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
 
@@ -1017,7 +1077,7 @@ def generate_test_population(num_students=300,max_classes=6):
 
 def _generate_test_population(num_students=300,max_classes=6):
     from random import randint
-    from . import db
+
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
 
     def rand(x):
@@ -1042,6 +1102,9 @@ def _generate_test_population(num_students=300,max_classes=6):
     if not choice or choice[0] != 'y':
         print("No changes made.")
         return
+
+    db = getdb() # we will still explicitly reference test_ tables just to be doubly sure we don't wipe out the production DB
+
     db.test_events.delete({}, resort=False)
     db.test_messages.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
@@ -1052,11 +1115,17 @@ def _generate_test_population(num_students=300,max_classes=6):
     year, term = current_year(), current_term()
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
     S = []
+    names = set()
     for n in range(num_students):
         s = blank_student.copy()
         s['kerb'] = "test%03d" % n
-        firstname = db.names.random()
-        name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
+        while True:
+            firstname = db.names.random()
+            name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
+            if name in names:
+                continue
+            break
+        names.add(name)
         s['preferred_name'] = s['full_name'] = name
         s['year'] = rand(year_options)[0] if randint(0,7) else None
         if ( s['year'] == 1 ):
@@ -1113,17 +1182,21 @@ def _generate_test_population(num_students=300,max_classes=6):
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
         if s['year'] in [1,2] and randint(0,3):
-            classes = [db.classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
+            classes = [db.test_classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
         else:
-            classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+            classes = [db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
             while s['year'] in [3,4,5] and classes[0]['class_number'].split('.')[1][0] == '0':
-                classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+                classes = [db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
-            classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+            c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+            if not c in classes:
+                classes.append(c)
             for m in range(2,max_classes):
                 if randint(0,2*m-2):
                     break;
-                classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+                c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+                if not c in classes:
+                    classes.append(c)
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -1159,20 +1232,22 @@ def _generate_test_population(num_students=300,max_classes=6):
             S.append(c)
     db.test_classlist.insert_many(S, resort=False)
     S = []
-    for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
+    names = set({})
+    for c in db.test_classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
         kerbs = list(db.test_classlist.search({'class_id':c['id']},projection='kerb'))
         n = len(kerbs)
-        creators, names = set(), set()
+        creators = set()
         for i in range(n//10):
-            name = db.plural_nouns.random()
-            name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            if name in names:
-                continue
+            while True:
+                name = generate_group_name(c['id'])
+                if name in names:
+                    continue
+                break
+            names.add(name)            
             creator = rand(kerbs)
             if creator in creators:
                 continue
             s = db.test_students.lookup(creator, projection=['id','preferences', 'strengths'])
-            db.test_classlist.update({'class_id': c['id'], 'student_id': s['id']}, {'status': 1}, resort=False)
             prefs = { p: s['preferences'][p] for p in s.get('preferences',{}) if not p.endswith('affinity') }
             strengths = { p: s['strengths'][p] for p in s.get('strengths',{}) if not p.endswith('affinity') }
             for p in ["start", "style", "forum", "size"]:
@@ -1182,9 +1257,8 @@ def _generate_test_population(num_students=300,max_classes=6):
             maxsize = max_size_from_prefs(prefs)
             eds = [creator] if randint(0,1) else []
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': eds, 'max': maxsize }
+                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'creator': creator, 'editors': eds, 'max': maxsize }
             creators.add(creator)
-            names.add(name)
             S.append(g)
     if ( S ):
         db.test_groups.insert_many(S, resort=False)
@@ -1204,15 +1278,15 @@ def _generate_test_population(num_students=300,max_classes=6):
                 if s['student_id'] in members:
                     break
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
-                db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
                 members.append(s['student_id'])
+                db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
                 if randint(0,len(members)-1):
                     break
         db.test_grouplist.insert_many(S, resort=False)
 
     # take instructors from classes table for current term
     S = []
-    for r in db.classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
+    for r in db.test_classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
         if r['instructor_kerbs']:
             for i in range(len(r['instructor_kerbs'])):
                 kerb, name = r['instructor_kerbs'][i], r['instructor_names'][i]

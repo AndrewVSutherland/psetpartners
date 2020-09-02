@@ -4,7 +4,7 @@ from . import db
 from .app import livesite
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
-def count_rows(table, query, forcelive=False):
+def count_rows(table, query={}, forcelive=False):
     _db = getdb() if not forcelive else db
     return sum(1 for _ in _db[table].search(query, projection="id"))
 
@@ -72,10 +72,10 @@ def SQLWrapper(str,map={}):
 def students_in_class(class_id):
     s, c = ("students", "classlist") if livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths']
+    cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status']
     cmd = SQLWrapper(
         """
-SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}
+SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year}, {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {c}.{properties}, {c}.{preferences}, {c}.{strengths}, {c}.{status}
 FROM {c} INNER JOIN {s} ON {s}.{id} = {c}.{student_id}
 WHERE {c}.{class_id} = %s
         """,
