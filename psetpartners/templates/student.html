@@ -613,7 +613,7 @@ function setPartnerPanes() {
         }
         msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
-        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, classData[c].status));
+        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, c in classData ? classData[c].status : 0));
       }
     } else {
       $('#partner-summary-'+(i+1)).text(`Save your changes to get the latest pset partner data for ${c}.`);
