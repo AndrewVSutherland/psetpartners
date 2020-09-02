@@ -21,7 +21,7 @@ If you are an instructor or staff member outside of course 18 interested in usin
 </p>
 {% else %}
 {% if (user.classes|length) == 1 %}
-<p align="justify">According to out records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.</p>
+<p align="justify">According to our records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.</p>
 {% else %}
 <p>According to our records, you are an instructor for the following courses this term:
 <ul>
