@@ -1,6 +1,6 @@
 from psetpartners import db
 from collections import defaultdict
-from math import sqrt
+from math import sqrt, floor
 
 def compatible_sizes(G, S, size_lookup):
     size = size_lookup[S.id]

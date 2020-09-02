@@ -23,36 +23,40 @@ If you are an instructor or staff member outside of course 18 interested in usin
 {% if (user.classes|length) == 1 %}
 <p align="justify">According to our records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.</p>
 {% else %}
-<p>According to our records, you are an instructor for the following courses this term:
+<p>According to our records, you are an instructor for the following courses this term:</p>
 <ul>
 
 {% if (user.classes|length) > 0 %}
 
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
-<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="console.log({{i}}); toggleClass({{i}},{{user.classes|length}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
+<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="toggleClass({{i}},{{user.classes|length}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
 {% endfor %}
 </ul>
 {% endif %}
 {% endif %}
+{% for i in range(user.classes|length) %}
+{% set c = user.classes[i] %}
+<div class="class-{{i}}" {% if i > 0 %} style="display:none;" {% endif %}>
 <p>
-The table below lists the students who have entered this course into their pset partner profile; this does not necessarily mean that they are registered for the course.
-No matchings have taken place yet, so most students have yet to form groups.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>.
+The table below lists the <b>{{c.students|length}}</b> students who have this course listed in their pset partner profile; this does not necessarily mean that they have registered for the course.
+No matchings have taken place yet, so most students are not yet a mmember of a group.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>  Group names in bold denote a public group.  Public groups and their membership are visible to all students, otherwise groups are visible only to instructors and the members of the group.
 </p><p>
 Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
 </p>
-{% for i in range(user.classes|length) %}
-{% set c = user.classes[i] %}
+</div>
 <h3 style="text-align:center; {% if i > 0 %} display:none; {% endif %}" class="class-{{i}}"> {{c['class_number'] + " " + c['class_name']}}</h3>
 
 <table class="mtab class-{{i}}" {% if i > 0 %} style="display:none;" {% endif %}>
-  <head><tr><th>name</th><th>depts</th><th>year</th><th>email</th><th>pset group</th></tr></head>
+  <head><tr><th>name</th><th>depts</th><th>year</th><th>email</th><th>status</th><th>group</th></tr></head>
   <tbody>
-  {% for s in user.classes[i].students %}
+  {% for s in c.students %}
     {% set y = 'G' if s['year'] == 5 else (s['year'] if s['year'] else '-') %}
     {% set name = s['full_name'] if s['full_name'] else (s['preferred_name'] if s['preferred_name'] else s['kerb']) %}
-    {% set group = ( s['group_name'] + (' (public)' if s['visibility'] > 1 else ' (private)') ) if s['group_name'] else '' %}
-    <tr><td style="text-align:left">{{name}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td style="text-align:left">{{group}}</td></tr>
+    {% set group = '<b>' + s['group_name'] + '<b>' if s['group_name'] and s['visibility'] > 1 else ( s['group_name'] if s['group_name'] else '') %}
+    {% set status = s.get('status',0) %}
+    {% set status = "member" if status == 1 else ("in pool" if status == 2 else ("matching") if status > 2 else "") %}
+    <tr><td style="text-align:left">{{name}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td style="text-align:right;"><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td>{{status}}</td><td style="text-align:left">{{group|safe}}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -64,8 +68,8 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
 
 <script>
 function toggleClass(i,n) {
-    $('.class-'+i).show();
     for (let j = 0 ; j < n ; j++ ) if ( j != i ) $('.class-'+j).hide();
+    $('.class-'+i).show();
 }
 </script>
 

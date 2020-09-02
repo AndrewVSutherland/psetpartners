@@ -191,7 +191,16 @@ const studentOptions = {
   confidence_affinity: confidence_affinityOptions,
 };
 
-const shortOptions = { start: startShort, style: styleShort, forum: forumShort, size: sizeShort, };
+const startShortOptions = [...startOptions];
+for ( let i = 0 ; i < startOptions.length ; i++ ) { startShortOptions[i] = {...startOptions[i]}; startShortOptions[i].label = startShort[i]; }
+const styleShortOptions = [...styleOptions];
+for ( let i = 0 ; i < styleOptions.length ; i++ ) { styleShortOptions[i] = {...styleOptions[i]}; styleShortOptions[i].label = styleShort[i]; }
+const forumShortOptions = [...forumOptions];
+for ( let i = 0 ; i < forumOptions.length ; i++ ) { forumShortOptions[i] = {...forumOptions[i]}; forumShortOptions[i].label = forumShort[i]; }
+const sizeShortOptions = [...sizeOptions];
+for ( let i = 0 ; i < sizeOptions.length ; i++ ) { sizeShortOptions[i] = {...sizeOptions[i]}; sizeShortOptions[i].label = sizeShort[i]; }
+
+const shortOptions = { start: startShortOptions, style: styleShortOptions, forum: forumShortOptions, size: sizeShortOptions, };
 
 const studentPlaceholders = {
   departments: 'select up to three departments (optional)',
