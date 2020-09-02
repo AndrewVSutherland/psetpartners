@@ -680,6 +680,7 @@ class Student(UserMixin):
         for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
             if class_id not in class_ids:
                 self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
+                self._db.grouplist.delete({'class_id': class_id, 'student_id': self.id})
                 log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"
@@ -1187,11 +1188,15 @@ def _generate_test_population(num_students=300,max_classes=6):
             while s['year'] in [3,4,5] and classes[0]['class_number'].split('.')[1][0] == '0':
                 classes = [db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
-            classes.append(db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+            c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+            if not c in classes:
+                classes.append(c)
             for m in range(2,max_classes):
                 if randint(0,2*m-2):
                     break;
-                classes.append(db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+                c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+                if not c in classes:
+                    classes.append(c)
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -1265,7 +1270,6 @@ def _generate_test_population(num_students=300,max_classes=6):
                 sid = db.test_students.lookup(k,projection="id")
                 S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 members.append(student_id)
-                print("%s (%s) added to group %s in %s" %(k, sid, g['group_name'], g['class_number']))
                 db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1}, resort=False)
             while True:
                 if g['max'] and len(members) >= g['max']:
@@ -1275,7 +1279,6 @@ def _generate_test_population(num_students=300,max_classes=6):
                     break
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 members.append(s['student_id'])
-                print("%s (%s) added to group %s in %s" %(s['kerb'], s['student_id'], g['group_name'], g['class_number']))
                 db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
                 if randint(0,len(members)-1):
                     break
