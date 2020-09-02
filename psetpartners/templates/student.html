@@ -517,10 +517,16 @@ function gtabMemberView(g) {
   return '<table class="gtab"><thead>' + head + '</thead><tbody><tr>' + row+ '</tr></tbody></table>';
 }
 
-function partnerActionButtons(c) {
+function partnerActionButtons(c,status) {
   let btab = '<table class="btab">\n<tbody><tr>';
   const d = allCounts[c].next_match_date;
-  if ( d) btab += `<td><label class="paction" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
+  if ( d ) {
+    if ( status == 2 ) {
+      btab += `<td><label class="paction" onclick="confirmUnPool(this, '${c}')">do not match me ${d}<label></td>`;
+    } else {
+      btab += `<td><label class="paction" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
+    }
+  }
   btab += `<td><label class="paction" onclick="confirmMatch(this, '${c}')">match me asap<label></td>`;
   btab += `<td><label class="paction" onclick="confirmPrivateGroup(this, '${c}')">create private group<label></td>`;
   btab += `<td><label class="paction" onclick="confirmPublicGroup(this, '${c}')">create public group<label></td>`;
@@ -561,7 +567,6 @@ function setPartnerPanes() {
         const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
-        console.log(c);
         $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id));
       } else {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
@@ -608,7 +613,7 @@ function setPartnerPanes() {
         }
         msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
-        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c));
+        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, classData[c].status));
       }
     } else {
       $('#partner-summary-'+(i+1)).text(`Save your changes to get the latest pset partner data for ${c}.`);
@@ -719,6 +724,19 @@ function confirmPool(e, c) {
   showConfirm (msg, val, `put me in the ${d} match pool for ${c}`);
 }
 
+function confirmUnPool(e, c) {
+  if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  const d = allCounts[c].next_match_date;
+  const cid = allCounts[c].class_id;
+  const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
+  let msg = `You are about to leave the ${d} match pool for ${c}. `;
+  let val = "unpool " + cid;
+  if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
+  showConfirm (msg, val, `exit the ${d} match pool for ${c}`);
+}
+
 function confirmMatch(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
@@ -779,9 +797,7 @@ function confirmEditGroup(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
-  console.log(c);
   const g = groupData[c];
-  console.log(g);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
   if ( g.editors.length === 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
   if ( g.visibility > 1 ) $('.open').hide(); else $('.open').show();
@@ -1017,14 +1033,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   const shortspClassNames = {'select': 'sp-short-select', 'placeholder': 'sp-short-placeholder' };
-  let startOpts = studentOptions.start; for (let i = 0 ; i < startShort.length ; i++ ) startOpts[i].label = startShort[i];
-  makeSingleSelect('start', startOpts, {classNames: shortspClassNames, placeholder: 'select'});
-  let styleOpts = studentOptions.style; for (let i = 0 ; i < styleShort.length ; i++ ) styleOpts[i].label = styleShort[i];
-  makeSingleSelect('style', styleOpts, {classNames: shortspClassNames, placeholder: 'select'});
-  let forumOpts = studentOptions.forum; for (let i = 0 ; i < forumShort.length ; i++ ) forumOpts[i].label = forumShort[i];
-  makeSingleSelect('forum', forumOpts, {classNames: shortspClassNames, placeholder: 'select'});
-  let sizeOpts = studentOptions.size; for (let i = 0 ; i < sizeShort.length ; i++ ) sizeOpts[i].label = sizeShort[i];
-  makeSingleSelect('size', sizeOpts, {classNames: shortspClassNames, placeholder: 'select'});
+  makeSingleSelect('start', shortOptions.start, {classNames: shortspClassNames, placeholder: 'select'});
+  makeSingleSelect('style', shortOptions.style, {classNames: shortspClassNames, placeholder: 'select'});
+  makeSingleSelect('forum', shortOptions.forum, {classNames: shortspClassNames, placeholder: 'select'});
+  makeSingleSelect('size', shortOptions.size, {classNames: shortspClassNames, placeholder: 'select'});
   makeSingleSelect('editors', editorOptions, {classNames: shortspClassNames});
 
   makeCheckboxGrid();

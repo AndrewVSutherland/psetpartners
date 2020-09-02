@@ -398,6 +398,16 @@ def save_student():
             if debug_mode():
                 raise
             flash_error(msg)
+    elif submit[0] == "unpool":
+        try:
+            cid = int(submit[1])
+            flash_info(current_user.unpool(cid))
+        except Exception as err:
+            msg = "Error removing you from the match pool: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'unpool', status=-1, detail={'class_id': cid, 'msg': msg})
+            if debug_mode():
+                raise
+            flash_error(msg)
     elif submit[0] == "match":
         try:
             cid = int(submit[1])
@@ -434,7 +444,7 @@ def save_student():
             flash_info(current_user.edit_group (gid, {k: raw_data.get(k,'').strip() for k in group_options}))
         except Exception as err:
             msg = "Error editing group: {0}{1!r}".format(type(err).__name__, err.args)
-            log_event (current_user.kerb, 'create', status=-1, detail={'group_id': gid, 'public': True, 'msg': msg})
+            log_event (current_user.kerb, 'edit', status=-1, detail={'group_id': gid, 'public': True, 'msg': msg})
             if debug_mode():
                 raise
             flash_error(msg)
