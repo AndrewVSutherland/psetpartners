@@ -67,10 +67,14 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
 {% endif %}
 
 <script>
+
+classes = {{user.classes|tojson|safe}};
+
 function toggleClass(i,n) {
     for (let j = 0 ; j < n ; j++ ) if ( j != i ) $('.class-'+j).hide();
     $('.class-'+i).show();
 }
+
 </script>
 
 {% endblock %}
