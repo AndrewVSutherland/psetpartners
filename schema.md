@@ -63,7 +63,8 @@ hours                 | boolean[]   | hours the group is potentially available t
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
-max                   | smallint    | maximum number of students (only used for public groups)
+max                   | smallint    | maximum number of students
+match_run             | smallint    | only set for system created groups, incremented with each matching
 
 ## classlist
 
