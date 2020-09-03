@@ -155,10 +155,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     <td class="caption"><label class="pref-{{pref}}">{{caption}}</label></td>
     <td class="value pref-{{pref}}">
       <span class="select" id="select-pref-{{pref}}-{{i}}" tabindex="{{tabindex}}"></span>
-      <input type="hidden" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
+      <input type="hidden" class="pref pane-{{i}}" name="pref-{{pref}}-{{i}}" id="pref-{{pref}}-{{i}}" value="{{pval|blanknone}}" onchange="showPS(this.name,this.value)"/>
     </td>
     <td class="pref-{{pref}}" style="padding-left:10px;">
-      <input class="slider" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
+      <input class="slider pane-{{i}}" name="spref-{{pref}}-{{i}}" id="spref-{{pref}}-{{i}}" tabindex="{{tabindex+1}}" type="range" min="1" max="5" value="{{sval}}" oninput="showPSL(this.name,this.value)"{% if not pval %} style="display:none;"{% endif %} />
       <label class="strength" id="lspref-{{pref}}-{{i}}">{{options.strength[sval if pval else 0]}}</label>
     </td>
   </tr>
@@ -173,7 +173,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td class="caption"><label>{{caption}}</label></td>
       <td class="value">
         <span class="select" id="select-{{prop}}-{{i}}" tabindex="{{tabindex}}"></span>
-        <input type="hidden" name="{{prop}}-{{i}}" id="{{prop}}-{{i}}" value="{{pval|blanknone}}"/>
+        <input type="hidden" class="prop pane-{{i}}" name="{{prop}}-{{i}}" id="{{prop}}-{{i}}" value="{{pval|blanknone}}"/>
       </td>
       <td class="forminfo">optional</td>
     </tr>
@@ -944,15 +944,19 @@ function updateHoursCompatible(e) {
 
 function checkChanges(e) {
   if ( ! e.target.name ) return;
-  // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
+  console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
   $('#student button.submit').prop('disabled',!change);
   showSaveErrorMessage();
-  if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) ) showAffinityPreferences();
+  if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) )
+    showAffinityPreferences();
   if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' ) 
     showApplyPreferences();
   if ( e.target.name === 'timezone' ) computeHoursCompatible();
   if ( e.target.name.startsWith('hours-') ) updateHoursCompatible(e.target);
+}
+
+function resetAffinityPrefs () {
 }
 
 var submitting = false;
@@ -965,7 +969,20 @@ function submitStudentForm(value) {
   if ( value === "cancel" ) {
     $('input:not(.ctx)').attr('name','');
   } else {
-    for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pref-'+i+', .prop-'+i).attr('name','');
+    // don't send irrelevant affinity preferences
+    if ( $('#departments').val() === '' ) for ( let i = 0 ; i <= studentClasses.length ; i++ ) $('#pref-departments_affinity-'+i).val('');
+    if ( $('#gender').val() === '' ) for ( let i = 0 ; i <= studentClasses.length ; i++ ) $('#pref-gender_affinity-'+i).val('');
+    if ( $('#year').val() === '' ) for ( let i = 0 ; i <= studentClasses.length ; i++ ) $('#pref-year_affinity-'+i).val('');
+    for ( let i = 1 ; i <= studentClasses.length ; i++ ) {
+      if ( $('#commitment-'+i).val() === '' ) $('#pref-commitment_affinity-'+i).val('');
+      if ( $('#confidence-'+i).val() === '' ) $('#pref-confidence_affinity-'+i).val('');
+    }
+    // don't send blank properties
+    for ( const e of $('input.prop') ) if ( ! e.value ) e.name='';
+    // don't send blank prefs or strengths for them
+    for ( const e of $('input.pref') ) if ( ! e.value ) { e.name=''; $('#s'+e.id).attr('name',''); }
+    // don't send prefs, strengths, or props on unused panes
+    for ( let i = studentClasses.length+1 ; i <= maxlength.classes ; i++ ) $('input.pane-'+i).attr('name','');
   }
   document.getElementById('student').submit();
 }
