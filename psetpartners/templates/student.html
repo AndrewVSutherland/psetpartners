@@ -944,7 +944,7 @@ function updateHoursCompatible(e) {
 
 function checkChanges(e) {
   if ( ! e.target.name ) return;
-  console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
+  // console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
   $('#student button.submit').prop('disabled',!change);
   showSaveErrorMessage();
