@@ -850,7 +850,7 @@ class Student(UserMixin):
         if len(S) == 0:
             return
 
-        self._db.messages.insert_many([{'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
+        self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
         if livesite():
             send_email([email(s) for s in S], subject, message + signature)
         else: #TODO: remove this once we go live
