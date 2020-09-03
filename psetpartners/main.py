@@ -464,6 +464,7 @@ def save_changes(raw_data):
     sprefs = [ {} for i in range(num_classes+1) ]
     props = [ {} for i in range(num_classes+1) ]
     data["hours"] = [False for i in range(168)]
+    print(raw_data)
     for i in range(7):
         for j in range(24):
             if raw_data.get("hours-%d-%d"%(i,j),False):
@@ -521,6 +522,11 @@ def save_changes(raw_data):
             for msg in errmsgs:
                 flash_error(msg)
             return False;
+    # client should not be sending any unnecessary strengths, but remove them if present
+    for i in range(num_classes+1):
+        for k in list(sprefs[i]):
+            if not k in prefs[i]:
+                sprefs[i].pop(k)
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
     for k, v in data.items():
