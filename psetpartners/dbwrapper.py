@@ -77,7 +77,7 @@ def students_in_class(class_id, projection=[]):
     cmd = SQLWrapper(
         """
 SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
-       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status},
+       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}
 FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
 WHERE {cs}.{class_id} = %s
         """,
