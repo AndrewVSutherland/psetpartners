@@ -70,7 +70,7 @@ def SQLWrapper(str,map={}):
 #TODO: handle query and projection args to these functions (we fake projection at the moment)
 
 def students_in_class(class_id, projection=[]):
-    s, cs = ("students", "classlist", "grouplist", "groups") if livesite() else ("test_students", "test_classlist")
+    s, cs = ("students", "classlist") if livesite() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
             'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status']
