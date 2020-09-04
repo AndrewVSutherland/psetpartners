@@ -324,9 +324,10 @@ def poolme():
     try:
         current_user.poolme()
     except Exception as err:
-        app.logger.error("Error processing poolme request for student %s" % current_user.kerb)
+        msg = "Error adding you to match pool: {0}{1!r}".format(type(err).__name__, err.args)
+        app.logger.error("Error processing poolme request for student %s: %s" % (current_user.kerb, msg))
         log_event (current_user.kerb, 'poolme', status=-1, detail={'msg': msg})
-        flash_error("We encountered an error while attempting to put in the match pool: %s" % err)
+        flash_error("We encountered an error while attempting to put in the match pool: %s" % msg)
     return redirect(url_for(".student"))
 
 @app.route("/student")
