@@ -191,6 +191,7 @@ const studentOptions = {
   confidence_affinity: confidence_affinityOptions,
 };
 
+// jshint ignore:start
 const startShortOptions = [...startOptions];
 for ( let i = 0 ; i < startOptions.length ; i++ ) { startShortOptions[i] = {...startOptions[i]}; startShortOptions[i].label = startShort[i]; }
 const styleShortOptions = [...styleOptions];
@@ -199,6 +200,8 @@ const forumShortOptions = [...forumOptions];
 for ( let i = 0 ; i < forumOptions.length ; i++ ) { forumShortOptions[i] = {...forumOptions[i]}; forumShortOptions[i].label = forumShort[i]; }
 const sizeShortOptions = [...sizeOptions];
 for ( let i = 0 ; i < sizeOptions.length ; i++ ) { sizeShortOptions[i] = {...sizeOptions[i]}; sizeShortOptions[i].label = sizeShort[i]; }
+// jshint ignore:end
+/* global startShortOptions, styleShortOptions, forumShortOptions, sizeShortOptions */
 
 const shortOptions = { start: startShortOptions, style: styleShortOptions, forum: forumShortOptions, size: sizeShortOptions, };
 

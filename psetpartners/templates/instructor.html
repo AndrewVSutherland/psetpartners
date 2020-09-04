@@ -21,59 +21,107 @@ If you are an instructor or staff member outside of course 18 interested in usin
 </p>
 {% else %}
 {% if (user.classes|length) == 1 %}
-<p align="justify">According to our records, you are an instructor for <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b> this term.</p>
+<p align="justify">According to our records, you are teaching <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b>.</p>
 {% else %}
-<p>According to our records, you are an instructor for the following courses this term:</p>
+<p>According to our records, you are teaching the following classes this term:</p>
 <ul>
-
-{% if (user.classes|length) > 0 %}
-
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
-<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="toggleClass({{i}},{{user.classes|length}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
+<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="toggleClass({{i}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
 {% endfor %}
 </ul>
 {% endif %}
 {% endif %}
-{% for i in range(user.classes|length) %}
-{% set c = user.classes[i] %}
-<div class="class-{{i}}" {% if i > 0 %} style="display:none;" {% endif %}>
+
 <p>
-The table below lists the <b>{{c.students|length}}</b> students who have this course listed in their pset partner profile; this does not necessarily mean that they have registered for the course.
-No matchings have taken place yet, so most students are not yet a mmember of a group.  The first matching is currently scheduled to take place <b>{{user.classes[0]['next_match_date']}}</b>.  Group names in bold denote a public group.  Public groups and their membership are visible to all students, otherwise groups are visible only to instructors and the members of the group.
+The table below lists the <label class="highlight" id="num-students">?</label> students who have this course listed in their pset partner profile; this does not necessarily mean that they have registered for the course.
+No matchings have taken place yet, so most students are not yet a mmember of a group.  The first matching is currently scheduled to take place <label class="highlight" id="match-date">?</label>.  Bold group names denote public groups whose membership is visible to all students; other groups are visible only to instructors and the members of the group.
 </p><p>
 Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
 </p>
-</div>
-<h3 style="text-align:center; {% if i > 0 %} display:none; {% endif %}" class="class-{{i}}"> {{c['class_number'] + " " + c['class_name']}}</h3>
+<h3 style="text-align:center;" id="student-table-heading">?</h3>
 
-<table class="mtab class-{{i}}" {% if i > 0 %} style="display:none;" {% endif %}>
-  <head><tr><th>name</th><th>depts</th><th>year</th><th>email</th><th>status</th><th>group</th></tr></head>
-  <tbody>
-  {% for s in c.students %}
-    {% set y = 'G' if s['year'] == 5 else (s['year'] if s['year'] else '-') %}
-    {% set name = s['full_name'] if s['full_name'] else (s['preferred_name'] if s['preferred_name'] else s['kerb']) %}
-    {% set group = '<b>' + s['group_name'] + '<b>' if s['group_name'] and s['visibility'] > 1 else ( s['group_name'] if s['group_name'] else '') %}
-    {% set status = s.get('status',0) %}
-    {% set status = "member" if status == 1 else ("in pool" if status == 2 else ("matching") if status > 2 else "") %}
-    <tr><td style="text-align:left">{{name}}</td><td>{{(s['departments']|join(",")) if s['departments'] else '-'}}</td><td>{{y}}</td><td style="text-align:right;"><a href="mailto{{s['kerb']}}@mit.edu">{{s['kerb']}}@mit.edu</a></td><td>{{status}}</td><td style="text-align:left">{{group|safe}}</td></tr>
-  {% endfor %}
-  </tbody>
+<table class="mtab" id="student-table">
+  <head><tr>
+    <th id="name" class="sortable">name</th>
+    <th id="depts" class="sortable">depts</th>
+    <th id="year" class="sortable">year</th>
+    <th id="email" class="sortable">email</th>
+    <th id="status" class="sortable">status</th>
+    <th id="group" class="sortable">group</th>
+  </tr></head>
+  <tbody id="student-rows"></tbody>
 </table>
-{% endfor %}
-
-{% endif %}
 
 {% endif %}
 
 <script>
+// jshint ignore:start
+const classes = {{user.classes|tojson|safe}};
+// jshint ignore:end
+/* global classes */
 
-classes = {{user.classes|tojson|safe}};
+let classIndex = 0;
+let classSort = [];
+let classRows = [];
 
-function toggleClass(i,n) {
-    for (let j = 0 ; j < n ; j++ ) if ( j != i ) $('.class-'+j).hide();
-    $('.class-'+i).show();
+const statusPretty = ['-', 'member', 'in pool', 'matching', 'matching'];
+
+function formatRow(s) {
+  return {
+    name: s[0] || s[1] || s[5],
+    depts: s[3],
+    year:  s[4] == '5' ? 'G' : (s[4]||'-'),
+    email: `<a href="mailto:${s[5]}@mit.edu">  ${s[5]}@mit.edu</a>`,
+    status: statusPretty[parseInt(s[6]||'0')],
+    group: parseInt(s[8]) > 1 ? '<b>' + s[7] + '</b>' : s[7]
+  };
 }
+
+function renderRows() {
+  return classRows[classIndex].map(row => `<tr>
+    <td style="text-align:left;">${row.name}</td>
+    <td>${row.depts.split(' ').join(', ')}</td>
+    <td>${row.year}</td>
+    <td style="text-algin:right;">${row.email}</td>
+    <td>${row.status}</td>
+    <td style="text-align:left;">${row.group}</td>
+   <tr>`).join('');
+}
+
+function toggleClass(i) {
+  $('#num-students').html(''+classRows[i].length);
+  $('#match-date').html(classes[i].next_match_date);
+  $('#student-table-heading').html(classes[i].class_number + ' ' + classes[i].class_name);
+  $('#student-rows').html(renderRows(classRows[i]));
+  classIndex = i;
+}
+
+function headerClick (e) {
+  classSort[classIndex].curCol = e.target.id;
+  classSort[classIndex].dir = classSort[classIndex].curCol == classSort[classIndex].prevCol ? -classSort[classIndex].dir : 1;
+  classSort[classIndex].prevCol = classSort[classIndex].curCol;
+  showStudentTable();
+}
+
+function showStudentTable () {
+  const dir = classSort[classIndex].dir;
+  const col = classSort[classIndex].curCol;
+  classRows[classIndex].sort(function(a,b) { const x = a[col], y = b[col]; return x==y?0:(x<y?dir:-dir); });
+  $('#student-rows').html(renderRows());
+  const q = $('#student-table th.active');  q.removeClass('asc'); q.removeClass('desc'); q.removeClass('active');
+  $('#'+col).addClass('active');  $('#'+col).addClass(dir>0 ? 'asc' : 'desc');
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  for (let i = 0 ; i < classes.length ; i++ ) {
+    classSort[i] = { curCol: '', prevCol: '', dir: 1 };
+    classRows[i] = classes[i].students.map(formatRow);
+  }
+  $('#student-table th').click(headerClick);
+  if ( classes.length ) toggleClass(0);
+});
 
 </script>
 

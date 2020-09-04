@@ -180,6 +180,45 @@ div.footer > a {
   padding: var(--shadow-width);
 }
 
+label.highlight {
+  font-weight: bold;
+}
+
+th.sortable {
+  color: var(--mit-maroon);
+}
+
+th.sortable:hover {
+  background-color: var(--mit-pink);
+}
+
+th.sortable::after {
+  display:inline-block;
+  content: "◆";
+  font-size: 70%;
+  padding-left: 3px;
+  vertical-align: top;
+  padding-top: 2px;
+}
+
+th.sortable.asc::after {
+  display:inline-block;
+  content: "▼";
+  font-size: 90%;
+  padding-left: 2px;
+  vertical-align: top;
+  padding-top: 1.5px;
+}
+
+th.sortable.desc::after {
+  display:inline-block;
+  content: "▲";
+  font-size: 90%;
+  padding-left: 2px;
+  vertical-align: top;
+  margin-top: -1px;
+}
+
 h1 {
   font-size: 150%;
   margin-top: 20px;
