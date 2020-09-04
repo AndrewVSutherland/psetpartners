@@ -1,6 +1,6 @@
 from psetpartners import db
 from collections import defaultdict
-from math import sqrt
+from math import sqrt, floor
 import heapq
 from functools import lru_cache
 
@@ -47,15 +47,16 @@ def initial_assign(to_match, sizes):
         else:
             add(remainder)
     else:
-        while remainder % 3:
+        while len(remainder) % 3:
             add(remainder, 4)
         while remainder:
             add(remainder, 3)
     return groups
 
-def evaluate_swaps(all_ids, groups):
+def evaluate_swaps(groups):
     improvements = [(groups[i].evaluate_swap(i, j, groups[j]), i, j) for i in groups for j in groups if i < j]
     improvements.sort(reverse=True)
+    print(improvements)
     return improvements
 
 def run_swaps(to_match, groups, improvements):
@@ -72,12 +73,21 @@ def run_swaps(to_match, groups, improvements):
 def execute_swap(to_match, groups, improvements, changed):
     # Execute the swap with highest value, which is the first entry in the improvements list
     value, i, j = improvements.pop(0)
+    #assert groups[i] is not groups[j]
+    print("Swapping", value, i, j)
+    print("groups[i]", i, [S.id for S in groups[i].students])
+    print("groups[j]", j, [S.id for S in groups[j].students])
+    print("tm[i]", to_match[i].id)
+    print("tm[j]", to_match[j].id)
     # First change the actual groups (this will update these groups indexed under other ids)
     Gj = groups[i].swap(i, to_match[j])
     Gi = groups[j].swap(j, to_match[i])
+    print(Gi is Gj)
     # Now change the pointers from i and j
     groups[i] = Gi
     groups[j] = Gj
+    print("Gi", i, [S.id for S in Gi.students])
+    print("Gj", j, [S.id for S in Gj.students])
     # Now update values of every swap containing one of the members of one of these groups
     changed.append((-value, i, j))
     ctr = 0
@@ -243,10 +253,11 @@ def matches(year=2020, term=3, dryrun=True):
                 break
             # Now there are enough students who are flexible on their group size that we can create groups.
             groups = initial_assign(to_match, sizes)
-            improvements = evaluate_swaps(all_ids, groups):
+            print(groups)
+            improvements = evaluate_swaps(groups)
             run_swaps(to_match, groups, improvements)
         # Print warnings for groups with low compatibility and for non-satisfied requirements
-        if dry_run:
+        if dryrun:
             print("%s assignments complete" % clsrec["class_name"])
             for grp in set(groups.values()):
                 print(grp)
@@ -276,7 +287,7 @@ class Student(object):
         return isinstance(other, Student) and other.id == self.id
 
     def __repr__(self):
-        return self.kerb
+        return "%s(%s)" % (self.kerb, self.id)
 
     def compatibility(self, G):
         if isinstance(G, Student):
@@ -387,9 +398,10 @@ class Group(object):
         self.students = students
 
     def by_id(self, n):
-        if S in self.students:
+        for S in self.students:
             if S.id == n:
                 return S
+        raise ValueError(n, [S.id for S in self.students])
 
     def add(self, student):
         self.students.append(student)
@@ -405,7 +417,7 @@ class Group(object):
 
     def __repr__(self):
         students = ["%s%s" % (S, "(%s)" % (self.contributions[S.id]) if self.contributions[S.id] < 0 else "") for S in self.students]
-        return "Group(size=%s, score=%s) %s" % (len(self), self.compatibility(), " ".join(students)
+        return "Group(size=%s, score=%s) %s" % (len(self), self.compatibility(), " ".join(students))
 
     def schedule_overlap(self, swap_inout=None):
         if swap_inout:
@@ -416,7 +428,7 @@ class Group(object):
         hour_data = [S.properties["hours"] for S in students]
         return sum(all(available) for available in zip(hour_data))
 
-    @lru_cache
+    @lru_cache(128)
     def schedule_score(self, swap_inout=None):
         """
         Score based on how much overlap there is in the hours scheduled
@@ -424,8 +436,10 @@ class Group(object):
         overlap = self.schedule_overlap(swap_inout)
         if overlap < 4:
             return -20**(4-overlap)
+        elif overlap < 20:
+            return 5*(overlap - 4)
         else:
-            return 20 * floor(sqrt(overlap - 4))
+            return 80 + 5 * floor(sqrt(overlap - 20))
 
     # @cached_property requires Python 3.8
     @property
@@ -440,12 +454,18 @@ class Group(object):
         return sum(self.contributions.values()) + self.schedule_score()
 
     def evaluate_swap(self, thisid, otherid, othergrp):
+        revised_self = Group([S for S in self.students if S.id != thisid] + [othergrp.by_id(otherid)])
+        revised_other = Group([S for S in othergrp.students if S.id != otherid] + [self.by_id(thisid)])
+        print("Evaluating", revised_self, revised_other)
+        return (revised_self.compatibility() + revised_other.compatibility()) - (self.compatibility() + othergrp.compatibility())
+        if self == othergrp:
+            return 0
         this = self.by_id(thisid)
         other = othergrp.by_id(otherid)
         thisnew = sum(other.score(q, self) for q in affinities + styles)
         othernew = sum(this.score(q, othergrp) for q in affinities + styles)
         thischange = thisnew + self.schedule_score((this, other)) - self.contributions[thisid] - self.schedule_score()
-        otherchange = othernew + other.schedule_score((other, this)) - other.contributions[otherid] - other.schedule_score()
+        otherchange = othernew + othergrp.schedule_score((other, this)) - othergrp.contributions[otherid] - othergrp.schedule_score()
         return thischange + otherchange
 
     def swap(self, thisid, other):
