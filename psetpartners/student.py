@@ -1,7 +1,7 @@
 import re, datetime
 from . import app
 from .app import debug_mode, livesite, send_email
-from .dbwrapper import getdb, students_in_class, students_in_group, count_rows
+from .dbwrapper import getdb, students_in_class, students_groups_in_class, students_in_group, count_rows
 from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
@@ -11,14 +11,30 @@ from .utils import (
     current_year,
     current_term,
     hours_from_default,
-    flash_announce
+    flash_announce,
+    flash_info,
     )
 from .token import generate_timed_token
-from .group import generate_group_name
 from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
+
+# only student cols in this list will be visible to other group members -- note web pages depend on the order of these!
+member_row_cols = [ 'preferred_name', 'preferred_pronouns', 'departments', 'year', 'kerb' ]
+
+# only student cols in this list will be visible to instructors -- note web pages depend on the order of these!
+student_row_cols = [
+    'full_name',
+    'preferred_name',
+    'preferred_pronouns',
+    'departments',
+    'year',
+    'kerb',
+    'status',
+    'group_name',
+    'visibility',
+]
 
 student_welcome = """
 <b>Welcome to pset partners!</b>
@@ -251,6 +267,10 @@ def is_instructor(kerb):
     db = getdb()
     return True if db.instructors.lucky({'kerb':kerb},projection="id") else False
 
+def is_whitelisted(kerb):
+    db = getdb();
+    return True if (db.students.lookup(kerb) or db.whitelist.lookup(kerb)) else False
+
 def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
@@ -270,7 +290,7 @@ def next_match_date(class_id):
     match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
     if match_dates:
         today = datetime.datetime.now().date()
-        match_dates = [d for d in match_dates if d > today]
+        match_dates = [d for d in match_dates if d >= today]
         if match_dates:
             return match_dates[0].strftime("%b %-d")
     return ""
@@ -291,6 +311,24 @@ def get_pref_option(prefs, input, k):
         raise ValueError("Invalid option %s for %s " % (val, k))
     prefs[k] = val
 
+def generate_group_name(class_id, year=current_year(), term=current_term()):
+    db = getdb()
+    S = { g for g in db.groups.search({'class_id': class_id}, projection='group_name') }
+    A = { g.split(' ')[0] for g in S }
+    N = { g.split(' ')[1] for g in S }
+    acount = count_rows('positive_adjectives')
+    ncount = count_rows('plural_nouns')
+    while True:
+        a = db.positive_adjectives.random({})
+        if 2*len(A) < acount and a in A:
+            continue
+        n = db.plural_nouns.random({'firstletter':a[0]})
+        if 4*len(N) < ncount and n in N:
+            continue
+        name = a.capitalize() + " " + n.capitalize()
+        if db.groups.lucky({'group_name': name, 'year': year, 'term': term}):
+            continue
+        return name
 
 def student_counts(iter, opts):
     counts = { opt: {} for opt in opts if opt in countable_options and not opt in ['hours' 'departments'] }
@@ -361,12 +399,19 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c]['class_id'] = cid
     return counts
 
+# The *_row functions determine how data is passed to the client, we avoid using dictionaries both to save space and to control
+# exactly what the client can see (e.g. what students can see about group members and what instructors can see about students)
+# The downside is that the javascript depends on the order of the columns.  We pass everything as strings to avoid json
+
 def group_row(g, n):
     p = [_str(g['preferences'].get(k,"")) for k in ["start", "style", "forum"]] if g.get('preferences') else ["", "", ""]
     return [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
 
 def member_row(s):
-    return [_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','departments','year','kerb']]
+    return [_str(s.get(k,"")) for k in member_row_cols]
+
+def student_row(s):
+    return [_str(s.get(k,"")) for k in student_row_cols]
 
 def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
     db = getdb()
@@ -416,7 +461,7 @@ def cleanse_student_data(data):
         data['departments'] = sorted(data['departments'], key=course_number_key)
 
 class Student(UserMixin):
-    def __init__(self, kerb):
+    def __init__(self, kerb, full_name=''):
         if not kerb:
             raise ValueError("kerb required to create new student")
         self._db = getdb()
@@ -424,6 +469,7 @@ class Student(UserMixin):
         if data is None:
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
+            data['full_name'] = full_name
             data['id'] = -1
             data['new'] = True
             data['last_login'] =  datetime.datetime.now()
@@ -432,7 +478,9 @@ class Student(UserMixin):
                 send_message("", kerb, "welcome", student_welcome)
             log_event (kerb, 'new')
         else:
-            data["new"] = False
+            data['new'] = False
+            if not data.get('full_name'):
+                data['full_name'] = full_name
             log_event (kerb, 'load', detail={'student_id': data['id']})
         cleanse_student_data(data)
         self.__dict__.update(data)
@@ -542,10 +590,33 @@ class Student(UserMixin):
             log_event (self.kerb, 'leave', {'group_id': group_id})
             return self._leave(group_id)
 
+    def poolme(self):
+        if not self.class_data:
+            return "You do not have any classes listed in your pset partners profile for this term"
+        n = 0
+        with DelayCommit(self):
+            for k in self.class_data:
+                c = self.class_data[k]
+                if c['status'] == 0 or c['status'] == 3:
+                    log_event(self.kerb, 'pool', {'class_id': c['class_id']})
+                    flash_info(self._pool(c['class_id']))
+                    n += 1
+        if not n:
+            "You are either in a group or have already requested a match in all of your classes"
+        else:
+            log_event (self.kerb, 'poolme', {'count': n})
+
+        return "Done!"
+
     def pool(self, class_id):
         with DelayCommit(self):
             log_event (self.kerb, 'pool', {'class_id': class_id})
             return self._pool(class_id)
+
+    def unpool(self, class_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'unpool', {'class_id': class_id})
+            return self._unpool(class_id)
 
     def match(self, class_id):
         with DelayCommit(self):
@@ -617,30 +688,45 @@ class Student(UserMixin):
             self._db.students.update({"id": self.id, "kerb": self.kerb}, {col: getattr(self, col, None) for col in self._db.students.search_cols}, resort=False)
         if len(set(self.classes)) < len(self.classes):
             raise ValueError("Duplicates in class list %s" % self.classes)
-        q = {'student_id':self.id, 'year': current_year(), 'term': current_term()}
-        S = []
+        year = current_year()
+        term = current_term()
+        class_ids = set()
         for class_number in self.classes:
-            query = { 'class_number': class_number, 'year': current_year(), 'term': current_term()}
+            query = { 'class_number': class_number, 'year': year, 'term': term}
             class_id = self._db.classes.lucky(query, projection='id')
             if class_id is None:
                 raise ValueError("Class %s is not listed in the pset partners list of classes for this term." % class_number)
-            r = q.copy()
-            r['class_id'] = class_id
-            r['class_number'] = class_number
-            r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+            oldr = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id})
+            if oldr:
+                r = oldr.copy()
+                # make sure derived data is up to date (it should be but kerb was not getting set at one point)
+                r['class_number'] = class_number
+                r['year'] = year
+                r['term'] = term
+                r['kerb'] = self.kerb
+            else:
+                r = { 'class_id': class_id, 'student_id': self.id, 'year': year, 'term': term, 'class_number': class_number, 'kerb': self.kerb, 'status': 0 }
             # if user was just added to the class (e.g. via an invitation) we may not have any class_data for it
             if class_number in self.class_data:
                 r['properties'] = self.class_data[class_number].get('properties', {})
-                if self.class_data[class_number].get('preferences') is not None and any([self.class_data[class_number]['preferences'] != self.preferences, self.class_data[class_number]["strengths"] != self.strengths]):
-                    r['preferences'] = self.class_data[class_number]['preferences']
-                    r['strengths'] = self.class_data[class_number]['strengths']
-            S.append(r)
-        S = sorted(S, key=lambda x: x['class_id'])
-        T = sorted(self._db.classlist.search(q), key=lambda x: x['class_id'])
-        if S != T:
-            self._db.classlist.delete(q, resort=False)
-            if S:
-                self._db.classlist.insert_many(S, resort=False)
+                r['preferences'] = self.class_data[class_number].get('preferences', {})
+                r['strengths'] = self.class_data[class_number].get('strengths', {})
+            else: 
+                r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+            if oldr:
+                if r != oldr:
+                    self._db.classlist.update(oldr,r)
+                    log_event (self.kerb, 'edit', detail={'class_id': class_id})
+            else:
+                self._db.classlist.insert_many([r])
+                log_event (self.kerb, 'add', detail={'class_id': class_id})
+            class_ids.add(class_id)
+
+        for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
+            if class_id not in class_ids:
+                self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
+                self._db.grouplist.delete({'class_id': class_id, 'student_id': self.id})
+                log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"
 
@@ -657,7 +743,7 @@ class Student(UserMixin):
             app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
             raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1}, resort=False)
-        r = { k: g[k] for k in  ['class_number', 'year', 'term']}
+        r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         self._notify_group(group_id, "Say hello to your new pset partner!",
@@ -700,12 +786,34 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to join the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
-        if self.class_data[c]['status'] == 4:
-            raise ValueError("We are already working on a match for you in %s, please be patient." % c)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
         d = next_match_date(class_id)
+        if self.class_data[c]['status'] == 4:
+            msg = "We are already working on an urgent match for you in %s and have sent emails to a number of groups. If none respond we will put you in the <b>%s</b> match pool." % (c,d)
+        else:
+            msg = "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
         self._reload()
-        return "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
+        return msg
+
+    def _unpool(self, class_id):
+        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, "class_number")
+        if not c:
+            app.logger.warning("User %s attempted to leave the pool for non-existent class %s" % (self.kerb, class_id))
+            raise ValueError("Class not found in database.")
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to leave the pool for class %s not in their class list" % (self.kerb, class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to leave the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are currrently a member of the group %s in %s, and not in the match pool." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] != 2:
+            app.logger.warning("User %s attempted to leave the pool for class %s but is not in the match pool for that class" % (self.kerb, class_id, self.group_data[c]['id']))
+            raise ValueError("You are and not in the match pool for %s." % c)
+        d = next_match_date(class_id)
+        msg = "You have been removed from the match pool for <b>%s</b> on <b>%s</b>." %(c, d)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 0}, resort=False)
+        self._reload()
+        return msg
 
     def _match(self, class_id):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
@@ -741,12 +849,13 @@ class Student(UserMixin):
         editors = [self.kerb] if options.get('editors','').strip() == '1' else []
         strengths = {} # Groups don't have preference strengths right now
         maxsize = max_size_from_prefs(prefs)
-        name = generate_group_name()
+        name = generate_group_name(class_id)
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
              'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'editors': editors, 'max': maxsize }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1})
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
 
@@ -786,7 +895,7 @@ class Student(UserMixin):
         if len(S) == 0:
             return
 
-        self._db.messages.insert_many([{'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
+        self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
         if livesite():
             send_email([email(s) for s in S], subject, message + signature)
         else: #TODO: remove this once we go live
@@ -814,7 +923,7 @@ class Student(UserMixin):
             g = self._db.groups.lucky({'id': gid},
                 projection=['id', 'group_name', 'class_number', 'visibility', 'preferences', 'strengths', 'editors', 'max'])
             g['group_id'] = g['id'] # just so we don't get confused
-            members = list(students_in_group(gid))
+            members = list(students_in_group(gid, member_row_cols))
             g['count'] = len(members)
             g['members'] = sorted([member_row(s) for s in members])
             g['can_edit'] = True if self.kerb in g['editors'] or g['editors'] == [] else False;
@@ -828,21 +937,24 @@ def cleanse_instructor_data(data):
         data['toggles'] = {}
 
 class Instructor(UserMixin):
-    def __init__(self, kerb):
+    def __init__(self, kerb, full_name=''):
         if not kerb:
             raise ValueError("kerb required to create new instructor")
         self._db = getdb()
-        data = self._db.instructors.lucky({"kerb":kerb}, projection=3)
+        data = self._db.instructors.lucky({'kerb': kerb}, projection=3)
         if data is None:
             data = { col: None for col in self._db.students.col_type }
-            data["kerb"] = kerb
-            data["id"] = -1
-            data["new"] = True
+            data['kerb'] = kerb
+            data['full_name'] = full_name
+            data['id'] = -1
+            data['new'] = True
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", new_instructor_welcome)
             log_event (kerb, 'load', {'instructor_id': data['id']})
         else:
-            data["new"] = False
+            data['new'] = False
+            if not data.get('full_name'):
+                data['full_name'] = full_name
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", old_instructor_welcome)
             log_event (kerb, 'new', {'instructor':True})
@@ -855,21 +967,26 @@ class Instructor(UserMixin):
         self.classes = self._class_data()
         assert self.kerb
 
-    def _class_data(self, year=current_year(), term=current_term()):
-        classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
-        for c in classes:
-            c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
-            for s in c['students']:
-                s['group_id'] = self._db.grouplist.lucky({'class_id':c['id'], 'student_id': s['id']}, projection='group_id')
-                if s['group_id']:
-                    s['group_name'] = self._db.groups.lucky({'id':s['group_id']}, projection='group_name')
-            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
-        return sorted(classes, key = lambda x: x['class_number'])
-
     def acknowledge(self, msgid):
         self._db.messages.update({'id': msgid},{'read':True}, resort=False)
         log_event (self.kerb, 'ok')
         return "ok"
+
+    def update_toggle(self, name, value):
+        if not name:
+            return "no"
+        if self.toggles.get(name) == value:
+            return "ok"
+        self.toggles[name] = value;
+        self._db.instructors.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
+        return "ok"
+
+    def _class_data(self, year=current_year(), term=current_term()):
+        classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
+        for c in classes:
+            c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
+            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+        return sorted(classes, key = lambda x: x['class_number'])
 
     @property
     def is_student(self):
@@ -987,7 +1104,6 @@ def sandbox_message():
         return ''
     return "The sandbox was refreshed at %s (MIT time) with a new population of %s students." % (r['timestamp'].strftime("%Y-%m-%d %H:%M:%S"), r['value'].get('students'))
 
-
 test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", "US/Alaska", "US/Pacific", "US/Mountain",
                   "US/Central", "US/Eastern", "Brazil/East", "Canada/Newfoundland", "Brazil/DeNoronha", "Atlantic/Cape_Verde", "Iceland",
                   "Europe/London", "Europe/Paris", "Europe/Athens", "Asia/Dubai", "Asia/Baghdad", "Asia/Jerusalem", "Asia/Tehran",
@@ -1011,7 +1127,7 @@ def generate_test_population(num_students=300,max_classes=6):
 
 def _generate_test_population(num_students=300,max_classes=6):
     from random import randint
-    from . import db
+
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
 
     def rand(x):
@@ -1036,6 +1152,9 @@ def _generate_test_population(num_students=300,max_classes=6):
     if not choice or choice[0] != 'y':
         print("No changes made.")
         return
+
+    db = getdb() # we will still explicitly reference test_ tables just to be doubly sure we don't wipe out the production DB
+
     db.test_events.delete({}, resort=False)
     db.test_messages.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
@@ -1046,11 +1165,17 @@ def _generate_test_population(num_students=300,max_classes=6):
     year, term = current_year(), current_term()
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
     S = []
+    names = set()
     for n in range(num_students):
         s = blank_student.copy()
         s['kerb'] = "test%03d" % n
-        firstname = db.names.random()
-        name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
+        while True:
+            firstname = db.names.random()
+            name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
+            if name in names:
+                continue
+            break
+        names.add(name)
         s['preferred_name'] = s['full_name'] = name
         s['year'] = rand(year_options)[0] if randint(0,7) else None
         if ( s['year'] == 1 ):
@@ -1107,17 +1232,21 @@ def _generate_test_population(num_students=300,max_classes=6):
     for s in db.test_students.search(projection=3):
         student_id = s["id"]
         if s['year'] in [1,2] and randint(0,3):
-            classes = [db.classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
+            classes = [db.test_classes.lucky({'year': year, 'term': term, 'class_number': rand(big_classes)}, projection=['id', 'class_number'])]
         else:
-            classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+            classes = [db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
             while s['year'] in [3,4,5] and classes[0]['class_number'].split('.')[1][0] == '0':
-                classes = [db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
+                classes = [db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])]
         if randint(0,2):
-            classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+            c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+            if not c in classes:
+                classes.append(c)
             for m in range(2,max_classes):
                 if randint(0,2*m-2):
                     break;
-                classes.append(db.classes.random({'year': year, 'term': term}, projection=['id', 'class_number']))
+                c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
+                if not c in classes:
+                    classes.append(c)
         for i in range(len(classes)):
             prefs, strengths, props = {}, {}, {}
             for p in student_class_properties:
@@ -1143,8 +1272,8 @@ def _generate_test_population(num_students=300,max_classes=6):
             for p in student_affinities:
                 pa = p + "_affinity"
                 if pa in s['preferences'] and randint(0,2):
-                    prefs[p] = s['preferences'][pa]
-                    strengths[p] = s['strengths'][pa]
+                    prefs[pa] = s['preferences'][pa]
+                    strengths[pa] = s['strengths'][pa]
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa])[0]
                     strengths[pa] = randint(1,5)
@@ -1153,20 +1282,22 @@ def _generate_test_population(num_students=300,max_classes=6):
             S.append(c)
     db.test_classlist.insert_many(S, resort=False)
     S = []
-    for c in db.classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
+    names = set({})
+    for c in db.test_classes.search({'year': year, 'term': term}, projection=['id', 'class_number']):
         kerbs = list(db.test_classlist.search({'class_id':c['id']},projection='kerb'))
         n = len(kerbs)
-        creators, names = set(), set()
+        creators = set()
         for i in range(n//10):
-            name = db.plural_nouns.random()
-            name = db.positive_adjectives.random({'firstletter':name[0]}).capitalize() + " " + name.capitalize()
-            if name in names:
-                continue
+            while True:
+                name = generate_group_name(c['id'])
+                if name in names:
+                    continue
+                break
+            names.add(name)            
             creator = rand(kerbs)
             if creator in creators:
                 continue
             s = db.test_students.lookup(creator, projection=['id','preferences', 'strengths'])
-            db.test_classlist.update({'class_id': c['id'], 'student_id': s['id']}, {'status': 1}, resort=False)
             prefs = { p: s['preferences'][p] for p in s.get('preferences',{}) if not p.endswith('affinity') }
             strengths = { p: s['strengths'][p] for p in s.get('strengths',{}) if not p.endswith('affinity') }
             for p in ["start", "style", "forum", "size"]:
@@ -1176,37 +1307,42 @@ def _generate_test_population(num_students=300,max_classes=6):
             maxsize = max_size_from_prefs(prefs)
             eds = [creator] if randint(0,1) else []
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'editors': eds, 'max': maxsize }
+                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'creator': creator, 'editors': eds, 'max': maxsize }
             creators.add(creator)
-            names.add(name)
             S.append(g)
     if ( S ):
         db.test_groups.insert_many(S, resort=False)
         S = []
         for g in db.test_groups.search(projection=3):
             gid, cid, cnum, eds = g['id'], g['class_id'], g['class_number'], g['editors']
-            members = []
+            n = 0
             for k in eds:
                 sid = db.test_students.lookup(k,projection="id")
+                # make creator didn't leave to join another group
+                if db.test_classlist.lucky({'class_id': cid, 'student_id': sid},projection='status'):
+                    db.test_groups.update({'id':gid},{'editors':[]})
+                    continue
                 S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
-                members.append(student_id)
+                n += 1
                 db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1}, resort=False)
             while True:
-                if g['max'] and len(members) >= g['max']:
+                if g['max'] and n >= g['max']:
                     break
-                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': {'$ne':1}},projection=["student_id", "kerb"])))
-                if s['student_id'] in members:
-                    break
+                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': 0},projection=["student_id", "kerb"])))
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
+                n += 1
                 db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
-                members.append(s['student_id'])
-                if randint(0,len(members)-1):
+                if randint(0,n-1):
                     break
         db.test_grouplist.insert_many(S, resort=False)
+    # put most of the students not already in a group into the pool
+    for s in db.test_classlist.search(projection=["id","status"]):
+        if s['status'] == 0 and randint(0,9):
+            db.test_classlist.update({'id':s['id']},{'status':2}, resort=False)
 
     # take instructors from classes table for current term
     S = []
-    for r in db.classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
+    for r in db.test_classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
         if r['instructor_kerbs']:
             for i in range(len(r['instructor_kerbs'])):
                 kerb, name = r['instructor_kerbs'][i], r['instructor_names'][i]

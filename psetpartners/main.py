@@ -15,6 +15,7 @@ from flask_login import (
     current_user,
     LoginManager,
 )
+from .config import Configuration
 from .token import read_timed_token
 from datetime import datetime
 from .app import app, livesite, debug_mode, under_construction, send_email, routes
@@ -28,6 +29,7 @@ from .student import (
     strength_options,
     current_classes,
     is_instructor,
+    is_whitelisted,
     is_admin,
     get_counts,
     class_groups,
@@ -65,8 +67,9 @@ def load_user(kerb):
         return None
     if session.get("affiliation") == "affiliate":
         return AnonymousUser()
+    full_name = session.get('displayname')
     try:
-        s = Student(kerb) if session.get("affiliation") == "student" else Instructor(kerb)
+        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name)
         return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
@@ -115,6 +118,7 @@ def login():
             return render_template("500.html", message="Touchstone authentication invalid."), 500
         kerb = eppn.split("@")[0]
         affiliation = affiliation.split("@")[0]
+        displayname = request.environ.get("HTTP_DISPLAYNAME", "")
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
@@ -122,26 +126,34 @@ def login():
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
-        if kerb == "unknown":
+        if kerb == "staff":
             affiliation = "staff"
+        elif kerb == "affiliate":
+            affiliation = "affiliate"
         else:
             affiliation = "staff" if is_instructor(kerb) else "student"
+        displayname = ""
 
     if not kerb or not affiliation:
         return render_template("500.html", message="Missing login credentials"), 500
 
     if affiliation == "student":
-        user = Student(kerb)
+        user = Student(kerb, displayname)
+    elif is_whitelisted(kerb):
+        affiliation = "student"
+        user = Student(kerb, displayname)
     elif affiliation == "staff":
-        user = Instructor(kerb)
+        user = Instructor(kerb, displayname)
     else:
-        return render_template("404.html", message="Only current MIT students and instructors are authorized to use this site."), 404
+        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+        return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
+    session["displayname"] = displayname
     user.login()
     login_user(user, remember=False)
-    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s)" %
-        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor))
+    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s,full_name=%s)" %
+        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor,current_user.full_name))
     if next:
         return redirect(next)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
@@ -153,7 +165,17 @@ def loginas(kerb):
         app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     logout_user()
-    user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
+    if livesite():
+        if 'people' in Configuration().options:
+            from .people import get_kerb_data
+
+            c = Configuration().options['people']
+            data = get_kerb_data(kerb, c['id'], c['secret'])
+            if data:
+                session['affiliation'] = "student"
+                session['displayname'] = data['full_name']
+    displayname = session['displayname']
+    user = Instructor(kerb, displayname) if is_instructor(kerb) else Student(kerb, displayname)
     session["kerb"] = kerb
     session["affiliation"] = "student" if user.is_student else "staff"
     login_user(user, remember=False)
@@ -227,6 +249,12 @@ def testlog():
     app.logger.info(msg)
     return "The following message was just logged:\n\n"+msg
 
+@app.route("/testenviron")
+@login_required
+def testenviron():
+    r = ["%s = %s" %(k, request.environ[k]) for k in request.environ]
+    return '<br>'.join(r)
+
 allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence"]
 allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
 
@@ -286,6 +314,22 @@ def accept_invite(token):
         flash_error("Unable to process invitation: %s" % err)
     return redirect(url_for(".student"))
 
+@app.route("/poolme")
+@login_required
+def poolme():
+    if not current_user.is_authenticated or not current_user.is_student:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    try:
+        current_user.poolme()
+    except Exception as err:
+        msg = "Error adding you to match pool: {0}{1!r}".format(type(err).__name__, err.args)
+        app.logger.error("Error processing poolme request for student %s: %s" % (current_user.kerb, msg))
+        log_event (current_user.kerb, 'poolme', status=-1, detail={'msg': msg})
+        flash_error("We encountered an error while attempting to put in the match pool: %s" % msg)
+    return redirect(url_for(".student"))
+
 @app.route("/student")
 @login_required
 def student(context={}):
@@ -340,6 +384,9 @@ def save_student():
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
     if submit[0] == "save":
+        # update the full_name supplied by Touchstone (in case this changes)
+        if session.get("displayname",""):
+            current_user.full_name = session["displayname"]
         if not save_changes(raw_data):
             if submit != "save":
                 flash_error("The action you requested was not performed.")
@@ -374,6 +421,16 @@ def save_student():
         except Exception as err:
             msg = "Error adding you to the match pool: {0}{1!r}".format(type(err).__name__, err.args)
             log_event (current_user.kerb, 'pool', status=-1, detail={'class_id': cid, 'msg': msg})
+            if debug_mode():
+                raise
+            flash_error(msg)
+    elif submit[0] == "unpool":
+        try:
+            cid = int(submit[1])
+            flash_info(current_user.unpool(cid))
+        except Exception as err:
+            msg = "Error removing you from the match pool: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'unpool', status=-1, detail={'class_id': cid, 'msg': msg})
             if debug_mode():
                 raise
             flash_error(msg)
@@ -413,7 +470,7 @@ def save_student():
             flash_info(current_user.edit_group (gid, {k: raw_data.get(k,'').strip() for k in group_options}))
         except Exception as err:
             msg = "Error editing group: {0}{1!r}".format(type(err).__name__, err.args)
-            log_event (current_user.kerb, 'create', status=-1, detail={'group_id': gid, 'public': True, 'msg': msg})
+            log_event (current_user.kerb, 'edit', status=-1, detail={'group_id': gid, 'public': True, 'msg': msg})
             if debug_mode():
                 raise
             flash_error(msg)
@@ -433,6 +490,7 @@ def save_changes(raw_data):
     sprefs = [ {} for i in range(num_classes+1) ]
     props = [ {} for i in range(num_classes+1) ]
     data["hours"] = [False for i in range(168)]
+    print(raw_data)
     for i in range(7):
         for j in range(24):
             if raw_data.get("hours-%d-%d"%(i,j),False):
@@ -490,6 +548,11 @@ def save_changes(raw_data):
             for msg in errmsgs:
                 flash_error(msg)
             return False;
+    # client should not be sending any unnecessary strengths, but remove them if present
+    for i in range(num_classes+1):
+        for k in list(sprefs[i]):
+            if not k in prefs[i]:
+                sprefs[i].pop(k)
     data["preferences"] = prefs[0]
     data["strengths"] = sprefs[0]
     for k, v in data.items():

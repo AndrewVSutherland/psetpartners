@@ -5,11 +5,11 @@
 <h3>Unable to locate the page you requested.</h3>
 {% if messages %}
 {% for msg in messages %}
-<p>{{msg}}</p>
+<p>{{ msg|safe }}</p>
 {% endfor %}
 {% elif message %}
 <br>
-{{ message }}
+{{ message | safe }}
 {% elif request.referrer %}
 <br>
 <div>
