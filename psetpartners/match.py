@@ -1,6 +1,109 @@
 from psetpartners import db
 from collections import defaultdict
 from math import sqrt, floor
+import heapq
+from functools import lru_cache
+
+class MatchError(ValueError):
+    pass
+
+def initial_assign(to_match, sizes):
+    # In practice, 3-4 is by far the most common requested size.  In order to have room for expansion, we aim for 3.
+    # We first try to fulfill any other size requests: 9 then 5 then 2.
+    # Note that this function will destroy the sizes dictionary.
+    groups = {}
+    def add(source, n=None):
+        if n is None:
+            G = Group([to_match[i] for i in source])
+        else:
+            G = Group([to_match[i] for i in source[:n]])
+            source[:n] = []
+        for S in G.students:
+            groups[S.id] = G
+    for m in [9,5,2]:
+        # 9-5-2 is one of my favorite card games.  See https://debitcardcasino.ca/games/2018/04/19/9-5-2-rules-canada/ for a version of the rules.
+        while sizes[m]:
+            G = sizes[m][:m]
+            sizes[9] = sizes[m][m:]
+            fill = m - len(G)
+            if fill:
+                # Add students from the flex pool until enough.
+                G.extend(sizes[0][:fill])
+                sizes[0] = sizes[0][fill:]
+            add(G)
+    remainder = sizes[3] + sizes[0]
+    if len(remainder) == 5:
+        # Unless there's a strong preference for 3, we keep this case in a group of 5.
+        strong = [i for i in sizes[3] if to_match[i].preferences["size"][1] > 3]
+        if 0 < len(strong) <= 3:
+            for i in remainder:
+                if i not in strong:
+                    strong.append(i)
+                    if len(strong) == 3:
+                        break
+            other = [i for i in remainder if i not in strong]
+            add(strong)
+            add(other)
+        else:
+            add(remainder)
+    else:
+        while len(remainder) % 3:
+            add(remainder, 4)
+        while remainder:
+            add(remainder, 3)
+    return groups
+
+def evaluate_swaps(groups):
+    improvements = [(groups[i].evaluate_swap(i, j, groups[j]), i, j) for i in groups for j in groups if i < j]
+    improvements.sort(reverse=True)
+    print(improvements)
+    return improvements
+
+def run_swaps(to_match, groups, improvements):
+    while improvements[0][0] > 0:
+        # improvements is sorted so that the best swap is first.
+        changed = [] # will hold values extracted from improvements that have changed, unordered
+        top_changed = 0 # highest updated swap value
+        while improvements[0][0] > top_changed:
+            # execute_swap swaps the first entry of improvements, removing all affected values from improvements and inserting them into change, then returns the largest changed value.
+            top_changed = max(top_changed, execute_swap(to_match, groups, improvements, changed))
+        # The best swap is no longer in improvements, so we need to recombine improvements and changed and sort
+        improvements = sorted(improvements + changed, reverse=True)
+
+def execute_swap(to_match, groups, improvements, changed):
+    # Execute the swap with highest value, which is the first entry in the improvements list
+    value, i, j = improvements.pop(0)
+    #assert groups[i] is not groups[j]
+    print("Swapping", value, i, j)
+    print("groups[i]", i, [S.id for S in groups[i].students])
+    print("groups[j]", j, [S.id for S in groups[j].students])
+    print("tm[i]", to_match[i].id)
+    print("tm[j]", to_match[j].id)
+    # First change the actual groups (this will update these groups indexed under other ids)
+    Gj = groups[i].swap(i, to_match[j])
+    Gi = groups[j].swap(j, to_match[i])
+    print(Gi is Gj)
+    # Now change the pointers from i and j
+    groups[i] = Gi
+    groups[j] = Gj
+    print("Gi", i, [S.id for S in Gi.students])
+    print("Gj", j, [S.id for S in Gj.students])
+    # Now update values of every swap containing one of the members of one of these groups
+    changed.append((-value, i, j))
+    ctr = 0
+    biggest = 0
+    while ctr < len(improvements):
+        old, a, b = improvements[ctr]
+        if groups[a] is Gi or groups[a] is Gj or groups[b] is Gi or groups[b] is Gj:
+            del improvements[ctr]
+            # Swap value is symmetric
+            new = groups[a].evaluate_swap(a, b, groups[b])
+            if new > biggest:
+                biggest = new
+            changed.append((new, a, b))
+        else:
+            ctr += 1
+    return biggest
 
 def compatible_sizes(G, S, size_lookup):
     size = size_lookup[S.id]
@@ -85,17 +188,22 @@ def assign_one(to_match, groups, compatibilities, size_lookup):
     for i, S in to_match.items():
         compatibilities[i][gid] = S.compatibility(G)
 
-def matches(year=2020, term=3):
+def matches(year=2020, term=3, dryrun=True):
     """
     Creates groups for all classes in a given year and term.
     """
-    student_data = {rec["id"]: {key: rec.get(key) for key in ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments"]} for rec in db.test_students.search(projection=3)}
+    student_data = {rec["id"]: {key: rec.get(key) for key in ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments"]} for rec in db.students.search(projection=3)}
     by_class = {}
     for clsrec in db.classes.search({"year": year, "term": term}, ["id", "class_name"]):
         clsid = clsrec["id"]
         to_match = {}
         # Might also need to search on status for unmatched students?
-        for rec in db.test_classlist.search({"class_id": clsid}, ["student_id", "preferences", "strengths", "properties"]):
+        # 0 = unchosen
+        # 1 = in group
+        # 2 = in pool
+        # 3 = requested match
+        # 4 = emailed people
+        for rec in db.classlist.search({"class_id": clsid}, ["student_id", "preferences", "strengths", "properties"]):
             properties = dict(rec["properties"])
             properties.update(student_data[rec["student_id"]])
             to_match[rec["student_id"]] = Student(properties, rec["preferences"], rec["strengths"])
@@ -105,7 +213,9 @@ def matches(year=2020, term=3):
         groups = {}
         if N in [1, 2, 3]:
             # Only one way to group
-            groups[-1] = Group(list(to_match.values()))
+            G = Group(list(to_match.values()))
+            for S in G.students:
+                groups[S.id] = G
         elif N >= 4:
             # We first need to determine which size groups to create
             for limit in [9, 5, 3, 2]:
@@ -140,23 +250,20 @@ def matches(year=2020, term=3):
                     # We prohibit groups of 9+ then 5+ since these are harder to create.
                     # If that's still not enough, we make everyone flexible.
                     continue
-                # Now there are enough students who are flexible on their group size that we can create groups.
-                # We start creating groups based on which students are hardest to satisfy
-                compatibilities = defaultdict(dict)
-                # We use student ids as keys for students, and create negative ids for groups
-                for i, A in to_match.items():
-                    for j, B in to_match.items():
-                        if j <= i: continue
-                        compatibilities[i][j] = compatibilities[j][i] = A.compatibility(B)
-                while to_match:
-                    assign_one(to_match, groups, compatibilities, size_lookup)
-                # We succeeded, so we break out of the limit loop
                 break
+            # Now there are enough students who are flexible on their group size that we can create groups.
+            groups = initial_assign(to_match, sizes)
+            print(groups)
+            improvements = evaluate_swaps(groups)
+            run_swaps(to_match, groups, improvements)
         # Print warnings for groups with low compatibility and for non-satisfied requirements
-        print("%s assignments complete" % clsrec["class_name"])
-        for grp in groups.values():
-            grp.print_warnings()
-        by_class[clsrec["class_name"]] = list(groups.values())
+        if dryrun:
+            print("%s assignments complete" % clsrec["class_name"])
+            for grp in set(groups.values()):
+                print(grp)
+        else:
+            raise NotImplementedError
+        by_class[clsrec["class_name"]] = set(groups.values())
     return by_class
 
 
@@ -173,12 +280,21 @@ class Student(object):
         for k, v in preferences.items():
             self.preferences[k] = (v, strengths.get(k, 3))
 
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return isinstance(other, Student) and other.id == self.id
+
+    def __repr__(self):
+        return "%s(%s)" % (self.kerb, self.id)
+
     def compatibility(self, G):
         if isinstance(G, Student):
             Gplus = Group([G, self])
         else:
             Gplus = Group(G.students + [self])
-        return sum(T.score(q, Gplus) for q in affinities + styles for T in Gplus.students) + Gplus.schedule_score()
+        return Gplus.compatibility()
 
     def score(self, quality, G):
         """
@@ -281,25 +397,83 @@ class Group(object):
     def __init__(self, students):
         self.students = students
 
+    def by_id(self, n):
+        for S in self.students:
+            if S.id == n:
+                return S
+        raise ValueError(n, [S.id for S in self.students])
+
     def add(self, student):
         self.students.append(student)
 
     def __len__(self):
         return len(self.students)
 
-    def schedule_overlap(self):
-        hour_data = [S.properties["hours"] for S in self.students]
+    def __hash__(self):
+        return hash(frozenset(self.students))
+
+    def __eq__(self, other):
+        return isinstance(other, Group) and set(self.students) == set(other.students)
+
+    def __repr__(self):
+        students = ["%s%s" % (S, "(%s)" % (self.contributions[S.id]) if self.contributions[S.id] < 0 else "") for S in self.students]
+        return "Group(size=%s, score=%s) %s" % (len(self), self.compatibility(), " ".join(students))
+
+    def schedule_overlap(self, swap_inout=None):
+        if swap_inout:
+            this, other = swap_inout
+            students = [S for S in self.students if S.id != this.id] + [other]
+        else:
+            students = self.students
+        hour_data = [S.properties["hours"] for S in students]
         return sum(all(available) for available in zip(hour_data))
 
-    def schedule_score(self):
+    @lru_cache(128)
+    def schedule_score(self, swap_inout=None):
         """
         Score based on how much overlap there is in the hours scheduled
         """
-        overlap = self.schedule_overlap()
+        overlap = self.schedule_overlap(swap_inout)
         if overlap < 4:
             return -20**(4-overlap)
+        elif overlap < 20:
+            return 5*(overlap - 4)
         else:
-            return 20 * floor(sqrt(overlap - 4))
+            return 80 + 5 * floor(sqrt(overlap - 20))
+
+    # @cached_property requires Python 3.8
+    @property
+    def contributions(self):
+        try:
+            return self._cached_contributions
+        except AttributeError:
+            self._cached_contributions = {T.id : sum(T.score(q, self) for q in affinities + styles) for T in self.students}
+            return self._cached_contributions
+
+    def compatibility(self):
+        return sum(self.contributions.values()) + self.schedule_score()
+
+    def evaluate_swap(self, thisid, otherid, othergrp):
+        revised_self = Group([S for S in self.students if S.id != thisid] + [othergrp.by_id(otherid)])
+        revised_other = Group([S for S in othergrp.students if S.id != otherid] + [self.by_id(thisid)])
+        print("Evaluating", revised_self, revised_other)
+        return (revised_self.compatibility() + revised_other.compatibility()) - (self.compatibility() + othergrp.compatibility())
+        if self == othergrp:
+            return 0
+        this = self.by_id(thisid)
+        other = othergrp.by_id(otherid)
+        thisnew = sum(other.score(q, self) for q in affinities + styles)
+        othernew = sum(this.score(q, othergrp) for q in affinities + styles)
+        thischange = thisnew + self.schedule_score((this, other)) - self.contributions[thisid] - self.schedule_score()
+        otherchange = othernew + othergrp.schedule_score((other, this)) - othergrp.contributions[otherid] - othergrp.schedule_score()
+        return thischange + otherchange
+
+    def swap(self, thisid, other):
+        self.schedule_score.cache_clear()
+        self.students = [S for S in self.students if S.id != thisid] + [other]
+        del self._cached_contributions[thisid]
+        self._cached_contributions[other.id] = sum(other.score(q, self) for q in affinities + styles)
+        return self
 
     def print_warnings(self):
         for S in self.students:
