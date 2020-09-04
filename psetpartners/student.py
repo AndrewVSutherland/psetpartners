@@ -604,7 +604,7 @@ class Student(UserMixin):
         if not n:
             "You are either in a group or have already requested a match in all of your classes"
         else:
-            log_event (current_user.kerb, 'poolme', {'count': n})
+            log_event (self.kerb, 'poolme', {'count': n})
 
         return "Done!"
 
