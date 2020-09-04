@@ -438,6 +438,9 @@ def cleanse_student_data(data):
         data['strengths'] = {}
     if data['toggles'] is None:
         data['toggles'] = {}
+    if data["full_name"] == "(null)":
+        app.log_warning("Ignoring displayname (null) for student %s" % kerb);
+        data["full_name"] = ""
     for pref in list(data["preferences"]):
         if not pref in student_preferences:
             app.logger.warning("Ignoring unknown preference %s for student %s"%(pref,kerb))
@@ -464,6 +467,9 @@ class Student(UserMixin):
     def __init__(self, kerb, full_name=''):
         if not kerb:
             raise ValueError("kerb required to create new student")
+        if full_name == "(none)":
+            app.log_warning("Ignoring displayname (null) for kerb %s" % kerb);
+            full_name = ""
         self._db = getdb()
         data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None:
@@ -898,7 +904,7 @@ class Student(UserMixin):
         self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
         if livesite():
             send_email([email(s) for s in S], subject, message + signature)
-        else: #TODO: remove this once we go live
+        else: #TODO: remove this eventually (for now all messages will be sent to drew@math.mit.edu)
             send_email([email(s) for s in S], subject, message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
