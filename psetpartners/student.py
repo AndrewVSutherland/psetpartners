@@ -942,17 +942,26 @@ class Instructor(UserMixin):
         self.classes = self._class_data()
         assert self.kerb
 
+    def acknowledge(self, msgid):
+        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
+        log_event (self.kerb, 'ok')
+        return "ok"
+
+    def update_toggle(self, name, value):
+        if not name:
+            return "no"
+        if self.toggles.get(name) == value:
+            return "ok"
+        self.toggles[name] = value;
+        self._db.instructors.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
+        return "ok"
+
     def _class_data(self, year=current_year(), term=current_term()):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
         return sorted(classes, key = lambda x: x['class_number'])
-
-    def acknowledge(self, msgid):
-        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
-        log_event (self.kerb, 'ok')
-        return "ok"
 
     @property
     def is_student(self):
