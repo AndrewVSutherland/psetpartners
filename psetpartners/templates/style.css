@@ -184,8 +184,17 @@ label.highlight {
   font-weight: bold;
 }
 
+label.clickable {
+  color: var(--mit-maroon);
+  cursor: pointer;
+}
+label.clickable:hover {
+  background-color: var(--mit-pink);
+}
+
 th.sortable {
   color: var(--mit-maroon);
+  cursor: pointer;
 }
 
 th.sortable:hover {
