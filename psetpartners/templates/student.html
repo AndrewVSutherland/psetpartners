@@ -22,7 +22,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <table class="input">
     <tr>
       <td class="caption">Preferred name<b style="color:var(--alert-color);">*</b></td>
-      <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
+      <td class="value"><input class="value required" spellcheck="false" name="preferred_name" id="preferred_name" value="{{user.preferred_name if user.preferred_name else user.full_name}}" tabindex="1" placeholder="the name you generally use" maxlength="{{maxlength['preferred_name']}}" 
        oninput="if (this.value.trim()) $('#preferred_name_info').hide(); else $('#preferred_name_info').show();"/></td>
       <td class="alertinfo" id="preferred_name_info">{% if user.preferred_name == '' %}required{% endif %}</td>
     </tr>

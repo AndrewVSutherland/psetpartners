@@ -158,6 +158,21 @@ class Configuration(_Configuration):
             default="", # Need to provide in secrets file instead
         )
 
+        peoplegroup = parser.add_argument_group("people API options:")
+        peoplegroup.add_argument(
+            "--people-secret",
+            dest="people_secret",
+            metavar="PASS",
+            help="people API client secret [default: %(default)s]",
+            default="", # Need to provide in secrets file instead
+        )
+        peoplegroup.add_argument(
+            "--people-id",
+            dest="people_id",
+            help="people API client id [default: %(default)s]",
+            default="", # Need to provide in secrets file instead
+        )
+
         # undocumented options
         parser.add_argument(
             "--enable-profiler",

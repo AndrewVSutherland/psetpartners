@@ -11,7 +11,8 @@ from .utils import (
     current_year,
     current_term,
     hours_from_default,
-    flash_announce
+    flash_announce,
+    flash_info,
     )
 from .token import generate_timed_token
 from psycodict import DelayCommit
@@ -460,7 +461,7 @@ def cleanse_student_data(data):
         data['departments'] = sorted(data['departments'], key=course_number_key)
 
 class Student(UserMixin):
-    def __init__(self, kerb):
+    def __init__(self, kerb, full_name=''):
         if not kerb:
             raise ValueError("kerb required to create new student")
         self._db = getdb()
@@ -468,6 +469,7 @@ class Student(UserMixin):
         if data is None:
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
+            data['full_name'] = full_name
             data['id'] = -1
             data['new'] = True
             data['last_login'] =  datetime.datetime.now()
@@ -476,7 +478,9 @@ class Student(UserMixin):
                 send_message("", kerb, "welcome", student_welcome)
             log_event (kerb, 'new')
         else:
-            data["new"] = False
+            data['new'] = False
+            if not data.get('full_name'):
+                data['full_name'] = full_name
             log_event (kerb, 'load', detail={'student_id': data['id']})
         cleanse_student_data(data)
         self.__dict__.update(data)
@@ -585,6 +589,21 @@ class Student(UserMixin):
         with DelayCommit(self):
             log_event (self.kerb, 'leave', {'group_id': group_id})
             return self._leave(group_id)
+
+    def poolme(self):
+        if not self.class_data:
+            return "You do not have any classes listed in your pset partners profile for this term"
+        n = 0
+        with DelayCommit(self):
+            for k in self.class_data:
+                c = self.class_data[k]
+                if c['status'] == 0 or c['status'] == 3:
+                    log_event(self.kerb, 'pool', {'class_id': c['class_id']})
+                    flash_info(self._pool(c['class_id']))
+                    n += 1
+        if not n:
+            "You are either in a group or have already requested a match in all of your classes"
+        return "Done!"
 
     def pool(self, class_id):
         with DelayCommit(self):
@@ -915,21 +934,24 @@ def cleanse_instructor_data(data):
         data['toggles'] = {}
 
 class Instructor(UserMixin):
-    def __init__(self, kerb):
+    def __init__(self, kerb, full_name=''):
         if not kerb:
             raise ValueError("kerb required to create new instructor")
         self._db = getdb()
-        data = self._db.instructors.lucky({"kerb":kerb}, projection=3)
+        data = self._db.instructors.lucky({'kerb': kerb}, projection=3)
         if data is None:
             data = { col: None for col in self._db.students.col_type }
-            data["kerb"] = kerb
-            data["id"] = -1
-            data["new"] = True
+            data['kerb'] = kerb
+            data['full_name'] = full_name
+            data['id'] = -1
+            data['new'] = True
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", new_instructor_welcome)
             log_event (kerb, 'load', {'instructor_id': data['id']})
         else:
-            data["new"] = False
+            data['new'] = False
+            if not data.get('full_name'):
+                data['full_name'] = full_name
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", old_instructor_welcome)
             log_event (kerb, 'new', {'instructor':True})

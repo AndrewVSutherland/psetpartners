@@ -15,6 +15,7 @@ from flask_login import (
     current_user,
     LoginManager,
 )
+from .config import Configuration
 from .token import read_timed_token
 from datetime import datetime
 from .app import app, livesite, debug_mode, under_construction, send_email, routes
@@ -66,8 +67,9 @@ def load_user(kerb):
         return None
     if session.get("affiliation") == "affiliate":
         return AnonymousUser()
+    full_name = session.get('displayname')
     try:
-        s = Student(kerb) if session.get("affiliation") == "student" else Instructor(kerb)
+        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name)
         return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
@@ -136,19 +138,18 @@ def login():
         return render_template("500.html", message="Missing login credentials"), 500
 
     if affiliation == "student":
-        user = Student(kerb)
-    elif is_whitelisted(kerb):
+        user = Student(kerb, displayname)
+    elif is_whitelisted(kerb, displayname):
         affiliation = "student"
-        user = Student(kerb)
+        user = Student(kerb, displayname)
     elif affiliation == "staff":
-        user = Instructor(kerb)
+        user = Instructor(kerb, displayname)
     else:
         app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
         return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
     session["displayname"] = displayname
-    user.full_name = displayname
     user.login()
     login_user(user, remember=False)
     app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s,full_name=%s)" %
@@ -164,10 +165,19 @@ def loginas(kerb):
         app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     logout_user()
-    user = Instructor(kerb) if is_instructor(kerb) else Student(kerb)
+    if livesite():
+        if 'people' in Configuration().options:
+            from .people import get_kerb_data
+
+            c = Configuration().options['people']
+            data = get_kerb_data(kerb, c['id'], c['secret'])
+            if data:
+                session['affiliation'] = "student"
+                session['displayname'] = data['full_name']
+    displayname = session['displayname']
+    user = Instructor(kerb, displayname) if is_instructor(kerb) else Student(kerb, displayname)
     session["kerb"] = kerb
     session["affiliation"] = "student" if user.is_student else "staff"
-    session["displayname"] = ""
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
@@ -302,6 +312,20 @@ def accept_invite(token):
     except Exception as err:
         app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
         flash_error("Unable to process invitation: %s" % err)
+    return redirect(url_for(".student"))
+
+@app.route("/poolme")
+@login_required
+def poolme():
+    if not current_user.is_authenticated or not current_user.is_student:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    try:
+        current_user.poolme()
+    except Exception as err:
+        app.logger.error("Error processing poolme request for student %s" % current_user.kerb)
+        flash_error("We encountered an error while attempting to put in the match pool: %s" % err)
     return redirect(url_for(".student"))
 
 @app.route("/student")
