@@ -194,11 +194,11 @@ th.sortable:hover {
 
 th.sortable::after {
   display:inline-block;
-  content: "◆";
+  content: ""; //"◆";
   font-size: 70%;
-  padding-left: 3px;
+  padding-left: 4px;
   vertical-align: top;
-  padding-top: 2px;
+  margin-top: 1px;
 }
 
 th.sortable.asc::after {
@@ -207,7 +207,7 @@ th.sortable.asc::after {
   font-size: 90%;
   padding-left: 2px;
   vertical-align: top;
-  padding-top: 1.5px;
+  margin-top: 0.5px;
 }
 
 th.sortable.desc::after {
@@ -216,7 +216,7 @@ th.sortable.desc::after {
   font-size: 90%;
   padding-left: 2px;
   vertical-align: top;
-  margin-top: -1px;
+  margin-top: 0px;
 }
 
 h1 {
