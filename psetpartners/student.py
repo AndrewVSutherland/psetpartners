@@ -290,7 +290,7 @@ def next_match_date(class_id):
     match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
     if match_dates:
         today = datetime.datetime.now().date()
-        match_dates = [d for d in match_dates if d > today]
+        match_dates = [d for d in match_dates if d >= today]
         if match_dates:
             return match_dates[0].strftime("%b %-d")
     return ""
@@ -603,6 +603,9 @@ class Student(UserMixin):
                     n += 1
         if not n:
             "You are either in a group or have already requested a match in all of your classes"
+        else:
+            log_event (current_user.kerb, 'poolme', {'count': n})
+
         return "Done!"
 
     def pool(self, class_id):
@@ -1332,6 +1335,10 @@ def _generate_test_population(num_students=300,max_classes=6):
                 if randint(0,n-1):
                     break
         db.test_grouplist.insert_many(S, resort=False)
+    # put most of the students not already in a group into the pool
+    for s in db.test_classlist.search(projection=["id","status"]):
+        if s['status'] == 0 and randint(0,9):
+            db.test_classlist.update({'id':s['id']},{'status':2}, resort=False)
 
     # take instructors from classes table for current term
     S = []
