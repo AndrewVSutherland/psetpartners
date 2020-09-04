@@ -139,7 +139,7 @@ def login():
 
     if affiliation == "student":
         user = Student(kerb, displayname)
-    elif is_whitelisted(kerb, displayname):
+    elif is_whitelisted(kerb):
         affiliation = "student"
         user = Student(kerb, displayname)
     elif affiliation == "staff":
