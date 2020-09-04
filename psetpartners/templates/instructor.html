@@ -72,6 +72,7 @@ const statusPretty = ['-', 'member', 'in pool', 'matching', 'matching'];
 
 function formatRow(s) {
   return {
+    kerb: s[5],
     name: s[0] || s[1] || s[5],
     depts: s[3],
     year:  s[4] == '5' ? 'G' : (s[4]||'-'),
@@ -110,11 +111,17 @@ function headerClick (e) {
   showStudentTable();
 }
 
+function colCompare(a,b,col,dir)
+{
+  if ( a[col] == b[col] ) return a.name == b.name ? (a.kerb < b.kerb ? -dir : dir) : (a.name < b.name ? -dir : dir);
+  return a[col] < b[col] ? -dir : dir;
+}
+
 function showStudentTable () {
   const dir = classSort[classIndex].dir;
   const col = classSort[classIndex].curCol;
-  classRows[classIndex].sort(function(a,b) { const x = a[col], y = b[col]; return x==y?0:(x<y?-dir:dir); });
-  classSort[classIndex].prevCol = classSort[classIndex].curCol;
+  classRows[classIndex].sort(function(a,b) { return colCompare(a,b,col,dir); });
+  classSort[classIndex].prevCol = col;
   $('#student-rows').html(renderRows());
   const q = $('#student-table th.active');  q.removeClass('asc'); q.removeClass('desc'); q.removeClass('active');
   $('#'+col).addClass('active');  $('#'+col).addClass(dir>0 ? 'asc' : 'desc');
