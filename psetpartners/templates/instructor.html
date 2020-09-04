@@ -57,10 +57,13 @@ Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if
 
 <script>
 // jshint ignore:start
+const isLive = {{ livesite|tojson|safe }};
 const classes = {{user.classes|tojson|safe}};
+const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
-/* global classes */
+/* global classes, toggles, isLive */
 
+let loaded = false;
 let classIndex = 0;
 let classSort = [];
 let classRows = [];
@@ -90,38 +93,56 @@ function renderRows() {
 }
 
 function toggleClass(i) {
+  if ( i < 0 ) i = 0;
   $('#num-students').html(''+classRows[i].length);
   $('#match-date').html(classes[i].next_match_date);
   $('#student-table-heading').html(classes[i].class_number + ' ' + classes[i].class_name);
   $('#student-rows').html(renderRows(classRows[i]));
   classIndex = i;
+  ajaxToggle('ct', classes[i].class_number);
   showStudentTable();
 }
 
 function headerClick (e) {
   classSort[classIndex].curCol = e.target.id;
   classSort[classIndex].dir = classSort[classIndex].curCol == classSort[classIndex].prevCol ? -classSort[classIndex].dir : 1;
-  classSort[classIndex].prevCol = classSort[classIndex].curCol;
+  ajaxToggle('st-'+classes[classIndex].class_number, (classSort[classIndex].dir < 0 ? '-' : '+') +e.target.id);
   showStudentTable();
 }
 
 function showStudentTable () {
   const dir = classSort[classIndex].dir;
   const col = classSort[classIndex].curCol;
-  classRows[classIndex].sort(function(a,b) { const x = a[col], y = b[col]; return x==y?0:(x<y?dir:-dir); });
+  classRows[classIndex].sort(function(a,b) { const x = a[col], y = b[col]; return x==y?0:(x<y?-dir:dir); });
+  classSort[classIndex].prevCol = classSort[classIndex].curCol;
   $('#student-rows').html(renderRows());
   const q = $('#student-table th.active');  q.removeClass('asc'); q.removeClass('desc'); q.removeClass('active');
   $('#'+col).addClass('active');  $('#'+col).addClass(dir>0 ? 'asc' : 'desc');
 }
 
+function ajaxToggle(name, value) {
+  if ( ! loaded ) return false;
+  ajaxToggle[name] = value;
+  if ( ajaxToggle[name+'Pending'] ) return false;
+  ajaxToggle[name+'Pending'] = true;
+  window.setTimeout(function(){
+    $.ajax({url: '/_toggle', data: { 'name': name, 'value': ajaxToggle[name] }});
+    ajaxToggle[name+'Pending'] = false;
+    }, 500);
+  return true;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
   for (let i = 0 ; i < classes.length ; i++ ) {
-    classSort[i] = { curCol: 'name', prevCol: '', dir: -1 };
+    const c = classes[i].class_number,  t = toggles['st-'+c] || '+name';
+    classSort[i] = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
     classRows[i] = classes[i].students.map(formatRow);
   }
   $('#student-table th').click(headerClick);
-  if ( classes.length ) toggleClass(0);
+  if ( toggles.ct && classes.length ) toggleClass(classes.findIndex(x => x.class_number == toggles.ct));
+  else toggleClass(0);
+  loaded = true;
+  console.log(isLive ? "We are live!" : "We are in the sandbox.");
 });
 
 </script>
