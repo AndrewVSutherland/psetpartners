@@ -27,7 +27,7 @@ If you are an instructor or staff member outside of course 18 interested in usin
 <ul>
 {% for i in range(user.classes|length) %}
 {% set c = user.classes[i] %}
-<li style="margin:8px 0;"> <label style="color:var(--mit-maroon);" onclick="toggleClass({{i}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
+<li style="margin:8px 0;"> <label class="clickable" onclick="toggleClass({{i}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
 {% endfor %}
 </ul>
 {% endif %}
@@ -95,6 +95,7 @@ function toggleClass(i) {
   $('#student-table-heading').html(classes[i].class_number + ' ' + classes[i].class_name);
   $('#student-rows').html(renderRows(classRows[i]));
   classIndex = i;
+  showStudentTable();
 }
 
 function headerClick (e) {
@@ -116,7 +117,7 @@ function showStudentTable () {
 
 document.addEventListener('DOMContentLoaded', function() {
   for (let i = 0 ; i < classes.length ; i++ ) {
-    classSort[i] = { curCol: '', prevCol: '', dir: 1 };
+    classSort[i] = { curCol: 'name', prevCol: '', dir: -1 };
     classRows[i] = classes[i].students.map(formatRow);
   }
   $('#student-table th').click(headerClick);
