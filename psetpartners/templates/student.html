@@ -1000,7 +1000,7 @@ function ajaxToggle(name, value) {
   window.setTimeout(function(){
     $.ajax({url: '/_toggle', data: { 'name': name, 'value': ajaxToggle[name] }});
     ajaxToggle[name+'Pending'] = false;
-    }, 1000);
+    }, 500);
   return true;
 }
 
