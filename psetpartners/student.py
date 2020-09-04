@@ -1,7 +1,7 @@
 import re, datetime
 from . import app
 from .app import debug_mode, livesite, send_email
-from .dbwrapper import getdb, students_in_class, students_in_group, count_rows
+from .dbwrapper import getdb, students_in_class, students_groups_in_class, students_in_group, count_rows
 from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
@@ -18,6 +18,22 @@ from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
 default_strength = "preferred" # only relevant when preference is set to non-emtpy/non-zero value
+
+# only student cols in this list will be visible to other group members -- note web pages depend on the order of these!
+member_row_cols = [ 'preferred_name', 'preferred_pronouns', 'departments', 'year', 'kerb' ]
+
+# only student cols in this list will be visible to instructors -- note web pages depend on the order of these!
+student_row_cols = [
+    'full_name',
+    'preferred_name',
+    'preferred_pronouns',
+    'departments',
+    'year',
+    'kerb',
+    'status',
+    'group_name',
+    'visibility',
+]
 
 student_welcome = """
 <b>Welcome to pset partners!</b>
@@ -382,12 +398,19 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c]['class_id'] = cid
     return counts
 
+# The *_row functions determine how data is passed to the client, we avoid using dictionaries both to save space and to control
+# exactly what the client can see (e.g. what students can see about group members and what instructors can see about students)
+# The downside is that the javascript depends on the order of the columns.  We pass everything as strings to avoid json
+
 def group_row(g, n):
     p = [_str(g['preferences'].get(k,"")) for k in ["start", "style", "forum"]] if g.get('preferences') else ["", "", ""]
     return [str(g['id']), g['group_name'], p[0], p[1], p[2], str(n), _str(g.get("max","")), _str(g.get("visibility",0))]
 
 def member_row(s):
-    return [_str(s.get(k,"")) for k in ['preferred_name','preferred_pronouns','departments','year','kerb']]
+    return [_str(s.get(k,"")) for k in member_row_cols]
+
+def student_row(s):
+    return [_str(s.get(k,"")) for k in student_row_cols]
 
 def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
     db = getdb()
@@ -878,7 +901,7 @@ class Student(UserMixin):
             g = self._db.groups.lucky({'id': gid},
                 projection=['id', 'group_name', 'class_number', 'visibility', 'preferences', 'strengths', 'editors', 'max'])
             g['group_id'] = g['id'] # just so we don't get confused
-            members = list(students_in_group(gid))
+            members = list(students_in_group(gid, member_row_cols))
             g['count'] = len(members)
             g['members'] = sorted([member_row(s) for s in members])
             g['can_edit'] = True if self.kerb in g['editors'] or g['editors'] == [] else False;
@@ -922,14 +945,7 @@ class Instructor(UserMixin):
     def _class_data(self, year=current_year(), term=current_term()):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
-            c['students'] = sorted(list(students_in_class(c['id'])),key = lambda x: x['preferred_name'])
-            for s in c['students']:
-                s['group_id'] = self._db.grouplist.lucky({'class_id':c['id'], 'student_id': s['id']}, projection='group_id')
-                if s['group_id']:
-                    g = self._db.groups.lucky({'id':s['group_id']}, projection=['group_name', 'visibility'])
-                    s['group_name'] = g['group_name']
-                    s['visibility'] = g['visibility']
-
+            c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
         return sorted(classes, key = lambda x: x['class_number'])
 
@@ -1222,8 +1238,8 @@ def _generate_test_population(num_students=300,max_classes=6):
             for p in student_affinities:
                 pa = p + "_affinity"
                 if pa in s['preferences'] and randint(0,2):
-                    prefs[p] = s['preferences'][pa]
-                    strengths[p] = s['strengths'][pa]
+                    prefs[pa] = s['preferences'][pa]
+                    strengths[pa] = s['strengths'][pa]
                 elif randint(0,2) == 0:
                     prefs[pa] = rand(student_preferences[pa])[0]
                     strengths[pa] = randint(1,5)
@@ -1265,22 +1281,24 @@ def _generate_test_population(num_students=300,max_classes=6):
         S = []
         for g in db.test_groups.search(projection=3):
             gid, cid, cnum, eds = g['id'], g['class_id'], g['class_number'], g['editors']
-            members = []
+            n = 0
             for k in eds:
                 sid = db.test_students.lookup(k,projection="id")
+                # make creator didn't leave to join another group
+                if db.test_classlist.lucky({'class_id': cid, 'student_id': sid},projection='status'):
+                    db.test_groups.update({'id':gid},{'editors':[]})
+                    continue
                 S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
-                members.append(student_id)
+                n += 1
                 db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1}, resort=False)
             while True:
-                if g['max'] and len(members) >= g['max']:
+                if g['max'] and n >= g['max']:
                     break
-                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': {'$ne':1}},projection=["student_id", "kerb"])))
-                if s['student_id'] in members:
-                    break
+                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': 0},projection=["student_id", "kerb"])))
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
-                members.append(s['student_id'])
+                n += 1
                 db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
-                if randint(0,len(members)-1):
+                if randint(0,n-1):
                     break
         db.test_grouplist.insert_many(S, resort=False)
 
