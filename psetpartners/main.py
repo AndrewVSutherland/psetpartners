@@ -139,7 +139,7 @@ def login():
 
     if affiliation == "student":
         user = Student(kerb, displayname)
-    elif is_whitelisted(kerb, displayname):
+    elif is_whitelisted(kerb):
         affiliation = "student"
         user = Student(kerb, displayname)
     elif affiliation == "staff":
@@ -325,6 +325,7 @@ def poolme():
         current_user.poolme()
     except Exception as err:
         app.logger.error("Error processing poolme request for student %s" % current_user.kerb)
+        log_event (current_user.kerb, 'poolme', status=-1, detail={'msg': msg})
         flash_error("We encountered an error while attempting to put in the match pool: %s" % err)
     return redirect(url_for(".student"))
 
