@@ -574,7 +574,7 @@ function setPartnerPanes() {
       } else {
         if ( classData[c].status == 5 ) {
           $('#partner-summary-'+(i+1)).html(`You are a member of the pool for <b>${c}</b> that is currently being matched.  Please check back in a few hours. `);
-          return;
+          continue;
         }
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
@@ -593,7 +593,7 @@ function setPartnerPanes() {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
             $('#partner-div-'+(i+1)).html(gtab);
           }
-          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 5 ) {
+          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
             if ( classData[c].status == 2 ) {
               msg += `<br><br>You are currently in the <b>${allCounts[c].next_match_date}</b> match pool for <b>${c}</b>, but feel free to join or create a group using one of the links below. `;
             } else if ( classData[c].status == 3 ) {
