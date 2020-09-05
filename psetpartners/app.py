@@ -248,6 +248,8 @@ def send_email(to, subject, message, forcelive=False):
         # TODO just return here rather than spamming drew
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
         to = ['drew@math.mit.edu']
+    if not livesite():
+        print("forcing live email!")
 
     sender = "psetpartnersnoreply@math.mit.edu"
     app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
