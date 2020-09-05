@@ -244,8 +244,8 @@ def send_email(to, subject, message):
     if isinstance(to,str):
         to = [to]
 
-    # TODO the code below is for testing, remove it once we go live
     if not livesite() or under_construction():
+        # TODO just return here rather than spamming drew
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
         to = ['drew@math.mit.edu']
 
@@ -258,5 +258,6 @@ def send_email(to, subject, message):
             body=html2text(message),
             sender=sender,
             recipients=to,
+            bcc='avs@mit.edu' # TODO remove or setup a separate account for these
         )
     )

@@ -167,6 +167,11 @@ const editorOptions = [
   { label: 'everyone', value: '0' },
   { label: 'just me', value: '1' },
 ];
+const groupMembershipOptions = [
+  { label: 'invitation', value: '0' },
+  { label: 'permission', value: '1' },
+  { label: 'automatic', value: '2' },
+];
 
 const studentPreferences = [ "start", "style", "forum", "size", "departments_affinity", "year_affinity", "gender_affinity" ];
 const studentAffinities = [ 'departments', 'year', 'gender' ];
@@ -223,4 +228,4 @@ const studentPlaceholders = {
   confidence_affinity: 'knowledge affinity',
 };
 
-const profileOptions = [ "expand", "collapse" ];
+const profileOptions = [ 'expand', 'collapse' ];

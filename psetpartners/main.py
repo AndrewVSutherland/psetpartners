@@ -189,7 +189,7 @@ def admin(class_number):
     from .utils import current_term, current_year
 
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
-        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
+        app.logger.critical("Unauthorized admin/%s attempted by %s." % (class_number, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
@@ -397,7 +397,7 @@ def instructor():
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
 PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 
-group_options = ['start', 'style', 'forum', 'size', 'editors', 'open']
+group_options = ['start', 'style', 'forum', 'size', 'editors', 'membership']
 
 @app.route("/save/student", methods=["POST"])
 @login_required
@@ -614,7 +614,7 @@ def sitemap():
     Listing all routes
     """
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
-        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
+        app.logger.critical("Unauthorized sitemap attempted by %s." % current_user.kerb)
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     return (
         "<ul>"

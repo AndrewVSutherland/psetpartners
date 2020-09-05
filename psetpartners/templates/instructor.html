@@ -78,7 +78,7 @@ function formatRow(s) {
     year:  s[4] == '5' ? 'G' : (s[4]||'-'),
     email: `<a href="mailto:${s[5]}@mit.edu">  ${s[5]}@mit.edu</a>`,
     status: statusPretty[parseInt(s[6]||'0')],
-    group: parseInt(s[8]) > 1 ? '<b>' + s[7] + '</b>' : s[7]
+    group: parseInt(s[8]) > 2 ? '<b>' + s[7] + '</b>' : s[7]
   };
 }
 
