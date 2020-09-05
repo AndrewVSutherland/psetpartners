@@ -34,7 +34,6 @@ from .student import (
     get_counts,
     class_groups,
     send_message,
-    sandbox_message,
     log_event,
     )
 from .utils import (
@@ -48,6 +47,8 @@ from .utils import (
     timezones,
     list_of_strings,
 )
+from .test import sandbox_message
+
 
 def is_safe_url(target):
     if debug_mode() and target.startswith('/'):
@@ -331,14 +332,19 @@ def poolme():
     return redirect(url_for(".student"))
 
 @app.route("/student")
+@app.route("/student/<class_number>")
 @login_required
-def student(context={}):
+def student(class_number=''):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
     current_user.seen()
     current_user.flash_pending()
+    if class_number:
+        current_user.toggles['ct'] = class_number
+        current_user.toggles['ht'] = 'partner-header'
+        current_user._save_toggles
     return render_template(
         "student.html",
         options=template_options(),
@@ -350,7 +356,7 @@ def student(context={}):
 
 @app.route("/instructor")
 @login_required
-def instructor(context={}):
+def instructor():
     if not current_user.is_authenticated or not current_user.is_instructor:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:

@@ -459,11 +459,11 @@ function changeClasses(val) {
   setPartnerPanes();
 }
 
-// member record should be an array of strings  [preferred_name,preferred_pronouns,departments,year,kerb]
+// member row should be an array of strings  [preferred_name,preferred_pronouns,departments,year,kerb]
 function mtabHead() { return "<thead><tr><th>name</th><th>course</th><th>year</th><th>email</th></tr></thead>\n"; }
 function mtabRow(s) {
   let name = s[0] ? s[0] : s[4];
-  if ( s[0] && s[1] ) name += "(" + s[1] + ")";
+  if ( s[0] && s[1] ) name += " (" + s[1] + ")";
   let year = s[3] ? parseInt(s[3]) : 0;  year = ( year > 0 & year < yearShort.length ) ? yearShort[year] : "-";
   const depts = s[2].split(' ').join(',');
   return `<tr><td style="text-align:left;">${name}</td><td align="center">${depts}</td><td>${year}</td><td style="text-align:right;"><a href="mailto:${s[4]}@mit.edu">${s[4]}@mit.edu</a></td></tr>`;

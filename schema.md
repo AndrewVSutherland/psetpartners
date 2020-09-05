@@ -59,7 +59,6 @@ term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
 visibility            | smallint    | 0=private closed, 1=private open, 2=public group with private membership, 3=public group with public membership
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
-hours                 | boolean[]   | hours the group is potentially available to meet (used for matching)
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)

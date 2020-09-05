@@ -160,7 +160,7 @@ def date_and_daytimes_to_times(date, s, tz):
 
 def naive_utcoffset(tz):
     if isinstance(tz, str):
-        if tz == DEFAULT_TIMEZONE_NAME:
+        if tz == DEFAULT_TIMEZONE_NAME or not tz:
             tz = DEFAULT_TIMEZONE
         tz = pytz.timezone(tz)
     for h in range(10):
