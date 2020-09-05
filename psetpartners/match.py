@@ -1,4 +1,4 @@
-from .dbwrapper import getdb, count_rows
+from .dbwrapper import getdb
 from .utils import hours_from_default, current_year, current_term
 from collections import defaultdict
 from math import sqrt, floor
@@ -164,25 +164,25 @@ def refine_groups(to_match, groups):
             run_swaps(to_match, groups, improvements)
         return unsatisfied
 
-def match_all(pending=False, live=False, verbose=True):
-    db = getdb(live)
+def match_all(preview=False, forcelive=False, verbose=True):
+    db = getdb(forcelive)
     year = current_year()
     term = current_term()
     results = {}
     for clsrec in db.classes.search({"year": year, "term": term}, ["id", "class_name", "class_number"]):
-        n = len(list(db.classlist.search({'class_id': clsrec['id'], 'status': 2 if pending else 5},projection='id')))
+        n = len(list(db.classlist.search({'class_id': clsrec['id'], 'status': 2 if preview else 5},projection='id')))
         if n:
             if verbose:
                 print("\nMatching %d students in pool for %s %s" % (n, clsrec['class_number'], clsrec['class_name']))
-            groups, unmatched = matches(clsrec, pending, live, verbose)
+            groups, unmatched = matches(clsrec, preview, forcelive, verbose)
             results[clsrec['id']] = {'groups': groups, 'unmatched': unmatched}
     return results
 
-def matches(clsrec, pending=False, live=False, verbose=True):
+def matches(clsrec, preview=False, forcelive=False, verbose=True):
     """
     Creates groups for all classes in a given year and term.
     """
-    db = getdb(live)
+    db = getdb(forcelive)
     student_data = {rec["id"]: {key: rec.get(key) for key in ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments", "timezone"]} for rec in db.students.search(projection=3)}
     clsid = clsrec["id"]
     to_match = {}
@@ -193,7 +193,7 @@ def matches(clsrec, pending=False, live=False, verbose=True):
     # 3 = requested match
     # 4 = emailed people
     # 5 = to be matched (2 => 5 at midnight on match date, prevents students in pool from doing anything while we match)
-    for rec in db.classlist.search({"class_id": clsid, "status": 2 if pending else 5}, ["student_id", "preferences", "strengths", "properties"]):
+    for rec in db.classlist.search({"class_id": clsid, "status": 2 if preview else 5}, ["student_id", "preferences", "strengths", "properties"]):
         properties = dict(rec["properties"])
         properties.update(student_data[rec["student_id"]])
         to_match[rec["student_id"]] = Student(properties, rec["preferences"], rec["strengths"])

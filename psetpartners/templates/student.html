@@ -224,10 +224,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
           <td class="short-value"><span class="short-select" id="select-size"></span><input type="hidden" name="size" id="size" /></td>
           <td class="short-caption editors">Editors:</td>
           <td class="short-value editors"><span class="short-select" id="select-editors"></span><input type="hidden" name="editors" id="editors" /></td>
-          <td class="short-caption open">Open:</td>
-          <td class="short-value open"><label class="short-checkbox" id="checkbox-open" data-checkmark="&#x2714;" onclick="if ( this.textContent.length ) { this.textContent = ''; $('#open').val(''); } else { this.textContent = this.dataset.checkmark; $('#open').val('on'); };"/></label>
-            <input type="hidden" name="open" id="open" value="" />
-          </td>
+          <td class="short-caption membership">Members:</td>
+          <td class="short-value membership"><span class="short-select" id="select-membership"></span><input type="hidden" name="membership" id="membership" /></td>
         </tr></tbody></table>
     </div>
       <table class="ctab"><tbody><tr>
@@ -286,7 +284,7 @@ const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
 
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */
-/* global startShort, styleShort, forumShort, sizeShort, yearShort, shortOptions, profileOptions, editorOptions */ // options.js
+/* global startShort, styleShort, forumShort, sizeShort, yearShort, shortOptions, profileOptions, editorOptions, groupMembershipOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, copyToClipboard, focusTrap */ // in psetpartners.js
 
@@ -509,13 +507,15 @@ function gtabRow(g) {
   return row;
 }
 function gtabMemberView(g) {
-  let head = `<th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th>type</th>`;
+  let head = `<th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th>membership</th>`;
   const start = startShort[g.preferences.start || 0] || "-";
   const style = styleShort[g.preferences.style || 0] || "-";
   const max = g.max ? ''+g.max : '-';
   let row = `<tr><td style="text-align:left">${g.group_name}</td><td>${start||'-'}</td><td>${style||'-'}</td>`;
   row += `<td>${g.preferences.forum||'-'}</td><td>${g.members.length}</td><td>${max}</td>`;
-  row += '<td>' + ( g.visibility === 0 ? 'private (closed)' : (g.visibility === 1 ? 'private (open)' : 'public' ) )+ '</td>';
+  console.log(g.visibility);
+  console.log(groupMembershipOptions[g.visibility]);
+  row += '<td>' + (g.visibility < 3 ? groupMembershipOptions[g.visibility].label : 'public') + '</td>';
   return '<table class="gtab"><thead>' + head + '</thead><tbody><tr>' + row+ '</tr></tbody></table>';
 }
 
@@ -554,7 +554,7 @@ function partneredActionButtons2(c, gid, emails) {
 
 function setPartnerPanes() {
   let cnts = allCounts[''];
-  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${(cnts.visibility['2']||0)+(cnts.visibility['3']||0)} are public.<br><br>`;
+  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which ${cnts.visibility['3']||0} are public.<br><br>`;
   if ( studentClasses.length ) {
     msg += 'Click on a class number to see your pset partnering options for that class.';
   } else {
@@ -579,16 +579,16 @@ function setPartnerPanes() {
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
         for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
-        const w = v[2]+v[3];
-        const wt = w ? (w==1?"one is":"<b>"+w+"</b> are") : "none are";
+        const public = v[3] ? (v[3]==1?"one is":"<b>"+v[3]+"</b> are") : "none are";
         const tg = g > 1 ? "one of the <b>" + g + "</b> pset groups that have" : "the one pset group that has";
         let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
         $('#partner-div-'+(i+1)).html('');
         if ( sg ) {
-          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${wt} public and listed below`;
-          msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
+          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${public} public and listed below`;
+          const open = v[1]+v[2];
+          msg += open != '0' ? `, and ${open > 1 ? open + " is" : open  + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
-          if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
+          if ( v[3] != groups.length ) console.log("Warning: public group count "+ v[3] +" does not match allGroups count "+groups.length+" for "+c);
           if ( groups.length && classData[c].status != 5 ) {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
             $('#partner-div-'+(i+1)).html(gtab);
@@ -706,7 +706,7 @@ function confirmLeave(e, gid) {
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
   let msg = `You are about to leave the group <i>${g.group_name}</i>. `;
   if ( g.members.length > 1 ) msg += `All Existing members of the group will be notified. `;
-  if ( g.visibility < 2 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
+  if ( g.visibility < 3 && g.members.length > 1 ) msg += ' This is a private group, so you will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += ' As you are the only member of this group, it will be disbanded after you leave.';
   let val = "leave " + gid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
@@ -774,7 +774,7 @@ function confirmPublicGroup(e, c) {
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('0'); updateSingleSelect('editors');
-  $('.editors').show();  $('.open').hide();
+  $('.editors').show();  $('.membership').hide();
   let msg = `You are about to create a public group whose preferences you may edit below. `;
   msg += `This group and its members will be visisble to all ${c} students using pset partners.  Anyone can join your group, subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default any group member can change the settings for this group, but you can reserve edit rights to yourself if you wish. `;
   let val = "createpublic " + cid;
@@ -789,11 +789,12 @@ function confirmPrivateGroup(e, c) {
   const cid = allCounts[c].class_id;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
-  $('#editors').val('1'); updateSingleSelect('editors');  $('#open').val('');  $('#checkbox-open').text('');
-  $('.editors').show();  $('.open').show();
+  $('#editors').val('1'); updateSingleSelect('editors');
+  $('#membership').val('0'); updateSingleSelect('membership');
+  $('.editors').show();  $('.membership').show();
 
   let msg = `You are about to create a private group whose preferences you may update below. `;
-  msg += `This group will only be visible to members, but you can invite non-members to join.  If you indicate that your group is open, the system may contact you in the future when students with compatible preferences are looking for pset partners. Currently only you can change the settings for this group, but you may grant edit permission to all group members if you wish.`;
+  msg += `This group will only be visible to members, but you can invite non-members to join.  If you set members to "permission" the system may contact you in the future when students with compatible preferences are looking for pset partners and ask you to admit them if the size of your group is below any limit you have set; if you set members to "automatic" permission will automatically be granted. Currently only you can change the settings for this group, but you may grant edit permission to all group members if you wish.`;
   let val = "createprivate " + cid;
   if ( pending() ) { msg += 'All unsaved changes will be saved.'; val = "save " + val; }
   $('#confirm-group-settings').show();
@@ -806,8 +807,10 @@ function confirmEditGroup(e, c) {
   if ( ! i || i > studentClasses.length ) return;
   const g = groupData[c];
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
-  if ( g.editors.length === 0 ) $('.editors').hide(); else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
-  if ( g.visibility > 1 ) $('.open').hide(); else $('.open').show();
+  if ( g.editors.length === 0 ) $('.editors').hide();
+  else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
+  if ( g.visibility > 2 ) $('.membership').hide();
+  else { $('.membership').show(); $('#membership').val(''+g.visibility); updateSingleSelect('membership'); }
   let msg = `You are about to edit the settings for the ${c} pset group ${g.group_name}. `;
   if ( g.members.length > 1 ) msg += `Other members of the group will automatically be notified of your changes. `;
   if ( g.editors.length > 0 ) msg += `Note that changes to the editors setting are irreversible (all other changes can be undone).`;
@@ -1061,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
   makeSingleSelect('style', shortOptions.style, {classNames: shortspClassNames, placeholder: 'select'});
   makeSingleSelect('forum', shortOptions.forum, {classNames: shortspClassNames, placeholder: 'select'});
   makeSingleSelect('size', shortOptions.size, {classNames: shortspClassNames, placeholder: 'select'});
+  makeSingleSelect('membership', groupMembershipOptions, {classNames: shortspClassNames});
   makeSingleSelect('editors', editorOptions, {classNames: shortspClassNames});
 
   makeCheckboxGrid();

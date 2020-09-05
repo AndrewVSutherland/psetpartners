@@ -33,17 +33,17 @@ test_departments = ['6', '8', '7', '20', '5', '9', '10', '1', '3', '2', '16',  '
 
 big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
 
-def generate_test_population(num_students=300,max_classes=6):
+def populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
     """ generates a random student population for testing (destorys existing test data) """
     from . import db
     mydb = db
 
     with DelayCommit(mydb):
-        _generate_test_population(num_students, max_classes)
+        _populate_sandbox(num_students, max_classes, prefprob)
         db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
     print("Done!")
 
-def _generate_test_population(num_students=300,max_classes=6):
+def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
     from random import randint
 
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
@@ -71,6 +71,7 @@ def _generate_test_population(num_students=300,max_classes=6):
         print("No changes made.")
         return
 
+    npref = prefprob-1 if prefprob > 1 else 1
     db = getdb() # we will still explicitly reference test_ tables just to be doubly sure we don't wipe out the production DB
 
     db.test_events.delete({}, resort=False)
@@ -132,14 +133,14 @@ def _generate_test_population(num_students=300,max_classes=6):
         prefs, strengths = {}, {}
         for p in student_preferences:
             if not p.endswith("_affinity"):
-                if randint(0,2):
+                if randint(0,npref) == 0:
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
                     if p == "forum" and p in prefs and prefs[p] == "in-person":
                         prefs[p] = "video";
             else:
                 q = p.split('_')[0]
-                if q in student_affinities and s[q] and randint(0,1):
+                if q in student_affinities and s[q] and randint(0,npref) == 0:
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
         s['preferences'] = prefs
@@ -170,8 +171,7 @@ def _generate_test_population(num_students=300,max_classes=6):
             for p in student_class_properties:
                 if randint(0,1):
                     props[p] = rand(student_class_properties[p])[0]
-                    strengths[p] = randint(1,5)
-                    if randint(0,1):
+                    if randint(0,npref) == 0:
                         pa = p + "_affinity"
                         prefs[pa] = rand(student_preferences[pa])[0]
                         strengths[pa] = rand_strength()
@@ -184,7 +184,7 @@ def _generate_test_population(num_students=300,max_classes=6):
                         else:
                             prefs[p] = rand(student_preferences[p])[0]
                             strengths[p] = rand_strength()
-                    elif randint(0,2) == 0:
+                    elif randint(0,npref) == 0:
                         prefs[p] = rand(student_preferences[p])[0]
                         strengths[p] = rand_strength()
             for p in student_affinities:
@@ -192,7 +192,7 @@ def _generate_test_population(num_students=300,max_classes=6):
                 if pa in s['preferences'] and randint(0,2):
                     prefs[pa] = s['preferences'][pa]
                     strengths[pa] = s['strengths'][pa]
-                elif randint(0,2) == 0:
+                elif randint(0,npref) == 0:
                     prefs[pa] = rand(student_preferences[pa])[0]
                     strengths[pa] = randint(1,5)
             c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'kerb': s['kerb'], 'class_number': classes[i]['class_number'],

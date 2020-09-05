@@ -1,9 +1,9 @@
 :root {
   --header-height: 52px;
   --footer-height: 52px;
-  --min-width: 940px;
+  --min-width: 980px;
   --caption-width: 270px;
-  --value-width: 390px;
+  --value-width: 420px;
   --short-value-width: 84px;
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
@@ -278,12 +278,15 @@ table.short-input {
 td.short-caption {
   margin: 0;
   padding-right: 1px;
-  padding-left: 9px;
+  padding-left: 8px;
+}
+td.short-caption:first-of-type {
+  padding-left: 0px;
 }
 td.short-value {
   margin: 0;
   padding-left: 0px;
-  padding-right: 9px;
+  padding-right: 8px;
 }
 
 td.forminfo, span.forminfo {

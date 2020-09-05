@@ -644,6 +644,8 @@ class Student(UserMixin):
         if not g['class_number'] in self.classes:
             self.classes.append(g['class_number'])
             self.save()
+        elif self.class_data[g['class_number']]['status'] == 5:
+            raise ValueError("Unable to process invitation, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
         if gid == g['id']:
             self.send_message('', 'accepted', "You are currently a member of the <b>%s</b> pset group <b>%s</b>.  Welcome back!" % (g['class_number'], g['group_name']))
         else:
@@ -738,6 +740,9 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
             raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 5:
+            app.logger.warning("User %s attempted to join group %s in class %s but is currently being matched" % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1}, resort=False)
         r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
@@ -782,6 +787,9 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to join the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 5:
+            app.logger.warning("User %s attempted to join the pool for class %s but is currently being matched" % (self.kerb, c))
+            raise ValueError("Unable to join pool, you are currently in the process of being matched in <b>%s</b>." % c)
         d = next_match_date(class_id)
         if self.class_data[c]['status'] == 4:
             msg = "We are already working on an urgent match for you in %s and have sent emails to a number of groups. If none respond we will put you in the <b>%s</b> match pool." % (c,d)
@@ -802,6 +810,9 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s attempted to leave the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, and not in the match pool." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 5:
+            app.logger.warning("User %s attempted to leave the pool for class %s but is currently being matched" % (self.kerb, c))
+            raise ValueError("Unable to leave pool, you are currently in the process of being matched in <b>%s</b>." % c)
         if self.class_data[c]['status'] != 2:
             app.logger.warning("User %s attempted to leave the pool for class %s but is not in the match pool for that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are and not in the match pool for %s." % c)
@@ -821,8 +832,8 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s requested a match for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before requesting a match." % (self.group_data[c]['group_name'], c))
-        if self.class_data[c]['status'] == 3 or self.class_data[c]['status'] == 4:
-            return "We are already working on a match for you in %s, please be patient!" % c
+        if self.class_data[c]['status'] >= 3:
+            return "We are already working on a match for you in %s, please be patient." % c
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3}, resort=False)
         self._reload()
         return "We will start working on a match for you in <b>%s</b>, you should receive an email from us within 24 hours." % c
@@ -837,11 +848,14 @@ class Student(UserMixin):
         if c in self.groups:
             app.logger.warning("User %s tried to create a group in class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
             raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 5:
+            app.logger.warning("User %s attempted to create a group in the class %s but is currently being matched" % (self.kerb, c))
+            raise ValueError("Unable to create group, you are currently in the process of being matched in <b>%s</b>." % c)
         c = self.class_data[c]
         prefs = {}
         for k in ['start', 'style', 'forum', 'size']:
             get_pref_option(prefs, options, k)
-        visibility = 3 if public else (1 if options.get('open','').strip() else 0)
+        visibility = 3 if public else (int(options['membership'].strip()) if options.get('membership','').strip() else 0)
         editors = [self.kerb] if options.get('editors','').strip() == '1' else []
         strengths = {} # Groups don't have preference strengths right now
         maxsize = max_size_from_prefs(prefs)
@@ -871,17 +885,20 @@ class Student(UserMixin):
         for k in ['start', 'style', 'forum', 'size']:
             get_pref_option(prefs, options, k)
         visibility = g['visibility']
-        if visibility < 2:
-            visibility = (1 if options.get('open','').strip() else 0)
+        if visibility < 3 and options.get('membership','').strip():
+            visibility = int(options['membership'].strip());
         editors = g['editors']
         if len(editors) and options.get('editors','').strip() != '1':
             editors = []
         maxsize = max_size_from_prefs(prefs)
-        self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': maxsize}, resort=False)
-        self._notify_group(group_id, "pset partner notification",
-                           "%s (kerb=%s) updated the settings for the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
-        self._reload()
-        return "Updated the group <b>%s</b>!" % g['group_name']
+        if any([g['visibility'] != visibility, g['editors'] != editors, g['preferences'] != prefs]):
+            self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': maxsize}, resort=False)
+            self._notify_group(group_id, "pset partner notification",
+                               "%s (kerb=%s) updated the settings for the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
+            self._reload()
+            return "Updated the group <b>%s</b>!" % g['group_name']
+        else:
+            return "No changes made."
 
     def _notify_group(self, group_id, subject, message):
         S = [s for s in students_in_group(group_id) if s['id'] != self.id]
