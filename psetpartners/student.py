@@ -424,7 +424,7 @@ def cleanse_student_data(data):
     if data['toggles'] is None:
         data['toggles'] = {}
     if data["full_name"] == "(null)":
-        app.log_warning("Ignoring displayname (null) for student %s" % kerb);
+        app.logger.warning("Ignoring displayname (null) for student %s" % kerb);
         data["full_name"] = ""
     if not data.get('timezone'):
         data['timezone'] = DEFAULT_TIMEZONE_NAME
