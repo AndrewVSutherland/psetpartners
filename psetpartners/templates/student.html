@@ -479,6 +479,8 @@ function memberOneline(m) {
   return year ? (name + ' (' + year + (depts ? ', course ' + depts:'') + ')') : (depts ? name + ' (course ' + depts + ')' : name);
 }
 
+function memberEmail(m) { return m[4] + '@mit.edu'; }
+
 function gtabMembers(e, gid) {
   const members = membersTable[gid];
   const thisRow = e.parentElement.parentElement;
@@ -523,7 +525,7 @@ function partnerActionButtons(c,status) {
   if ( d ) {
     if ( status == 2 ) {
       btab += `<td><label class="paction" onclick="confirmUnPool(this, '${c}')">do not match me ${d}<label></td>`;
-    } else {
+    } else if ( status === 0 ) {
       btab += `<td><label class="paction" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
     }
   }
@@ -542,9 +544,10 @@ function partneredActionButtons1(c, gid, edit) {
   return btab;
 }
 
-function partneredActionButtons2(c, gid) {
+function partneredActionButtons2(c, gid, emails) {
   let btab = '<table class="btab">\n<tbody><tr>';
   btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
+  btab += `<td><label class="paction"><a href="mailto:${emails}?subject=${c} pset group">email the group</a></label>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
@@ -567,8 +570,12 @@ function setPartnerPanes() {
         const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
         const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
         $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
-        $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id));
+        $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(',')));
       } else {
+        if ( classData[c].status == 5 ) {
+          $('#partner-summary-'+(i+1)).html(`You are a member of the pool for <b>${c}</b> that is currently being matched.  Please check back in a few hours. `);
+          return;
+        }
         const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups;
         let v = [0,0,0,0];
         for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
@@ -582,11 +589,11 @@ function setPartnerPanes() {
           msg += v[1] != '0' ? `, and ${v[1] > 1? v[1] + " is":v[1] + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[2]+v[3] != groups.length ) console.log("Warning: public group count "+(v[2]+v[3])+" does not match allGroups count "+groups.length+" for "+c);
-          if ( groups.length ) {
+          if ( groups.length && classData[c].status != 5 ) {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
             $('#partner-div-'+(i+1)).html(gtab);
           }
-          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
+          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 5 ) {
             if ( classData[c].status == 2 ) {
               msg += `<br><br>You are currently in the <b>${allCounts[c].next_match_date}</b> match pool for <b>${c}</b>, but feel free to join or create a group using one of the links below. `;
             } else if ( classData[c].status == 3 ) {
