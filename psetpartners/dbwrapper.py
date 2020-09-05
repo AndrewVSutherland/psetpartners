@@ -13,7 +13,10 @@ _db = None
 def getdb(forcelive=False):
     global _db
 
-    if forcelive or livesite():
+    if livesite():
+        return db
+    if forcelive:
+        print("forcing use of live database!")
         return db
     if _db is None:
         _db = PsetPartnersTestDB(db)
