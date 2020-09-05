@@ -1,5 +1,5 @@
-from psetpartners import db
-from psetpartners.utils import hours_from_default, current_year, current_term
+from .dbwrapper import getdb, count_rows
+from .utils import hours_from_default, current_year, current_term
 from collections import defaultdict
 from math import sqrt, floor
 from functools import lru_cache
@@ -156,7 +156,7 @@ def refine_groups(to_match, groups):
                 if len(new_group) == 1:
                     raise NotImplementedError
                 for U in unsat:
-                    del group[U.id]
+                    del groups[U.id]
                 for S in sat:
                     groups[S.id] = new_group
         if rerun:
@@ -164,16 +164,25 @@ def refine_groups(to_match, groups):
             run_swaps(to_match, groups, improvements)
         return unsatisfied
 
-def match_all(dryrun=True):
+def match_all(pending=False, live=False, verbose=True):
+    db = getdb(live)
     year = current_year()
     term = current_term()
+    results = {}
     for clsrec in db.classes.search({"year": year, "term": term}, ["id", "class_name", "class_number"]):
-        matches(clsrec, dryrun)
+        n = len(list(db.classlist.search({'class_id': clsrec['id'], 'status': 2 if pending else 5},projection='id')))
+        if n:
+            if verbose:
+                print("\nMatching %d students in pool for %s %s" % (n, clsrec['class_number'], clsrec['class_name']))
+            groups, unmatched = matches(clsrec, pending, live, verbose)
+            results[clsrec['id']] = {'groups': groups, 'unmatched': unmatched}
+    return results
 
-def matches(clsrec, dryrun=True):
+def matches(clsrec, pending=False, live=False, verbose=True):
     """
     Creates groups for all classes in a given year and term.
     """
+    db = getdb(live)
     student_data = {rec["id"]: {key: rec.get(key) for key in ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments", "timezone"]} for rec in db.students.search(projection=3)}
     clsid = clsrec["id"]
     to_match = {}
@@ -183,7 +192,8 @@ def matches(clsrec, dryrun=True):
     # 2 = in pool
     # 3 = requested match
     # 4 = emailed people
-    for rec in db.classlist.search({"class_id": clsid, "status": 2}, ["student_id", "preferences", "strengths", "properties"]):
+    # 5 = to be matched (2 => 5 at midnight on match date, prevents students in pool from doing anything while we match)
+    for rec in db.classlist.search({"class_id": clsid, "status": 2 if pending else 5}, ["student_id", "preferences", "strengths", "properties"]):
         properties = dict(rec["properties"])
         properties.update(student_data[rec["student_id"]])
         to_match[rec["student_id"]] = Student(properties, rec["preferences"], rec["strengths"])
@@ -195,11 +205,10 @@ def matches(clsrec, dryrun=True):
         return [], []
     elif N == 1:
         S = next(iter(to_match.values()))
-        if dryrun:
+        if verbose:
             print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
             print("Only student %s unmatched" % S.kerb)
-        else:
-            return [], [(S.kerb, "only")]
+        return [], [(S.kerb, "only")]
     elif N in [2, 3]:
         # Only one way to group
         G = Group(list(to_match.values()))
@@ -208,11 +217,10 @@ def matches(clsrec, dryrun=True):
         # Might violate a requirement
         unmatched = refine_groups(to_match, groups)
         G = next(iter(groups.values()))
-        if dryrun:
+        if verbose:
             print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
             print(G)
-        else:
-            return [[S.kerb for S in G.students], unmatched]
+        return [[S.kerb for S in G.students], unmatched]
     else:
         # We first need to determine which size groups to create
         for limit in [9, 5, 3, 2]:
@@ -256,13 +264,12 @@ def matches(clsrec, dryrun=True):
         run_swaps(to_match, groups, improvements)
         removed = refine_groups(to_match, groups)
         # Print warnings for groups with low compatibility and for non-satisfied requirements
-        if dryrun:
+        if verbose:
             print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
             for grp in set(groups.values()):
                 print(grp)
-        else:
-            gset = set(groups.values())
-            return [[S.kerb for S in group.students] for group in gset], removed
+        gset = set(groups.values())
+        return [[S.kerb for S in group.students] for group in gset], removed
 
 affinities = ["gender", "confidence_affinity", "commitment_affinity", "departments_affinity", "year_affinity"]
 styles = ["forum", "start", "style"]
