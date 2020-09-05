@@ -220,7 +220,7 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
         if verbose:
             print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
             print(G)
-        return [[S.kerb for S in G.students], unmatched]
+        return [[S.kerb for S in G.students]], unmatched
     else:
         # We first need to determine which size groups to create
         for limit in [9, 5, 3, 2]:

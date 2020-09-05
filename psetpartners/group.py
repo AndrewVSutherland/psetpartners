@@ -10,12 +10,12 @@ new_group_subject = "Say hello to your new pset partners in {class_number}!"
 
 new_group_email = """
 Greetings!  You have been matched with a pset group in <b>{class_number}</b>.<br>
-To learn more about your group and its memebers please visit<br><br>
+To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-We encourage you to reach out to your new group today.  You can
-use the "email group" button on pset partners to do this.
+We encourage you to reach out to your new group today.<br>
+You can use the "email group" button on pset partners to do this.
 """
 
 unmatched_only = """
@@ -65,12 +65,14 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
 
     db = getdb(forcelive)
     c = db.classes.lucky({'id': class_id})
+    print(c)
 
     g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'] }
     g['visibility'] = 2  # unlisted by default
     g['creator'] = ''    # system created
     g['editors'] = []    # everyone can edit
 
+    print(kerbs)
     students = [db.students.lookup(kerb, projection=['kerb','email','preferences', 'id']) for kerb in kerbs]
     g['preferences'] = {}
     for p in group_preferences:
@@ -101,7 +103,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
     subject = new_group_subject.format(class_number=g['class_number'])
     url = student_url(g['class_number'], forcelive=forcelive)
     body = new_group_email.format(class_number=g['class_number'],url=url)
-    send_email([email_address(s) for s in students], subject, body + signature)
+    send_email([email_address(s) for s in students], subject, body + signature, forcelive=forcelive)
     return g
  
 def process_matches (matches, forcelive=False, match_run=-1):
@@ -110,7 +112,7 @@ def process_matches (matches, forcelive=False, match_run=-1):
     groups = list of lists of kerbes, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
     only means there was only one member of the pool, requirement means a required preference could not be satisifed
     """
-    db = getdb()
+    db = getdb(forcelive)
     if match_run < 0:
         r = db.globals.lookup('match_run')
         match_run = r['value']+1 if r else 0
