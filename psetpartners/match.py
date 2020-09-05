@@ -2,7 +2,6 @@ from psetpartners import db
 from psetpartners.utils import hours_from_default, current_year, current_term
 from collections import defaultdict
 from math import sqrt, floor
-import heapq
 from functools import lru_cache
 
 class MatchError(ValueError):
@@ -263,7 +262,7 @@ def matches(clsrec, dryrun=True):
                 print(grp)
         else:
             gset = set(groups.values())
-            return [[S.kerb for S in group] for group in gset], removed
+            return [[S.kerb for S in group.students] for group in gset], removed
 
 affinities = ["gender", "confidence_affinity", "commitment_affinity", "departments_affinity", "year_affinity"]
 styles = ["forum", "start", "style"]
@@ -318,8 +317,6 @@ class Student(object):
                 prop = quality.replace("_affinity", "")
                 a = self.properties.get(prop)
                 b = T.properties.get(prop)
-                s = self.preferences.get(quality, (None, 0))[1]
-                t = T.preferences.get(quality, (None, 0))[1]
             if quality == "blocked_student_ids":
                 return not (T.properties.get("id") in a)
             if a is None or b is None:
