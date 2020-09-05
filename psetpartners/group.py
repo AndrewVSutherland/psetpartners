@@ -6,7 +6,7 @@ from .dbwrapper import getdb, count_rows
 
 group_preferences = [ 'start', 'style', 'forum', 'size' ]
 
-new_group_subject = "Say hello to your new pset partners in {class_number}!"
+new_group_subject = "Say hello to your pset partners in {class_number}!"
 
 new_group_email = """
 Greetings!  You have been matched with a pset group in <b>{class_number}</b>.<br>
