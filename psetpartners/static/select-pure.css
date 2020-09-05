@@ -55,6 +55,7 @@
 
 .sp-short-select {
   width: calc(var(--short-value-width) + 7px);
+/* width: calc(100% + 12px); */
   min-height: var(--short-min-height);
   padding: 0px 4px;
 }
