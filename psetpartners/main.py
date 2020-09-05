@@ -182,6 +182,30 @@ def loginas(kerb):
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
+@app.route("/admin/<class_number>")
+@login_required
+def admin(class_number):
+    from .dbwrapper import getdb
+    from .utils import current_term, current_year
+
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
+        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    db = getdb()
+    c = db.classes.lucky({'class_number': class_number, 'year': current_year(), 'term': current_term()})
+    if not c:
+        return render_template("404.html", message="Class %s not found for the current term" % class_number)
+    user = Instructor(c['instructor_kerbs'][0], c['instructor_names'][0])
+    return render_template(
+        "instructor.html",
+        options=template_options(),
+        maxlength=maxlength,
+        ctx=session.pop("ctx",""),
+        user=user,
+    )
+
 @app.route("/environ")
 def environ():
     return "<br>".join(["%s = %s" % (key,request.environ[key]) for key in request.environ])
@@ -589,6 +613,9 @@ def sitemap():
     """
     Listing all routes
     """
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
+        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
     return (
         "<ul>"
         + "\n".join(
