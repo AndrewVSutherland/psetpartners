@@ -260,6 +260,6 @@ def send_email(to, subject, message, forcelive=False):
             body=html2text(message),
             sender=sender,
             recipients=to,
-            bcc='avs@mit.edu' # TODO remove or setup a separate account for these
+            bcc=['drew@math.mit.edu'] # TODO remove or setup a separate account for these
         )
     )
