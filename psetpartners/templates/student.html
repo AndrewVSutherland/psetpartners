@@ -547,7 +547,7 @@ function partneredActionButtons1(c, gid, edit) {
 function partneredActionButtons2(c, gid, emails) {
   let btab = '<table class="btab">\n<tbody><tr>';
   btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
-  btab += `<td><label class="paction"><a href="mailto:${emails}?subject=${c} pset group">email the group</a></label>`;
+  btab += `<td><label class="paction"><a href="mailto:${emails}?subject=${c} pset group">email group</a></label>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
