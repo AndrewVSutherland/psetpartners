@@ -8,10 +8,13 @@ group_preferences = [ 'start', 'style', 'forum', 'size' ]
 new_group_subject = "Say hellp to your new pset partners in %s!"
 
 new_group_email = """
-Greetings!  The pset partners matching algorithm has formed a <b>%s</b> pset group for you.
-To learn more about your group and its memebers, visit:<br><br>
+Greetings!  Pset partners has placed you in a pset group in <b>%s</b>.
+To learn more about your group and its memebers please visit<br><br>
 
-&nbsp;&nbsp;https://psetpartners.mit.edu/student/%s<br>
+&nbsp;&nbsp;https://psetpartners.mit.edu/student/%s<br><br>
+
+We encourage you to reach out to your new group today.  You can
+use the "email the group" button on pset partners to do this.
 """
 
 def generate_group_name(class_id, year=current_year(), term=current_term()):
@@ -33,7 +36,7 @@ def generate_group_name(class_id, year=current_year(), term=current_term()):
             continue
         return name
 
-def create_group (class_id, student_ids, match_run=0):
+def create_group (class_id, student_ids, match_run=0, group_name=''):
     from .student import max_size_from_prefs, email_address, signature
 
     db = getdb()
@@ -49,12 +52,13 @@ def create_group (class_id, student_ids, match_run=0):
     for p in group_preferences:
         v = { s['preferences'][p] for s in students if p in s['preferences'] }
         if len(v) == 1:
-            g['preferences'][p] = v
+            g['preferences'][p] = list(v)[0]
+    print(g)
     g['max'] = max_size_from_prefs(g['preferences'])
     g['match_run'] = match_run
 
     with DelayCommit(db):
-        g['group_name'] = generate_group_name(class_id, c['year'], c['term'])
+        g['group_name'] = group_name if group_name else generate_group_name(class_id, c['year'], c['term'])
         db.groups.insert_many([g])
         gs = [{'class_id': class_id, 'group_id': g['id'], 'student_id': s['id'], 'kerb': s['kerb'],
                'class_number': c['class_number'], 'year': c['year'], 'term': c['term']} for s in students]
