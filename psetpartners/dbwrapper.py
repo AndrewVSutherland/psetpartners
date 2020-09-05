@@ -5,15 +5,15 @@ from .app import livesite
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
 def count_rows(table, query={}, forcelive=False):
-    _db = getdb() if not forcelive else db
+    _db = getdb(forcelive)
     return sum(1 for _ in _db[table].search(query, projection="id"))
 
 _db = None
 
-def getdb():
+def getdb(forcelive=False):
     global _db
 
-    if livesite():
+    if forcelive or livesite():
         return db
     if _db is None:
         _db = PsetPartnersTestDB(db)
