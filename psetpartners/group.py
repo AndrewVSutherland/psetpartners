@@ -10,12 +10,12 @@ new_group_subject = "Say hello to your new pset partners in {class_number}!"
 
 new_group_email = """
 Greetings!  You have been matched with a pset group in <b>{class_number}</b>.<br>
-To learn more about your group and its memebers please visit<br><br>
+To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-We encourage you to reach out to your new group today.  You can
-use the "email group" button on pset partners to do this.
+We encourage you to reach out to your new group today.<br>
+You can use the "email group" button on pset partners to do this.
 """
 
 unmatched_only = """
@@ -65,14 +65,15 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
 
     db = getdb(forcelive)
     c = db.classes.lucky({'id': class_id})
+    print(c)
 
     g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'] }
     g['visibility'] = 2  # unlisted by default
     g['creator'] = ''    # system created
     g['editors'] = []    # everyone can edit
 
+    print(kerbs)
     students = [db.students.lookup(kerb, projection=['kerb','email','preferences', 'id']) for kerb in kerbs]
-    print(students)
     g['preferences'] = {}
     for p in group_preferences:
         v = { s['preferences'][p] for s in students if p in s['preferences'] }
@@ -102,7 +103,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
     subject = new_group_subject.format(class_number=g['class_number'])
     url = student_url(g['class_number'], forcelive=forcelive)
     body = new_group_email.format(class_number=g['class_number'],url=url)
-    send_email([email_address(s) for s in students], subject, body + signature)
+    send_email([email_address(s) for s in students], subject, body + signature, forcelive=forcelive)
     return g
  
 def process_matches (matches, forcelive=False, match_run=-1):
