@@ -138,6 +138,9 @@ def login():
     if not kerb or not affiliation:
         return render_template("500.html", message="Missing login credentials"), 500
 
+    if displayname == "(null)":
+        displayname = ""
+
     if affiliation == "student":
         user = Student(kerb, displayname)
     elif is_whitelisted(kerb):

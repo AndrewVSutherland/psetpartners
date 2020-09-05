@@ -495,7 +495,7 @@ function gtabMembers(e, gid) {
 
 // group record should be an array [group_id, group_name, start, style, forum, size, max, ...] (entries after max will be ignored here)
 function gtabHead() {
-  return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th>type</th></tr></thead>';
+  return '<thead><tr><th>group name</th><th>start</th><th>style</th><th>forum</th><th>size</th><th>limit</th><th></th></tr></thead>';
 }
 function gtabRow(g) {
   const start = startShort[parseInt(g[2]) || 0] || "-";
