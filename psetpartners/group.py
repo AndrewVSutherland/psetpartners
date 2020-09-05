@@ -72,6 +72,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
     g['editors'] = []    # everyone can edit
 
     students = [db.students.lookup(kerb, projection=['kerb','email','preferences', 'id']) for kerb in kerbs]
+    print(students)
     g['preferences'] = {}
     for p in group_preferences:
         v = { s['preferences'][p] for s in students if p in s['preferences'] }
@@ -110,7 +111,7 @@ def process_matches (matches, forcelive=False, match_run=-1):
     groups = list of lists of kerbes, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
     only means there was only one member of the pool, requirement means a required preference could not be satisifed
     """
-    db = getdb()
+    db = getdb(forcelive)
     if match_run < 0:
         r = db.globals.lookup('match_run')
         match_run = r['value']+1 if r else 0
