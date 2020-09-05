@@ -513,8 +513,6 @@ function gtabMemberView(g) {
   const max = g.max ? ''+g.max : '-';
   let row = `<tr><td style="text-align:left">${g.group_name}</td><td>${start||'-'}</td><td>${style||'-'}</td>`;
   row += `<td>${g.preferences.forum||'-'}</td><td>${g.members.length}</td><td>${max}</td>`;
-  console.log(g.visibility);
-  console.log(groupMembershipOptions[g.visibility]);
   row += '<td>' + (g.visibility < 3 ? groupMembershipOptions[g.visibility].label : 'public') + '</td>';
   return '<table class="gtab"><thead>' + head + '</thead><tbody><tr>' + row+ '</tr></tbody></table>';
 }
@@ -572,7 +570,8 @@ function setPartnerPanes() {
         $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
         $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(',')));
       } else {
-        if ( classData[c].status == 5 ) {
+        const status = c in classData ? classData[c].status : 0;
+        if ( status == 5 ) {
           $('#partner-summary-'+(i+1)).html(`You are a member of the pool for <b>${c}</b> that is currently being matched.  Please check back in a few hours. `);
           continue;
         }
@@ -589,18 +588,16 @@ function setPartnerPanes() {
           msg += open != '0' ? `, and ${open > 1 ? open + " is" : open  + " are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
           if ( v[3] != groups.length ) console.log("Warning: public group count "+ v[3] +" does not match allGroups count "+groups.length+" for "+c);
-          if ( groups.length && classData[c].status != 5 ) {
+          if ( groups.length && !(c in classData && classData[c].status != 5) ) {
             const gtab = '<table class="gtab">\n' + gtabHead() + '<tbody>' + groups.map(gtabRow).join('\n') + '\n</body></table>';
             $('#partner-div-'+(i+1)).html(gtab);
           }
-          if ( c in classData && classData[c].status >= 2 && classData[c].status <= 4 ) {
-            if ( classData[c].status == 2 ) {
-              msg += `<br><br>You are currently in the <b>${allCounts[c].next_match_date}</b> match pool for <b>${c}</b>, but feel free to join or create a group using one of the links below. `;
-            } else if ( classData[c].status == 3 ) {
-              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
-            } else if ( classData[c].status == 4 ) {
-              msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
-            }
+          if ( status == 2 ) {
+            msg += `<br><br>You are currently in the <b>${allCounts[c].next_match_date}</b> match pool for <b>${c}</b>, but feel free to join or create a group using one of the links below. `;
+          } else if ( status == 3 ) {
+            msg += `<br><br>You have requested an urgent match for <b>${c}</b> which will be processed shortly, but feel free to join a group by clicking on a link (doing so will cancel your pending match request). `;
+          } else if ( status == 4 ) {
+            msg += `<br><br>You have requested an urgent match for <b>${c}</b> which is currently in process; we have sent emails on your behalf and are waiting for responses. But if you would rather join a group now, you can do so. `;
           } else {
             msg += '<br><br>To find a pset partner, click any of the bold action links. ';
           }
@@ -620,7 +617,7 @@ function setPartnerPanes() {
         }
         msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
-        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, c in classData ? classData[c].status : 0));
+        $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, status));
       }
     } else {
       $('#partner-summary-'+(i+1)).text(`Save your changes to get the latest pset partner data for ${c}.`);
