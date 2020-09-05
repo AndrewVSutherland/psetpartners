@@ -10,9 +10,8 @@ def get_kerb_data (kerb, client_id, client_secret):
     data = resp.get('item',{})
     if not data or data.get('kerberosId','') != kerb:
         return {}
-    print(data)
     res = { 'kerb':kerb }
-    full_name = data.get('displayName','')
+    full_name = data.get('displayName','').strip()
     if full_name:
         res['full_name'] = full_name
     homepage = data.get('website','')
@@ -26,10 +25,10 @@ def get_kerb_data (kerb, client_id, client_secret):
             if year:
                 res['year'] = year
             if a.get('departments',{}):
-                depts = [r['code'] for r in a['departments'] if r.get('code')]
+                depts = [r['code'].strip() for r in a['departments'] if r.get('code')]
                 depts = [c for c in depts if c and db.departments.lookup(c)]
                 res['departments'] = sorted(depts, key=course_number_key)
-            email = a.get('email','')
+            email = a.get('email','').strip()
             if email and not email.endswith('@mit.edu'):
                 res['email'] = email
     return res
