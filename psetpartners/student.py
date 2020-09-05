@@ -401,7 +401,7 @@ def student_row(s):
 def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
     db = getdb()
     G = []
-    mv = 0 if instructor_view else 2
+    mv = 0 if instructor_view else 3
     for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
         members = list(students_in_group(g['id']))
         r = group_row(g, len(members))
