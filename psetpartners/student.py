@@ -592,7 +592,7 @@ class Student(UserMixin):
 
     def join(self, group_id):
         with DelayCommit(self):
-            log_event (self.kerb, 'join''leave', {'group_id': group_id})
+            log_event (self.kerb, 'join', {'group_id': group_id})
             return self._join(group_id)
 
     def leave(self, group_id):
@@ -931,7 +931,7 @@ class Student(UserMixin):
         """ Notifies members of group other than self and updates group size (so must be called for leave/join!) """
         S = list(students_in_group(group_id,projection=["kerb", "email"]))
         T = [s for s in S if s['kerb'] != self.kerb]
-        self._db.groups.update({'group_id': group_id}, {'size': len(S)}, resort=False)
+        self._db.groups.update({'id': group_id}, {'size': len(S)}, resort=False)
         if not T:
             return
         self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in T], resort=False)
