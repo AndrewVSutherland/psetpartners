@@ -789,6 +789,8 @@ class Student(UserMixin):
         if not c in self.groups:
             app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, c))
             raise ValueError("Group not found in your list of groups for this term.")
+        r = self._db.grouplist.lucky({'group_id': group_id, 'student_id': self.id})
+        self._db.grouplistleft.insert_many([r], resort=False)
         self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id}, resort=False)
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0}, resort=False)
         msg = "You have been removed from the group <b>%s</b> in <b>%s</b>." % (g['group_name'], c)
