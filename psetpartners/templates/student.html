@@ -552,11 +552,11 @@ function partneredActionButtons2(c, gid, emails) {
 
 function setPartnerPanes() {
   let cnts = allCounts[''];
-  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which<br><ul class="group-desc">
-      <li>${cnts.visibility['3']||0} are <b>public</b> groups that anyone can join (up to the size limit);</li>
-      <li>${cnts.visibility['2']||0} are <b>private</b> groups with <b>automatic</b> assignment of compatible members by the system;</li>
-      <li>${cnts.visibility['1']||0} are <b>private</b> groups that require <b>permission</b> before the system will add compatible members;</li>
-      <li>${cnts.visibility['0']||0} are <b>private</b> groups with membership by <b>invitation</b> only.</li>
+  let msg = `There are currently <b>${cnts.students}</b> students, <b>${cnts.classes}</b> classes, and <b>${cnts.groups}</b> groups listed on pset partners, of which<br><ul class="group-desc">
+      <li><b>${cnts.visibility['3']||0}</b> are <b>public</b> groups that anyone can join (up to the size limit);</li>
+      <li><b>${cnts.visibility['2']||0}</b> are <b>private</b> groups with <b>automatic</b> assignment of compatible members by the system;</li>
+      <li><b>${cnts.visibility['1']||0}</b> are <b>private</b> groups that require <b>permission</b> before the system will add compatible members;</li>
+      <li><b>${cnts.visibility['0']||0}</b> are <b>private</b> groups with membership by <b>invitation</b> only.</li>
       </ul>
     Private groups are visible only to instructors and their members.  Any group member may invite new members (up to the size limit).
       <br><br>`;
