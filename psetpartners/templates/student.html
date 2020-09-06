@@ -611,10 +611,10 @@ function setPartnerPanes() {
       } else if ( g > 0 ){
         msg += `There are currently <b>${g}</b> pset groups in this class`;
         if ( v[1]+v[2]+v[3] ) msg += ', of which '; else msg += '. ';
-        if ( v[3] == 1 ) msg += 'one is public and listed below';
+        if ( v[3] == 1 ) msg += '<b>1</b> is public and listed below';
         if ( v[3] > 1 ) msg += `<b>${v[3]}</b> are public and listed below`;
         if ( v[3] && (w[1]+w[2]) ) msg += ' and ';
-        if ( w[1]+w[2] == 1 ) msg += `one is a private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
+        if ( w[1]+w[2] == 1 ) msg += `<b>1</b> is a private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         if ( w[1]+w[2] > 1 ) {
           msg += `<b>${w[1]+w[2]}</b> are private groups open to new mambers`;
           if ( !w[1] ) msg += ' (automatic)';
