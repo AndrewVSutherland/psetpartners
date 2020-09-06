@@ -13,6 +13,7 @@ from .utils import (
     hours_from_default,
     flash_announce,
     flash_info,
+    flash_error,
     )
 from .group import generate_group_name
 from .token import generate_timed_token
@@ -352,19 +353,34 @@ def student_counts(iter, opts):
     counts["students"] = n
     return counts
 
-def group_visibility_counts(class_number, year=current_year(), term=current_term()):
-    db = getdb()
-    vcounts = {}
+def group_visibility_counts(class_number, year=current_year(), term=current_term(), forcelive=False):
+    """ 
+    Returns two dictionaries of group counts for the specified class, indexed by visibility (set class_number='' for all classes.
+    The first dictionary includes all groups, the second only includes groups to which members can be added (size < max)
+    """
+    db = getdb(forcelive)
+    vcounts, wcounts = {}, {}
     if class_number:
-        for v in db.groups.search({'year': year, 'term': term, 'class_number': class_number},projection="visibility"):
+        for g in db.groups.search({'year': year, 'term': term, 'class_number': class_number}, projection=['visibility','size','max']):
+            v = g['visibility']
             vcounts[v] = vcounts[v]+1 if v in vcounts else 1
+            if not g.get('max') or not g.get('size') or g['size'] < g['max']:
+                wcounts[v] = wcounts[v]+1 if v in wcounts else 1
     else:
-        for v in db.groups.search({'year': year, 'term': term},projection="visibility"):
+        for g in db.groups.search({'year': year, 'term': term}, projection=['visibility','size','max']):
+            v = g['visibility']
             vcounts[v] = vcounts[v]+1 if v in vcounts else 1
-    return vcounts
+            if not g.get('max') or not g.get('size') or g['size'] < g['max']:
+                wcounts[v] = wcounts[v]+1 if v in wcounts else 1
+    return vcounts, wcounts
 
-def get_counts(classes, opts, year=current_year(), term=current_term()):
-    db = getdb();
+def get_counts(classes, opts, year=current_year(), term=current_term(), forcelive=False):
+    """ 
+    Returns a dictionary of count dictionaries indexed by class numbers in classes ('' indicates totals across all classes).
+    Each count dictionary includes keys for student preferences and properties, as well as counts of classes and groups,
+    as well as students in those classes and gorups, visibility and capacity counts, and the next_match_date for each class.
+    """
+    db = getdb(forcelive);
     counts = {}
     if '' in classes:
         counts[''] = student_counts(db.students.search(), opts)
@@ -372,7 +388,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
         counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
         counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
         counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term})
-        counts['']['visibility'] = group_visibility_counts('')
+        counts['']['visibility'], counts['']['capacity'] = group_visibility_counts('')
     for c in classes:
         if c:
             cid = db.classes.lucky({'class_number': c, 'year': year, 'term': term}, projection="id")
@@ -380,7 +396,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c]['groups'] = count_rows('groups',{'class_id': cid})
             counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid})
             counts[c]['next_match_date'] = next_match_date(cid)
-            counts[c]['visibility'] = group_visibility_counts(c, year=year, term=term)
+            counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
             counts[c]['class_id'] = cid
     return counts
 
@@ -617,10 +633,10 @@ class Student(UserMixin):
             log_event (self.kerb, 'match', {'class_id': class_id})
             return self._match(class_id)
 
-    def create_group(self, group_id, options, public=True):
+    def create_group(self, class_id, options, public=True):
         with DelayCommit(self):
-            log_event (self.kerb, 'create', detail={'group_id': group_id, 'options': options, 'public': public})
-            return self._create_group(group_id, options=options, public=public)
+            log_event (self.kerb, 'create', detail={'class_id': class_id, 'options': options, 'public': public})
+            return self._create_group(class_id, options=options, public=public)
 
     def edit_group(self, group_id, options):
         with DelayCommit(self):
@@ -699,10 +715,7 @@ class Student(UserMixin):
             if oldr:
                 r = oldr.copy()
                 # make sure derived data is up to date (it should be but kerb was not getting set at one point)
-                r['class_number'] = class_number
-                r['year'] = year
-                r['term'] = term
-                r['kerb'] = self.kerb
+                r['class_number'], r['year'], r['term'], r['kerb'] = class_number, year, term, self.kerb
             else:
                 r = { 'class_id': class_id, 'student_id': self.id, 'year': year, 'term': term, 'class_number': class_number, 'kerb': self.kerb, 'status': 0 }
             # if user was just added to the class (e.g. via an invitation) we may not have any class_data for it
@@ -718,13 +731,23 @@ class Student(UserMixin):
                     log_event (self.kerb, 'edit', detail={'class_id': class_id})
             else:
                 self._db.classlist.insert_many([r])
+                n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
+                self._db.classes.update({'class_id': class_id}, {'size': n})
                 log_event (self.kerb, 'add', detail={'class_id': class_id})
             class_ids.add(class_id)
 
         for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
             if class_id not in class_ids:
+                group_id = self._db.grouplist.search({'class_id': class_id, 'student_id': self.id},projection='group_id')
+                if group_id is not None:
+                    class_number = self._db.classes.lucky({'id': class_id}, projection='class_number')
+                    group_name = self._db.groups.lucky({'id': group_id}, projection='group_name')
+                    flash_error("You were not removed from the class <b>%s</b> because you are currently a member of the pset group <b>%s</b> in that class.  Please leave the group first." % (class_number, group_name))
+                    log_event(self.kerb, 'drop', detail={'class_id': class_id, 'group_id': group_id}, status=-1)
+                    continue
                 self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
-                self._db.grouplist.delete({'class_id': class_id, 'student_id': self.id})
+                n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
+                self._db.classes.update({'class_id': class_id}, {'size': n})
                 log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"
@@ -748,6 +771,7 @@ class Student(UserMixin):
         r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
+        # note that size of group will be updated by _notify_group
         self._notify_group(group_id, "Say hello to your new pset partner!",
                            "%s has joined your pset group %s in %s!<br>You can contact your new partner at %s." % (self.pretty_name, g['group_name'], g['class_number'], self.email_address))
         self._reload()
@@ -772,6 +796,7 @@ class Student(UserMixin):
             self._db.groups.delete({'id': group_id}, resort=False)
             msg += " You were the only member of this group, so it has been disbanded."
         else:
+            # note that size of group will be updated by _notify_group
             self._notify_group(group_id, "pset partner notification",
                            "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
         self._reload()
@@ -859,10 +884,11 @@ class Student(UserMixin):
         visibility = 3 if public else (int(options['membership'].strip()) if options.get('membership','').strip() else 0)
         editors = [self.kerb] if options.get('editors','').strip() == '1' else []
         strengths = {} # Groups don't have preference strengths right now
-        maxsize = max_size_from_prefs(prefs)
+        limit = max_size_from_prefs(prefs)
         name = generate_group_name(class_id)
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'group_name': name,
-             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'editors': editors, 'max': maxsize }
+             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'creator': self.kerb, 'editors': editors,
+             'size': 1, 'max': limit }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
@@ -891,9 +917,9 @@ class Student(UserMixin):
         editors = g['editors']
         if len(editors) and options.get('editors','').strip() != '1':
             editors = []
-        maxsize = max_size_from_prefs(prefs)
+        limit = max_size_from_prefs(prefs)
         if any([g['visibility'] != visibility, g['editors'] != editors, g['preferences'] != prefs]):
-            self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': maxsize}, resort=False)
+            self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': limit}, resort=False)
             self._notify_group(group_id, "pset partner notification",
                                "%s updated the settings for the pset group %s in %s." % (self.preferred_name, g['group_name'], g['class_number']))
             self._reload()
@@ -902,12 +928,14 @@ class Student(UserMixin):
             return "No changes made."
 
     def _notify_group(self, group_id, subject, message):
-        S = [s for s in students_in_group(group_id) if s['id'] != self.id]
-        if len(S) == 0:
+        """ Notifies members of group other than self and updates group size (so must be called for leave/join!) """
+        S = list(students_in_group(group_id,projection=["kerb", "email"]))
+        T = [s for s in S if s['kerb'] != self.kerb]
+        self._db.groups.update({'group_id': group_id}, {'size': len(S)}, resort=False)
+        if not T:
             return
-
-        self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S], resort=False)
-        send_email([email_address(s) for s in S], subject, message + signature)
+        self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in T], resort=False)
+        send_email([email_address(s) for s in T], subject, message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}

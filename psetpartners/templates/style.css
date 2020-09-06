@@ -2,7 +2,7 @@
   --header-height: 52px;
   --footer-height: 52px;
   --min-width: 1024px;
-  --caption-width: 275px;
+  --caption-width: 270px;
   --value-width: 420px;
   --short-value-width: 90px;
   --mit-maroon: #a31f34;
@@ -101,12 +101,13 @@ a:focus {
 .main-page {
   margin-left: auto;
   margin-right: auto;
-  min-height: calc(100% - var(--header-height));
+  min-height: calc(100% - var(--header-height) - 0.1px);
   max-width: var(--min-width);
   margin-bottom: calc(0px - var(--footer-height));
 }
 
 .main-page:after {
+  font-size:1px;
   content: "";
   display: block;
   height: var(--footer-height);
@@ -128,6 +129,11 @@ a:focus {
   font-size: 160%;
   text-align: center;
 }
+@-moz-document url-prefix(){
+#title {
+  font-size: 140%;
+}
+}
 
 #title a, #userinfo a {
   color: var(--mit-white);
@@ -144,10 +150,14 @@ div.footer > a {
 #userinfo {
   float: right;
   color: var(--mit-white);
-  font-size: 16px;
+  font-size: 100%;
   font-weight: bold;
 }
-
+@-moz-document url-prefix(){
+#userinfo {
+  font-size: 85%;
+}
+}
 #logout {
   cursor: pointer;
   font-size: 14px;
@@ -474,24 +484,24 @@ label.confirm::before {
   color: var(--info-color);
 }
 
-p.flash-info, p.flash-warning p.flash-cancel {
-  margin-left: 0;
-  margin-top: 8px;
-  margin-bottom: 0;
-  font-size: 90%;
-  padding-bottom: 6px;
+p.flash-info, p.flash-warning, p.flash-cancel {
+  padding: 0;
 }
 p.flash-info::before, p.flash-announce:before, p.flash-instruct:before {
-  font-size:120%;
+  font-size:110%;
   content:"✔";
+  padding-right: 1px;
+  vertical-align: -3%;
   color:#469c33;
 }
-p.flash-announce:before {
-  font-size:120%;
+p.flash-announce::before {
+  vertical-align: 10%;
+  padding-right: 3px;
   content: "🎉";
 }
 p.flash-instruct:before {
-  font-size:100%;
+  vertical-align: 5%;
+  padding-right: 3px;
   content: "💡";
 }
 .flash-after {
@@ -504,26 +514,31 @@ p.flash-instruct:before {
   background-color: var(--mit-pink);
 }
 p.flash-warning::before {
-  font-size:120%;
   content:"☡";
-  color:#f5ad42;
-  margin-bottom: -5px;
+  font-size: 90%;
+  vertical-align: -5%;
+  color: #d11;
 }
 p.flash-cancel::before {
   content:"🗙";
   color:#b11;
-  padding-right: 3px;
-  margin-bottom: 0px;
+  font-size: 80%;
+  padding-right: 4px;
+  vertical-align: 15%;
 }
 
-p.flash-error, p.flash-announce, p.flash-instruct {
-  margin-left: 0;
+p.flash-announce, p.flash-instruct {
+  margin: 10px 0;
+}
+p.flash-error {
+  margin: 0 5px;
 }
 p.flash-error::before {
-  font-size: 130%;
-  content: "●";/*"⚠";*/
+  content:"🗙";
   color: #d11;
-  padding-right: 3px;
+  font-weight: bold;
+  padding-right: 8px;
+  vertical-align: 5%;
 }
 
 table.mtab, table.gtab {
@@ -577,14 +592,14 @@ label.naction:hover {
 table.ctab {
   margin: 0 auto;
 }
-
+/*
 div.caction p {
   font-weight: bold;
 }
 div.caction p i {
   color: var(--mit-maroon);
 }
-
+*/
 .group-label {
   color: var(--mit-maroon);
   cursor: pointer;
@@ -621,7 +636,7 @@ ul.group-members {
   list-style: none;
 }
 ul.group-members li {
-  margin: 2px 0px 2px 20px;
+  margin: 3px 0px 3px 20px;
 }
 ul.group-members li::before {
   font-weight:bold;
