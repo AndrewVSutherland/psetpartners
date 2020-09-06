@@ -102,12 +102,12 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td class="forminfo"></td>
     </tr>
     <tr>
-      <td class="caption" colspan="3" style="padding-top:10px;">
+      <td class="caption" colspan="3" style="padding-top:15px;">
         <label id="tzcaption">Times available for collaboration (in your time zone)</label><b style="color:var(--alert-color);">*</b>
     </td>
   </table>
   <br>
-  <table class="cbg" id="hours" style="margin-left:60px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
+  <table class="cbg" id="hours" style="margin-left:100px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
     <tr class="cbg">
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
@@ -204,8 +204,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <!-- TOOO figure out what is up with the margin-right's below, they should not be needed (or handled in style.css) -->
   {% set n = user.classes|length + 1 %}
   {% for i in range(maxlength["classes"]+1) %}
-    <div style="width: 100%; padding:0 10px;{{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
-      <p align="justify" class="partner-summary" style="margin: 20px 20px 20px 5px;" id="partner-summary-{{i}}"></p>
+    <div style="width: 100%; {{'display:none;' if i else ''}}" id="partner-pane-{{i}}" class="toggle-{{i}} partner-pane">
+      <p align="justify" class="partner-summary" style="margin: 15px;" id="partner-summary-{{i}}"></p>
       <div class="partner-div" style="margin-right:30px'" id="partner-div-{{i}}"></div>
       <div class="partner-buttons" style="margin-right:30px;" id="partner-buttons-{{i}}"></div>
     </div>
@@ -214,7 +214,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <p align="justify" id="partner-confirm-message"></p>
       <div id="confirm-options" style="display:none;">
         <table class="short-input"><tbody><tr>
-          <td class="short-caption" style="margin-left:0; padding-left:0;">Start:</td>
+          <td class="short-caption">Start:</td>
           <td class="short-value"><span class="short-select" id="select-start"></span><input type="hidden" name="start" id="start" /></td>
           <td class="short-caption">Style:</td>
           <td class="short-value"><span class="short-select" id="select-style"></span><input type="hidden" name="style" id="style" /></td>
@@ -590,7 +590,7 @@ function setPartnerPanes() {
         let msg = `There are <b>${s}</b> students who have <b>${c}</b> listed on pset partners. `;
         $('#partner-div-'+(i+1)).html('');
         if ( sg ) {
-          msg += `Currently <b>${sg}</b> of these students are members of ${tg} been formed in this class, of which ${public} public and listed below`;
+          msg += `Currently <b>${sg}</b> are members of ${tg} been formed in this class, of which ${public} public and listed below`;
           const open = v[1]+v[2];
           msg += open != '0' ? `, and <b>${open}</b> ${open == 1 ? "is" : "are"} private but open to new members.` : '. ';
           const groups = allGroups[c];
@@ -622,7 +622,7 @@ function setPartnerPanes() {
             msg += '<br><br>To find a pset partner, click a bold action link. ';
           }
         }
-        msg += 'Each link will tell you what is going to happen and seek confirmation before proceeding.';
+        msg += 'You will be given an explanation and asked to confirm before proceeding.';
         $('#partner-summary-'+(i+1)).html(msg);
         $('#partner-buttons-'+(i+1)).html(partnerActionButtons(c, status));
       }

@@ -1,10 +1,10 @@
 :root {
   --header-height: 52px;
   --footer-height: 52px;
-  --min-width: 980px;
-  --caption-width: 270px;
+  --min-width: 1024px;
+  --caption-width: 275px;
   --value-width: 420px;
-  --short-value-width: 84px;
+  --short-value-width: 90px;
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
@@ -255,7 +255,7 @@ a, a:visited {
 
 table.input, table.output {
   border-collapse: collapse;
-  margin-left: 20px;
+  margin-left: 25px;
 }
 
 table.submit {
@@ -277,8 +277,8 @@ table.short-input {
 
 td.short-caption {
   margin: 0;
-  padding-right: 1px;
-  padding-left: 8px;
+  padding-right: 1.5px;
+  padding-left: 7.5px;
 }
 td.short-caption:first-of-type {
   padding-left: 0px;
@@ -286,7 +286,10 @@ td.short-caption:first-of-type {
 td.short-value {
   margin: 0;
   padding-left: 0px;
-  padding-right: 8px;
+  padding-right: 7.5px;
+}
+td.short-caption:last-of-type {
+  padding-right: 0px;
 }
 
 td.forminfo, span.forminfo {
@@ -575,11 +578,6 @@ table.ctab {
   margin: 0 auto;
 }
 
-div.caction {
-  padding:0 20px;
-  outline: none;
-}
-
 div.caction p {
   font-weight: bold;
 }
@@ -613,7 +611,7 @@ ul.group-members li::before {
 
 /* BEGIN htoggler */
 .htoggler, .profile-toggler {
-  margin: 15px 0 0 0;
+  margin: 15px 0 5px 0;
   padding-left: 0;
   font-size: 110%;
   font-weight: bold;
@@ -666,7 +664,7 @@ ul.group-members li::before {
 
 /* BEGIN toggler */
 .toggler {
-  margin: 0 0 10px 0;
+  margin: 0 0 20px 0;
   border-bottom: 1.5px solid var(--mit-maroon);
 }
 
