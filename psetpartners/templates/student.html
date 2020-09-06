@@ -589,7 +589,7 @@ function setPartnerPanes() {
     const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups, sng = s-sg;
     let msg = '';
     if ( s <= 1) {
-      msg += 'You are the only person in this class using pset partners right now.  Invite others to join! ';
+      msg += 'You are the only person in this class using pset partners right now.  You can be the first to create a group and invite others to join! ';
     } else {
       msg += `There are <b>${s}</b> students in <b>${c}</b> using pset partners`;
       let v = [0,0,0,0], w = [0,0,0,0];
@@ -598,6 +598,8 @@ function setPartnerPanes() {
       if ( v[0]+v[1]+v[2]+v[3] != g )  console.log(`Warning: visibility counts ${v[0]}+${v[1]}+${v[2]}+${v[3]} != ${g} in ${c}.`);
       if ( sg === 0 ) {
         msg += ', all of whom may be looking for partners. ';
+      } else if ( sng == 0 ) {
+        msg += ', all of whom are currently in a group. ';
       } else {
         msg += `: <b>${sg}</b> ${sg==1?'is':'are'} in a group and <b>${sng}</b> ${sng==1?'is':'are'} looking for partners. `;
       }
