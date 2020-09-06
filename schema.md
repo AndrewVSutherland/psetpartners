@@ -128,6 +128,6 @@ id                    |	bigint      | unique identifier automatically assigned b
 sender_kerb           | text        | kerberos of of sender (empty string for system messages)
 recipient_kerb        | text        | kerberos of of recipient (who will see the message on their home page)
 type                  | text        | type of message (e.g. welcome, notify, accepted, newgroup, ...)
-content               | text        | the HTML content of the message (will appear inside a p element)
+content               | text        | the HTML content of the message (will appear inside a `p` element)
 read                  | boolean     | set when user acknowledges messages by clicking ok
 
