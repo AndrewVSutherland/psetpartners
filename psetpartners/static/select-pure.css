@@ -1,5 +1,5 @@
 :root {
-  --short-min-height: 24px;
+  --short-min-height: 22px;
   --min-height: 32px;
   --max-height: 200px;
   --row-height: 20px;
@@ -11,26 +11,18 @@
   font-size: 90%;
 }
 
-.sp-placeholder::after {
+.sp-placeholder::after, .sp-short-placeholder::after {
   content: "▽";
   font-weight: normal;
   position: absolute;
   bottom: 7px;
-  right: 2px;
+  right: 1.5px;
   color: var(--mit-maroon);
   font-style: normal;
   font-size: 70%;
 }
-
 .sp-short-placeholder::after {
-  content: "▽";
-  font-weight: normal;
-  position: absolute;
-  bottom: 4px;
-  right: 2px;
-  color: var(--mit-maroon);
-  font-style: normal;
-  font-size: 70%;
+ top: 5px;
 }
 
 .sp-select ,.sp-short-select {
@@ -56,7 +48,8 @@
 .sp-short-select {
   width: calc(var(--short-value-width) + 7px);
   min-height: var(--short-min-height);
-  padding: 0px 4px;
+  font-size: 95%;
+  padding: 2px 5px 1.5px 3px;
 }
 
 .sp-select:hover, .sp-short-select:hover {

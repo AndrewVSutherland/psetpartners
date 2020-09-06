@@ -405,9 +405,10 @@ def class_groups(class_number, opts, year=current_year(), term=current_term(), v
     for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
         members = list(students_in_group(g['id']))
         r = group_row(g, len(members))
-        if 'members' in opts and (g['visibility'] == 3 or instructor_view):
+        if 'members' in opts and (g['visibility'] >= mv):
             r.append(sorted([member_row(s) for s in members]))
         G.append(r)
+    print(G)
     return sorted(G,key=lambda r: r[1])
 
 def cleanse_student_data(data):

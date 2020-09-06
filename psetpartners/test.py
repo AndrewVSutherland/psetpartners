@@ -223,9 +223,12 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = rand_strength()
             maxsize = max_size_from_prefs(prefs)
-            eds = [creator] if randint(0,1) else []
+            eds = [creator] if randint(0,2)==0 else []
+            if randint(0,2):
+                creator = ''
+            visibility = randint(0,3)
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'],
-                 'group_name': name, 'visibility': 3, 'preferences': prefs, 'strengths': strengths, 'creator': creator, 'editors': eds, 'max': maxsize }
+                 'group_name': name, 'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'creator': creator, 'editors': eds, 'max': maxsize }
             creators.add(creator)
             S.append(g)
     if ( S ):
