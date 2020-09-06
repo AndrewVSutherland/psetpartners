@@ -589,7 +589,7 @@ function setPartnerPanes() {
     const s = allCounts[c].students, g = allCounts[c].groups, sg = allCounts[c].students_groups, sng = s-sg;
     let msg = '';
     if ( s <= 1) {
-      msg += 'You are the only person in this class using pset partners right now.  Invite others to join! ';
+      msg += 'You are the only person in this class using pset partners right now.  You can be the first to create a group and invite others to join! ';
     } else {
       msg += `There are <b>${s}</b> students in <b>${c}</b> using pset partners`;
       let v = [0,0,0,0], w = [0,0,0,0];
@@ -597,24 +597,26 @@ function setPartnerPanes() {
       for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].capacity ) w[i] = parseInt(allCounts[c].capacity[''+i]);
       if ( v[0]+v[1]+v[2]+v[3] != g )  console.log(`Warning: visibility counts ${v[0]}+${v[1]}+${v[2]}+${v[3]} != ${g} in ${c}.`);
       if ( sg === 0 ) {
-        msg += ', all of whom may be looking for partners. ';
+        msg += ', all of whom are still looking for partners. ';
+      } else if ( sng === 0 ) {
+        msg += ', all of whom are currently in a group. ';
       } else {
         msg += `: <b>${sg}</b> ${sg==1?'is':'are'} in a group and <b>${sng}</b> ${sng==1?'is':'are'} looking for partners. `;
       }
       if ( g === 1 ) {
         msg += `One pset group has been created in this class`;
-        if ( v[3] ) msg += ', is public and listed below. ';
-        else if ( v[1]+v[2] ) msg += ', which is a private group open to new members. ';
+        if ( v[3] ) msg += ', it is public group and listed below. ';
+        else if ( w[1]+w[2] ) msg += `, it is a private group open to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         else msg += '. ';
-      } else {
+      } else if ( g > 0 ){
         msg += `There are currently <b>${g}</b> pset groups in this class`;
         if ( v[1]+v[2]+v[3] ) msg += ', of which '; else msg += '. ';
-        if ( v[3] == 1 ) msg += 'one is public and listed below';
+        if ( v[3] == 1 ) msg += '<b>1</b> is public and listed below';
         if ( v[3] > 1 ) msg += `<b>${v[3]}</b> are public and listed below`;
-        if ( v[3] && (v[1]+v[2]) ) msg += ' and ';
-        if ( w[1]+w[2] == 1 ) msg += `one is 1 private group to new members (${v[1] ? 'by permission' : 'automatic'}). `;
+        if ( v[3] && (w[1]+w[2]) ) msg += ' and ';
+        if ( w[1]+w[2] == 1 ) msg += `<b>1</b> is a private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         if ( w[1]+w[2] > 1 ) {
-          msg += `<b>${v[1]+v[2]}</b> are private groups open to new mambers`;
+          msg += `<b>${w[1]+w[2]}</b> are private groups open to new mambers`;
           if ( !w[1] ) msg += ' (automatic)';
           if ( !w[2] ) msg += ' (by permission)';
           if ( w[1] && w[2] ) msg += ` (<b>${w[2]}</b> automatic, <b>${w[1]}</b> by permission)`;
