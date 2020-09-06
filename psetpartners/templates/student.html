@@ -598,7 +598,7 @@ function setPartnerPanes() {
       if ( v[0]+v[1]+v[2]+v[3] != g )  console.log(`Warning: visibility counts ${v[0]}+${v[1]}+${v[2]}+${v[3]} != ${g} in ${c}.`);
       if ( sg === 0 ) {
         msg += ', all of whom may be looking for partners. ';
-      } else if ( sng == 0 ) {
+      } else if ( sng === 0 ) {
         msg += ', all of whom are currently in a group. ';
       } else {
         msg += `: <b>${sg}</b> ${sg==1?'is':'are'} in a group and <b>${sng}</b> ${sng==1?'is':'are'} looking for partners. `;
@@ -608,13 +608,13 @@ function setPartnerPanes() {
         if ( v[3] ) msg += ', it is public group and listed below. ';
         else if ( w[1]+w[2] ) msg += `, it is a private group open to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         else msg += '. ';
-      } else {
+      } else if ( g > 0 ){
         msg += `There are currently <b>${g}</b> pset groups in this class`;
         if ( v[1]+v[2]+v[3] ) msg += ', of which '; else msg += '. ';
         if ( v[3] == 1 ) msg += 'one is public and listed below';
         if ( v[3] > 1 ) msg += `<b>${v[3]}</b> are public and listed below`;
         if ( v[3] && (w[1]+w[2]) ) msg += ' and ';
-        if ( w[1]+w[2] == 1 ) msg += `one is 1 private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
+        if ( w[1]+w[2] == 1 ) msg += `one is a private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         if ( w[1]+w[2] > 1 ) {
           msg += `<b>${v[1]+v[2]}</b> are private groups open to new mambers`;
           if ( !w[1] ) msg += ' (automatic)';
