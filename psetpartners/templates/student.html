@@ -604,7 +604,7 @@ function setPartnerPanes() {
       if ( g === 1 ) {
         msg += `One pset group has been created in this class`;
         if ( v[3] ) msg += ', it is public group and listed below. ';
-        else if ( w[1]+w[2] ) msg += `, it is a private group open to new members ($(w[1] ? 'by permission' : 'automatic'}). `;
+        else if ( w[1]+w[2] ) msg += `, it is a private group open to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         else msg += '. ';
       } else {
         msg += `There are currently <b>${g}</b> pset groups in this class`;
