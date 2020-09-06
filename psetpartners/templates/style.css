@@ -531,7 +531,7 @@ p.flash-announce, p.flash-instruct {
   margin: 10px 0;
 }
 p.flash-error {
-  margin: 0 5px;
+  margin: 5px;
 }
 p.flash-error::before {
   content:"🗙";

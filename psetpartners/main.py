@@ -523,7 +523,6 @@ def save_changes(raw_data):
     sprefs = [ {} for i in range(num_classes+1) ]
     props = [ {} for i in range(num_classes+1) ]
     data["hours"] = [False for i in range(168)]
-    print(raw_data)
     for i in range(7):
         for j in range(24):
             if raw_data.get("hours-%d-%d"%(i,j),False):
