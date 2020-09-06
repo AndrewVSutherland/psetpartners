@@ -520,11 +520,11 @@ p.flash-warning::before {
   color: #d11;
 }
 p.flash-cancel::before {
-  content:"🗙";
+  content: "●";
   color:#b11;
   font-size: 80%;
   padding-right: 4px;
-  vertical-align: 15%;
+  vertical-align: 20%;
 }
 
 p.flash-announce, p.flash-instruct {
