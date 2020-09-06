@@ -593,8 +593,25 @@ div.caction p i {
   background: var(--mit-pink);
 }
 
+ul.group-desc {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+ul.group-desc li {
+  margin: 5px 10px 5px 25px;
+  padding: 0;
+  list-style: none;
+}
+ul.group-desc li::before {
+  content: "⚫";
+  padding-right: 3px;
+  font-size: 85%;
+  color: var(--mit-maroon);
+}
+
 ul.group-members {
-  margin: 0 0 0 40px;
+  margin: 0 0 0 20px;
   padding: 0;
   list-style: none;
 }
@@ -602,10 +619,10 @@ ul.group-members li {
   font-size: 95%;
 }
 ul.group-members li::before {
-  content: "●";
+  content: "⚫";
   padding-right: 3px;
   padding-bottom: 1px;
-  font-size: 90%;
+  font-size: 85%;
   color: var(--mit-maroon);
 }
 

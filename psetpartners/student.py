@@ -41,7 +41,7 @@ student_welcome = """
 <b>Welcome to pset partners!</b>
 To begin, enter your preferred name and any other personal details you care to share.<br>
 Then select your location, timezone, the math classes you are taking this term, and hours of availability (include partial hours).<br>
-You can then explore your options for finding pset partners using the Preferences and Partners buttons.
+You can explore your options for finding pset partners using the Preferences and Partners buttons.
 """
 
 old_instructor_welcome = """

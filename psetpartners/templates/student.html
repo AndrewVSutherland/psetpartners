@@ -552,13 +552,13 @@ function partneredActionButtons2(c, gid, emails) {
 
 function setPartnerPanes() {
   let cnts = allCounts[''];
-  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which<br><ul>
+  let msg = `There are currently ${cnts.students} students, ${cnts.classes} classes, and ${cnts.groups} groups listed on pset partners, of which<br><ul class="group-desc">
       <li>${cnts.visibility['3']||0} are <b>public</b> groups that anyone can join (up to the size limit);</li>
-      <li>${cnts.visibility['2']||0} are <b>private</b> groups that may be assigned new compatible members by the system <b>automatically</b>;</li>
-      <li>${cnts.visibility['1']||0} are <b>private</b> groups that may be contacted by the system to request <b>permission</b> to add a compabitlbe member;</li>
+      <li>${cnts.visibility['2']||0} are <b>private</b> groups with <b>automatic</b> assignment of compatible members by the system;</li>
+      <li>${cnts.visibility['1']||0} are <b>private</b> groups that require <b>permission</b> before the system will add compatible members;</li>
       <li>${cnts.visibility['0']||0} are <b>private</b> groups with membership by <b>invitation</b> only.</li>
       </ul>
-    Private groups are visible only to instructors and their members.  Any member may invite new members (up to the size limit).
+    Private groups are visible only to instructors and their members.  Any group member may invite new members (up to the size limit).
       <br><br>`;
   if ( studentClasses.length ) {
     msg += 'Click on a class number to see your pset partnering options for that class.';
