@@ -24,6 +24,7 @@ instructor_names[]    | text[]      | list of instructor names
 instructor_kerbs[]    | text[]      | list of instructor kerbs
 homepage              | text        | course homepage
 match_dates           | date[] 	    | matching dates (only future dates are relevant)
+size                  | smallint    | number of rows in classlist with class_id = id (read/write ratio is high, so worth maintaining)
 
 ## students
 			
@@ -35,7 +36,7 @@ description           |	text	    | Student's public description of themself (not
 email	              | text	    | smith@gmail.com (not currently used, we just email kerb@mit.edu)
 gender                | text        | optional, currently female, male, or non-binary (optional)
 hours                 | boolean[]   | a list of 7x24=168 booleans indicating hours available to pset (in timezone)
-kerb                  |	text	    | kerberos id
+kerb                  |	text	    | kerberos id (lookup column for this table)
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
 name                  |	text        | e.g. Johnathan Smith
 preferred_name        | text        | e.g. John Smith
@@ -44,8 +45,7 @@ preferences           |	jsonb	    | dictionary of preferences (see Preferences t
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
 year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
-blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
-rejected_group_ids    | bigint[]    | list of group ids theis student has rejectd
+blocked_kerbs         | text[]      | list of student ids this student will never be put in a group with
 			
 ## groups
 
@@ -62,7 +62,8 @@ preferences	      | jsonb       | optional group preferences; if unspecified, sy
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
-max                   | smallint    | maximum number of students
+size                  | smallint    | number of rows in grouplist with group_id=id (read/write ratio is high, so worth maintaining)
+max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
 match_run             | smallint    | only set for system created groups, incremented with each matching
 
 ## classlist
@@ -76,11 +77,11 @@ kerb                  | text        | kerberos id of student (copied from studen
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied from classes table for convenience)
-properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
+properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
-status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match in progress
-			
+status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match permissions sought, 5 = pool match in progress
+		
 ## grouplist
 
 Column                | Type        |  Notes
@@ -93,3 +94,40 @@ kerb                  | text        | kerberos ud of student (copied from studen
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied for convenience)
+
+## grouplistleft
+(rows are moved here from grouplist whenver a student leaves a group)
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+class_id              | bigint      | id in classes_table
+group_id	      | bigint      | id in groups table
+student_id            | bigint      | id in students table
+kerb                  | text        | kerberos ud of student (copied from students table for convenience)
+class_number          | text        | class number (copied from classes table for convenience)
+year		      | smallint    | year of class (copied from classes table for convenience)
+term                  | smallint    | term of class (copied for convenience)
+
+## events
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+kerb                  | text        | kerberos ud of user (student or instructor)
+event                 | text        | type of event (e.g. login, join, leave, pool, match, ...)
+detail                | jsonb       | details associated to the even (e.g. group id or class id)
+timestamp             | timestamp   | time of event (always in MIT time, no timezone)
+status                | smallint    | status code -- 0 means informational, nonzero is some sort of error
+
+## messages
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+sender_kerb           | text        | kerberos of of sender (empty string for system messages)
+recipient_kerb        | text        | kerberos of of recipient (who will see the message on their home page)
+type                  | text        | type of message (e.g. welcome, notify, accepted, newgroup, ...)
+content               | text        | the HTML content of the message (will appear inside a `p` element)
+read                  | boolean     | set when user acknowledges messages by clicking ok
+
