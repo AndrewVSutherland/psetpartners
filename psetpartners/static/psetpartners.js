@@ -171,12 +171,12 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
 function flashTop(msg, category) {
   const p = document.createElement('p'), pt = document.createTextNode(msg);
   const l = document.createElement('l'), lt = document.createTextNode(' [ok]');
-  p.classList.add(category); p.appendChild(pt); p.appendChild(l);
+  p.classList.add('flash-'+category); p.appendChild(pt); p.appendChild(l);
   l.classList.add('flash-after'); l.appendChild(lt);  l.onclick = function(e) { p.remove(); };
   document.getElementById('flash-top').appendChild(p);
 }
 function flashAnnounce(msg) { flashTop(msg, 'announce'); }
-function flashInstruct(msg) { flashTop(msg, 'instructo'); }
+function flashInstruct(msg) { flashTop(msg, 'instruct'); }
 function flashError(msg) { flashTop(msg, 'error'); }
 
 // TODO: We currently display only one bottom messages of each type at a time, fix this
