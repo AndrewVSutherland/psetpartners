@@ -611,7 +611,7 @@ function setPartnerPanes() {
         if ( v[1]+v[2]+v[3] ) msg += ', of which '; else msg += '. ';
         if ( v[3] == 1 ) msg += 'one is public and listed below';
         if ( v[3] > 1 ) msg += `<b>${v[3]}</b> are public and listed below`;
-        if ( v[3] && (v[1]+v[2]) ) msg += ' and ';
+        if ( v[3] && (w[1]+w[2]) ) msg += ' and ';
         if ( w[1]+w[2] == 1 ) msg += `one is 1 private group to new members (${v[1] ? 'by permission' : 'automatic'}). `;
         if ( w[1]+w[2] > 1 ) {
           msg += `<b>${v[1]+v[2]}</b> are private groups open to new mambers`;
