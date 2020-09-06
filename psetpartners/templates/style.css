@@ -606,10 +606,16 @@ ul.group-desc li {
 ul.group-desc li::before {
   content: "⚫";
   padding-right: 3px;
-  font-size: 85%;
+  font-size: 80%;
+  font-weight: bold;
   color: var(--mit-maroon);
 }
-
+@-moz-document url-prefix(){
+ul.group-desc li::before {
+  font-size: 110%;
+  padding-right: 1px;
+}
+}
 ul.group-members {
   margin: 0 0 0 20px;
   padding: 0;
@@ -622,8 +628,15 @@ ul.group-members li::before {
   content: "⚫";
   padding-right: 3px;
   padding-bottom: 1px;
-  font-size: 85%;
+  font-size: 80%;
+  font-weight: bold;
   color: var(--mit-maroon);
+}
+@-moz-document url-prefix(){
+ul.group-members li::before {
+  font-size: 120%;
+  padding-right: 1px;
+}
 }
 
 /* BEGIN htoggler */
