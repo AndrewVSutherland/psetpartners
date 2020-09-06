@@ -96,7 +96,7 @@ year		      | smallint    | year of class (copied from classes table for conveni
 term                  | smallint    | term of class (copied for convenience)
 
 ## grouplistleft
-(rows are moved from grouplist to this table whenver a student leaves a group)
+(rows are moved here from grouplist whenver a student leaves a group)
 
 Column                | Type        |  Notes
 ----------------------|-------------|-------
