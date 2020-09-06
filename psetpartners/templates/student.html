@@ -591,7 +591,7 @@ function setPartnerPanes() {
     if ( s <= 1) {
       msg += 'You are the only person in this class using pset partners right now.  Invite others to join! ';
     } else {
-      msg += `There are currently <b>${s}</b> students in <b>${c}</b> using pset partners`;
+      msg += `There are <b>${s}</b> students in <b>${c}</b> using pset partners`;
       let v = [0,0,0,0], w = [0,0,0,0];
       for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].visibility ) v[i] = parseInt(allCounts[c].visibility[''+i]);
       for (let i = 0 ; i <= 3 ; i++ ) if ( (''+i) in allCounts[c].capacity ) w[i] = parseInt(allCounts[c].capacity[''+i]);
@@ -693,7 +693,7 @@ function hideConfirm() {
   document.removeEventListener('keydown', confirmKeydown, true);
   $('#partner-confirm').hide(); $('.partner-summary').show(); $('.partner-div').show(); 
   $('.partner-buttons').show(); $('button.submit.default').show();
-  flashCancel("Nevermind (no action taken).");
+  flashCancel("No action taken.");
 }
 
 function confirmJoin(e, gid) {
