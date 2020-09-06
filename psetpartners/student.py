@@ -424,7 +424,6 @@ def class_groups(class_number, opts, year=current_year(), term=current_term(), v
         if 'members' in opts and (g['visibility'] >= mv):
             r.append(sorted([member_row(s) for s in members]))
         G.append(r)
-    print(G)
     return sorted(G,key=lambda r: r[1])
 
 def cleanse_student_data(data):
@@ -732,14 +731,15 @@ class Student(UserMixin):
             else:
                 self._db.classlist.insert_many([r])
                 n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
-                self._db.classes.update({'class_id': class_id}, {'size': n})
+                self._db.classes.update({'id': class_id}, {'size': n})
                 log_event (self.kerb, 'add', detail={'class_id': class_id})
             class_ids.add(class_id)
 
         for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
             if class_id not in class_ids:
-                group_id = self._db.grouplist.search({'class_id': class_id, 'student_id': self.id},projection='group_id')
+                group_id = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id},projection='group_id')
                 if group_id is not None:
+                    print("member of a group being dropped!")
                     class_number = self._db.classes.lucky({'id': class_id}, projection='class_number')
                     group_name = self._db.groups.lucky({'id': group_id}, projection='group_name')
                     flash_error("You were not removed from the class <b>%s</b> because you are currently a member of the pset group <b>%s</b> in that class.  Please leave the group first." % (class_number, group_name))
@@ -747,7 +747,7 @@ class Student(UserMixin):
                     continue
                 self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
                 n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
-                self._db.classes.update({'class_id': class_id}, {'size': n})
+                self._db.classes.update({'id': class_id}, {'size': n})
                 log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"

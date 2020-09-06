@@ -65,21 +65,18 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
 
     db = getdb(forcelive)
     c = db.classes.lucky({'id': class_id})
-    print(c)
 
     g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'] }
     g['visibility'] = 2  # unlisted by default
     g['creator'] = ''    # system created
     g['editors'] = []    # everyone can edit
 
-    print(kerbs)
     students = [db.students.lookup(kerb, projection=['kerb','email','preferences', 'id']) for kerb in kerbs]
     g['preferences'] = {}
     for p in group_preferences:
         v = { s['preferences'][p] for s in students if p in s['preferences'] }
         if len(v) == 1:
             g['preferences'][p] = list(v)[0]
-    print(g)
     g['max'] = max_size_from_prefs(g['preferences'])
     g['match_run'] = match_run
 
