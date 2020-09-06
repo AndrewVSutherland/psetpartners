@@ -24,6 +24,7 @@ instructor_names[]    | text[]      | list of instructor names
 instructor_kerbs[]    | text[]      | list of instructor kerbs
 homepage              | text        | course homepage
 match_dates           | date[] 	    | matching dates (only future dates are relevant)
+size                  | smallint    | number of rows in classlist with class_id = id (read/write ratio is high, so worth maintaining)
 
 ## students
 			
@@ -62,7 +63,8 @@ preferences	      | jsonb       | optional group preferences; if unspecified, sy
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
-max                   | smallint    | maximum number of students
+size                  | smallint    | number of rows in grouplist with group_id=id (read/write ratio is high, so worth maintaining)
+max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
 match_run             | smallint    | only set for system created groups, incremented with each matching
 
 ## classlist
@@ -76,10 +78,10 @@ kerb                  | text        | kerberos id of student (copied from studen
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied from classes table for convenience)
-properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties such as gender or year)
+properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
 preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
 strengths             | jsonb       | replaces students preferences if preferences is not None
-status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match in progress
+status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match permissions sought, 5 = pool match in progress
 			
 ## grouplist
 
