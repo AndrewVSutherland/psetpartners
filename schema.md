@@ -78,8 +78,8 @@ class_number          | text        | class number (copied from classes table fo
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied from classes table for convenience)
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
-preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
-strengths             | jsonb       | replaces students preferences if preferences is not None
+preferences           |	jsonb       | copied from student preferences initially but may be modified
+strengths             | jsonb       | copied from studnet strengths initially but may then be modified
 status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match permissions sought, 5 = pool match in progress
 		
 ## grouplist
