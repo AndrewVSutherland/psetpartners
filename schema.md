@@ -45,7 +45,7 @@ preferences           |	jsonb	    | dictionary of preferences (see Preferences t
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
 year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
-blocked_kerbs         | text[]      | list of student ids this student will never be put in a group with
+blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
 			
 ## groups
 
