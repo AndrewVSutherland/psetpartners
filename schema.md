@@ -81,7 +81,7 @@ term                  | smallint    | term of class (copied from classes table f
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
 preferences           |	jsonb       | copied from student preferences initially but may be modified
 strengths             | jsonb       | copied from studnet strengths initially but may then be modified
-status                | smallint    | 0 = unmatched, no pendin gaction, 1 = in a group, 2 = in pool, 3 = match requested, 4 = unused, 5 = pool match in progress
+status                | smallint    | 0 = unmatched, no pending gaction, 1 = in a group, 2 = in pool, 3 = match requested, 4 = unused, 5 = pool match in progress
 status_timestamp      | timestamp   | set whenever status changes (currently used mainly to timeout match requests after 24 hours)
 		
 ## grouplist
