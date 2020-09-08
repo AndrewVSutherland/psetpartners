@@ -57,7 +57,7 @@ class_number	      | text        | class number (e.g. "18.701")
 year                  | smallint    | year of class (e.g. 2020)
 term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
-visibility            | smallint    | 0=private closed, 1=private open, 2=unlisted, 3=public group with public membership
+visibility            | smallint    | 0=invitation, 1=permission, 2=automatic, 3=public
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
@@ -65,6 +65,7 @@ editors               | text[]      | list of kerbs of students authorized to mo
 size                  | smallint    | number of rows in grouplist with group_id=id (read/write ratio is high, so worth maintaining)
 max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
 match_run             | smallint    | only set for system created groups, incremented with each matching
+permission_requested  | timestamp   | set when permission has been requested, set to none if/when granted (only relevant if visibility=1)
 
 ## classlist
 
@@ -81,6 +82,7 @@ properties            | jsonb       | class-specific student properties such as 
 preferences           |	jsonb       | copied from student preferences initially but may be modified
 strengths             | jsonb       | copied from studnet strengths initially but may then be modified
 status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match permissions sought, 5 = pool match in progress
+permission_requested  | timestamp   | set when permission requested (match_me_asap), expires after 24 hours
 		
 ## grouplist
 
