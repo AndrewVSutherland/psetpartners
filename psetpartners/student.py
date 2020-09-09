@@ -56,8 +56,8 @@ new_instructor_welcome = """
 
 permission_request = """
 There is a student in {class_number} looking to join a pset group whose schedule and preferences appear to be a good fit for <b>{group_name}</b>.<br><br>
-To add this student to your group, visit <a href="{approve_link}">{approve_link}</a>.<br><br>
-If your group is no longer accepting new members, visit <a href="{deny_link}">{deny_link}</a>.
+To you are happy to add this student to your group, please visit<br>&nbsp;&nbsp;<a href="{approve_link}">{approve_link}</a>.<br><br>
+If your group is no longer accepting new members, visit<br>&nbsp;&nbsp;<a href="{deny_link}">{deny_link}</a>.
 """
 
 signature = "<br><br>Your friends at psetpartners@mit.edu.<br>"
