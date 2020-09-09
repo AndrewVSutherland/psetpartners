@@ -39,20 +39,14 @@ student_row_cols = [
     'visibility',
 ]
 
-student_welcome = """
-<b>Welcome to pset partners!</b>
+student_welcome = """<b>Welcome to pset partners!</b>
 To begin, enter your preferred name and any other personal details you care to share.<br>
 Then select your location, timezone, the math classes you are taking this term, and hours of availability (include partial hours).<br>
-You can explore your options for finding pset partners using the Preferences and Partners buttons.
-"""
+You can explore your options for finding pset partners using the Preferences and Partners buttons."""
 
-old_instructor_welcome = """
-<b>Welcome to pset partners!</b>
-"""
+old_instructor_welcome = "<b>Welcome to pset partners!</b>"
 
-new_instructor_welcome = """
-<b>Welcome to pset partners!</b>
-"""
+new_instructor_welcome = "<b>Welcome to pset partners!</b>"
 
 permission_request = """
 There is a student in {class_number} looking to join a pset group whose schedule and preferences appear to be a good fit for <b>{group_name}</b>.<br><br>
@@ -286,7 +280,8 @@ def is_admin(kerb, forcelive=False):
 
 def send_message(sender, recipient, typ, content, forcelive=False):
     db = getdb(forcelive)
-    db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}], resort=False)
+    now = datetime.datetime.now()
+    db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content, 'timestamp': now}], resort=False)
 
 def log_event(kerb, event, detail={}, status=0, forcelive=False):
     db = getdb(forcelive)

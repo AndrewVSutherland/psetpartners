@@ -131,6 +131,7 @@ sender_kerb           | text        | kerberos of of sender (empty string for sy
 recipient_kerb        | text        | kerberos of of recipient (who will see the message on their home page)
 type                  | text        | type of message (e.g. welcome, notify, accepted, newgroup, ...)
 content               | text        | the HTML content of the message (will appear inside a `p` element)
+timestamp             | timestamp   | time message was sent
 read                  | boolean     | set when user acknowledges messages by clicking ok
 
 ## requests
