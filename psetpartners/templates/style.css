@@ -487,7 +487,7 @@ label.confirm::before {
 p.flash-info, p.flash-warning, p.flash-cancel {
   padding: 0;
 }
-p.flash-info::before, p.flash-announce:before, p.flash-instruct:before {
+p.flash-info::before, p.flash-notify:before {
   font-size:110%;
   content:"✔";
   padding-right: 1px;
@@ -504,15 +504,6 @@ p.flash-instruct:before {
   padding-right: 3px;
   content: "💡";
 }
-.flash-after {
-  color: var(--mit-maroon);
-  font-weight: bold;
-  font-size: 95%;
-  cursor: pointer;
-}
-.flash-after:hover {
-  background-color: var(--mit-pink);
-}
 p.flash-warning::before {
   content:"☡";
   font-size: 90%;
@@ -526,19 +517,29 @@ p.flash-cancel::before {
   padding-right: 4px;
   vertical-align: 20%;
 }
-
-p.flash-announce, p.flash-instruct {
-  margin: 10px 0;
-}
-p.flash-error {
-  margin: 5px;
-}
 p.flash-error::before {
   content:"🗙";
   color: #d11;
   font-weight: bold;
   padding-right: 8px;
   vertical-align: 5%;
+}
+.flash-after {
+  color: var(--mit-maroon);
+  font-weight: bold;
+  font-size: 95%;
+  cursor: pointer;
+  padding-left: 8px;
+}
+.flash-after:hover {
+  background-color: var(--mit-pink);
+}
+
+p.flash-announce, p.flash-instruct, p.flash-notify {
+  margin: 10px 0;
+}
+p.flash-error {
+  margin: 5px;
 }
 
 table.mtab, table.gtab {

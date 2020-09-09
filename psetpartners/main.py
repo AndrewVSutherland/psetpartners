@@ -40,6 +40,7 @@ from .utils import (
     format_input_errmsg,
     show_input_errors,
     flash_info,
+    flash_notify,
     flash_error,
     process_user_input,
     maxlength,
@@ -337,9 +338,31 @@ def accept_invite(token):
         return redirect(url_for(".student"))
     try:
         current_user.accept_invite(invite)
-    except Exception as err:
+    except ValueError as err:
         app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
         flash_error("Unable to process invitation: %s" % err)
+    return redirect(url_for(".student"))
+
+@app.route("/approve/<int:request_id>")
+@login_required
+def approve_request(request_id):
+    try:
+        msg = current_user.approve_request(request_id)
+        print(msg)
+        flash_notify(msg)
+    except ValueError as err:
+        app.logger.error("Error processing approve response from %s to request id %s" % (current_user.kerb, request_id))
+        flash_error("Error processing response: %s" % err)
+    return redirect(url_for(".student"))
+
+@app.route("/deny/<int:request_id>")
+@login_required
+def deny_request(request_id):
+    try:
+        flash_notify(current_user.deny_request(request_id))
+    except ValueError as err:
+        app.logger.error("Error processing deny response from %s to request id %s" % (current_user.kerb, request_id))
+        flash_error("Error processing response: %s" % err)
     return redirect(url_for(".student"))
 
 @app.route("/poolme")
@@ -350,8 +373,8 @@ def poolme():
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
     try:
-        current_user.poolme()
-    except Exception as err:
+        flash_notify(current_user.poolme())
+    except ValueError as err:
         msg = "Error adding you to match pool: {0}{1!r}".format(type(err).__name__, err.args)
         app.logger.error("Error processing poolme request for student %s: %s" % (current_user.kerb, msg))
         log_event (current_user.kerb, 'poolme', status=-1, detail={'msg': msg})
@@ -467,13 +490,23 @@ def save_student():
             if debug_mode():
                 raise
             flash_error(msg)
-    elif submit[0] == "match":
+    elif submit[0] == "matchasap":
         try:
-            cid = int(submit[1])
-            flash_info(current_user.match(cid))
+            gid = int(submit[1])
+            flash_info(current_user.matchasap(gid))
         except Exception as err:
-            msg = "Error submitting match request: {0}{1!r}".format(type(err).__name__, err.args)
-            log_event (current_user.kerb, 'match', status=-1, detail={'class_id': cid, 'msg': msg})
+            msg = "Error submitting match me asap request: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'matchasap', status=-1, detail={'group_id': gid, 'msg': msg})
+            if debug_mode():
+                raise
+            flash_error()
+    elif submit[0] == "matchnow":
+        try:
+            gid = int(submit[1])
+            flash_info(current_user.matchnow(gid))
+        except Exception as err:
+            msg = "Error submitting match me now request: {0}{1!r}".format(type(err).__name__, err.args)
+            log_event (current_user.kerb, 'matchnow', status=-1, detail={'group_id': gid, 'msg': msg})
             if debug_mode():
                 raise
             flash_error()

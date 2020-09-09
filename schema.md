@@ -45,7 +45,7 @@ preferences           |	jsonb	    | dictionary of preferences (see Preferences t
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
 year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
-blocked_kerbs         | text[]      | list of student ids this student will never be put in a group with
+blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
 			
 ## groups
 
@@ -57,14 +57,15 @@ class_number	      | text        | class number (e.g. "18.701")
 year                  | smallint    | year of class (e.g. 2020)
 term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
-visibility            | smallint    | 0=private closed, 1=private open, 2=unlisted, 3=public group with public membership
+visibility            | smallint    | 0=invitation, 1=permission, 2=automatic, 3=public
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
 size                  | smallint    | number of rows in grouplist with group_id=id (read/write ratio is high, so worth maintaining)
 max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
-match_run             | smallint    | only set for system created groups, incremented with each matching
+match_run             | smallint    | only set for system created groups (creator=''), incremented with each matching
+request_id            | bigint      | id in request_table (if this is not None there is a pending request and we should not make another)
 
 ## classlist
 
@@ -78,9 +79,10 @@ class_number          | text        | class number (copied from classes table fo
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied from classes table for convenience)
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
-preferences           |	jsonb       | replaces students preferences if not None (which is not the same as {})
-strengths             | jsonb       | replaces students preferences if preferences is not None
-status                | smallint    | 1 = in a group, 2 = in match pool, 3 = match requested, 4 = match permissions sought, 5 = pool match in progress
+preferences           |	jsonb       | copied from student preferences initially but may be modified
+strengths             | jsonb       | copied from studnet strengths initially but may then be modified
+status                | smallint    | 0 = unmatched, no pending gaction, 1 = in a group, 2 = in pool, 3 = match requested, 4 = unused, 5 = pool match in progress
+status_timestamp      | timestamp   | set whenever status changes (currently used mainly to timeout match requests after 24 hours)
 		
 ## grouplist
 
@@ -129,5 +131,16 @@ sender_kerb           | text        | kerberos of of sender (empty string for sy
 recipient_kerb        | text        | kerberos of of recipient (who will see the message on their home page)
 type                  | text        | type of message (e.g. welcome, notify, accepted, newgroup, ...)
 content               | text        | the HTML content of the message (will appear inside a `p` element)
+timestamp             | timestamp   | time message was sent
 read                  | boolean     | set when user acknowledges messages by clicking ok
+
+## requests
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+timestamp             | timestamp   | timestamp of request (in MIT time, no timezone)
+group_id              | bigint      | id of group to whom reqeust was made
+student_id            | bigint      | id of student on whose behalf the request was made
+kerb                  | text        | kerberos id of student on whose behalf the request was made
 

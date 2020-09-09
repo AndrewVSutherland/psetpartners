@@ -9,21 +9,24 @@ def count_rows(table, query={}, forcelive=False):
     return sum(1 for _ in _db[table].search(query, projection="id"))
 
 _db = None
+warn_forcelive=False
 
 def getdb(forcelive=False):
-    global _db
+    global _db, warn_forcelive
 
     if livesite():
         return db
     if forcelive:
-        print("forcing use of live database!")
+        if not warn_forcelive:
+            warn_forcelive=True
+            print("forclive=True!")
         return db
     if _db is None:
         _db = PsetPartnersTestDB(db)
     return _db
 
 # list of tablenames X we want to redirect to test_X
-test_redirects = ['instructors', 'students', 'groups', 'classlist', 'grouplist', 'grouplistleft', 'messages', 'events', 'classes']
+test_redirects = ['instructors', 'students', 'groups', 'classlist', 'grouplist', 'grouplistleft', 'messages', 'events', 'classes', 'requests']
 
 def test_redirect(str):
     return 'test_'+str if str in test_redirects else str

@@ -89,9 +89,10 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
         gs = [{'class_id': class_id, 'group_id': g['id'], 'student_id': s['id'], 'kerb': s['kerb'],
                'class_number': c['class_number'], 'year': c['year'], 'term': c['term']} for s in students]
         db.grouplist.insert_many(gs)
+        now = datetime.datetime.now()
         for s in students:
-            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1})
-        log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
+            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now})
+        log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs}, forcelive=forcelive)
         print("created group %s with members %s" % (g['group_name'], kerbs))
 
     cnum = g['class_number']
