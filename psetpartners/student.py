@@ -109,7 +109,7 @@ gender_options = [
 
 location_options = [
     ("near", "on campus or near MIT"),
-    ("far", "not hear MIT"),
+    ("far", "not near MIT"),
     #("baker", "Baker House"),
     #("buron-conner", "Burton Conner House"),
     #("east", "East Campus"),
@@ -289,7 +289,7 @@ def log_event(kerb, event, detail={}, status=0, forcelive=False):
 
 def pretty_name(s):
     if 'preferred_name' not in s:
-        return s.get('kerb', 'unkown')
+        return s.get('kerb', 'unknown')
     if 'preferred_pronouns' in s:
         return s['preferred_name']
     return "%s (%s)" % (s['preferred_name'], s['preferred_pronouns'])
@@ -764,7 +764,7 @@ class Student(UserMixin):
         gid = self._db.grouplist.lucky({'class_number': g['class_number'], 'year': g['year'], 'term': g['term'], 'student_id': self.id}, projection='group_id')
         if gid is not None:
             if gid != g['id']:
-                raise ValueError("You are currently a mamber of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
+                raise ValueError("You are currently a member of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
         if not g['class_number'] in self.classes:
             self.classes.append(g['class_number'])
             self.save()
@@ -907,7 +907,7 @@ class Student(UserMixin):
         self._notify_group(g['id'], "pset partner notification", notify_msg, notify_msg)
         notify_msg = "The group in %s we contacted on your behalf is no longer accepting new members.  Check your partner options for that class to see if other groups have open slots." % g['class_number']
         send_message('', r['kerb'], 'denied', notify_msg)
-        send_email([email_address(r)], "pset patner notification", notify_msg + signature)
+        send_email([email_address(r)], "pset partner notification", notify_msg + signature)
         self.update_toggle('ct', g['class_number'])
         self.update_toggle('ht', 'partner-header')
         self._reload()
@@ -964,7 +964,7 @@ class Student(UserMixin):
             raise ValueError("Class not found in your list of classes for this term.")
         if c in self.groups:
             app.logger.warning("User %s attempted to join the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
-            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
+            raise ValueError("You are currently a member of the group %s in %s, you must leave that group before joining the match pool." % (self.group_data[c]['group_name'], c))
         if self.class_data[c]['status'] == 5:
             app.logger.warning("User %s attempted to join the pool for class %s but is currently being matched" % (self.kerb, c))
             raise ValueError("Unable to join pool, you are currently in the process of being matched in <b>%s</b>." % c)
@@ -985,7 +985,7 @@ class Student(UserMixin):
             raise ValueError("Class not found in your list of classes for this term.")
         if c in self.groups:
             app.logger.warning("User %s attempted to leave the pool for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
-            raise ValueError("You are currrently a member of the group %s in %s, and not in the match pool." % (self.group_data[c]['group_name'], c))
+            raise ValueError("You are currently a member of the group %s in %s, and not in the match pool." % (self.group_data[c]['group_name'], c))
         if self.class_data[c]['status'] == 5:
             app.logger.warning("User %s attempted to leave the pool for class %s but is currently being matched" % (self.kerb, c))
             raise ValueError("Unable to leave pool, you are currently in the process of being matched in <b>%s</b>." % c)
@@ -1008,7 +1008,7 @@ class Student(UserMixin):
             raise ValueError("Class not found in your list of classes for this term.")
         if c in self.groups:
             app.logger.warning("User %s tried to create a group in class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
-            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
+            raise ValueError("You are currently a member of the group %s in %s, you must leave that group before creating a new group." % (self.group_data[c]['group_name'], c))
         if self.class_data[c]['status'] == 5:
             app.logger.warning("User %s attempted to create a group in the class %s but is currently being matched" % (self.kerb, c))
             raise ValueError("Unable to create group, you are currently in the process of being matched in <b>%s</b>." % c)
