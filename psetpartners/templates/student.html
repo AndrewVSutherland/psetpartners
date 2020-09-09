@@ -571,7 +571,7 @@ function setPartnerPanes() {
   if ( studentClasses.length ) {
     msg += 'Click on a class number to see your pset partnering options for that class.';
   } else {
-    msg += 'Add one or more classes to see information on how to find pset partners.  You may want to set default perferences first (click Preferences).';
+    msg += 'Add one or more classes to see information on how to find pset partners.  You may want to set default preferences first (click Preferences).';
   }
   $('#partner-summary-0').html(msg);
 
@@ -624,7 +624,7 @@ function setPartnerPanes() {
         if ( v[3] && (w[1]+w[2]) ) msg += ' and ';
         if ( w[1]+w[2] == 1 ) msg += `<b>1</b> is a private group to new members (${w[1] ? 'by permission' : 'automatic'}). `;
         if ( w[1]+w[2] > 1 ) {
-          msg += `<b>${w[1]+w[2]}</b> are private groups open to new mambers`;
+          msg += `<b>${w[1]+w[2]}</b> are private groups open to new members`;
           if ( !w[1] ) msg += ' (automatic)';
           if ( !w[2] ) msg += ' (by permission)';
           if ( w[1] && w[2] ) msg += ` (<b>${w[2]}</b> automatic, <b>${w[1]}</b> by permission)`;
@@ -656,7 +656,7 @@ function setPartnerPanes() {
     if ( cdata && 'public_match' in classData[c] ) {
       const gid = classData[c].public_match;
       let j = 0; for ( ; j < allGroups[c].length && allGroups[c][j][0] != gid ; j++ );
-      if ( j < allGroups[c].length ) msg += `<br><br>Based on your saved preferences and availibility, the public group <b>${allGroups[c][j][1]}</b> looks like a good fit for you`;
+      if ( j < allGroups[c].length ) msg += `<br><br>Based on your saved preferences and availability, the public group <b>${allGroups[c][j][1]}</b> looks like a good fit for you`;
       publicrec = true;
     }
     let matchmenow = '';
@@ -789,7 +789,7 @@ function confirmPool(e, c) {
   msg += '<br><br>';
   if ( Object.values(res).find(r => r.strength == '5') )
     msg += 'You have marked some preferences <b>required</b>, which will preclude matching you with students with no expressed preference. ';
-  msg += 'You can change your hours of availibility and preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the match pool.';
+  msg += 'You can change your hours of availability and preferences at any time before the match date.  You are also welcome to join or create a group in the meantime; doing so will automatically remove you from the match pool.';
   showConfirm (msg, val, `put me in the ${d} match pool for ${c}`);
 }
 
@@ -822,7 +822,7 @@ function confirmMatchAsap(e, gid) {
   if ( ! i || i > studentClasses.length ) return;
   const c = studentClasses[i-1];
   let msg = `You are about to request permission to join a private group in <b>${c}</b> that the system has identified as a good fit for you, based on your preferences and availability. `;
-  msg += 'An email will be sent to the group requesting permssion to add a new member; your identity will not be revealed.';
+  msg += 'An email will be sent to the group requesting permission to add a new member; your identity will not be revealed.';
   msg += '<br><br>You will be added to the group if a group member approves this request and you have not joined or created a different group in the meantime.  You will receive an email if this happens.  If you receive no response within 24 hours please check back here to see other options you may have.';
   let val = "matchasap " + gid;
   if ( pending ) { msg += 'Your unsaved changes <b>will be saved</b>.'; val = "save " + val; }
@@ -839,7 +839,7 @@ function confirmPublicGroup(e, c) {
   $('#editors').val('0'); updateSingleSelect('editors');
   $('.editors').show();  $('.membership').hide();
   let msg = `You are about to create a <b>public</b> group whose settings you may edit below. `;
-  msg += `This group and its members <b>will be visisble</b> to all <b>${c}</b> students using pset partners.  Anyone can join your group, subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default, any group member can change the settings for this group, but you can reserve edit rights to yourself if you wish. `;
+  msg += `This group and its members <b>will be visible</b> to all <b>${c}</b> students using pset partners.  Anyone can join your group, subject to the size restrictions shown below.  You will be emailed whenever new students join or leave this group. By default, any group member can change the settings for this group, but you can reserve edit rights to yourself if you wish. `;
   let val = "createpublic " + cid;
   if ( pending ) { msg += 'Your unsaved changes <b>will be saved</b>.'; val = "save " + val; }
   showConfirm (msg, val, 'create a new public group for ' + c, true);
