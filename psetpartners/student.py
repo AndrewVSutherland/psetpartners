@@ -12,11 +12,12 @@ from .utils import (
     current_term,
     hours_from_default,
     flash_announce,
-    flash_info,
+    flash_notify,
     flash_error,
     )
 from .group import generate_group_name
 from .token import generate_timed_token
+from .match import rank_groups
 from psycodict import DelayCommit
 
 strength_options = ["no preference", "nice to have", "weakly preferred", "preferred", "strongly preferred", "required"]
@@ -51,6 +52,12 @@ old_instructor_welcome = """
 
 new_instructor_welcome = """
 <b>Welcome to pset partners!</b>
+"""
+
+permission_request = """
+There is a student in {class_number} looking to join a pset group whose schedule and preferences appear to be a good fit for <b>{group_name}</b>.<br><br>
+To add this student to your group, visit <a href="{approve_link}">{approve_link}</a>.<br><br>
+If your group is no longer accepting new members, visit <a href="{deny_link}">{deny_link}</a>.
 """
 
 signature = "<br><br>Your friends at psetpartners@mit.edu.<br>"
@@ -255,43 +262,50 @@ def course_number_key(s):
         return 27*27*27 + 27*27*(ord(r.group(2)[0])-ord('A')+1) + 27*(ord(r.group(2)[1])-ord('A')+1) + ord(r.group(2)[2])-ord('A')+1
     return 27*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')+1) if r.group(2) != '' else 0)
 
-def current_classes(year=current_year(), term=current_term()):
-    db = getdb()
+def current_classes(year=current_year(), term=current_term(), forcelive=False):
+    db = getdb(forcelive)
     classes = [(r['class_number'], r['class_name']) for r in db.classes.search({'year': year, 'term': term}, projection=['class_number', 'class_name'])]
     return sorted(classes)
 
-def departments():
-    db = getdb()
+def departments(forcelive=False):
+    db = getdb(forcelive)
     departments = [(r['course_number'], r['course_name']) for r  in db.departments.search({}, projection=['course_number', 'course_name'])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
 
-def is_instructor(kerb):
-    db = getdb()
+def is_instructor(kerb, forcelive=False):
+    db = getdb(forcelive)
     return True if db.instructors.lucky({'kerb':kerb},projection="id") else False
 
-def is_whitelisted(kerb):
-    db = getdb();
+def is_whitelisted(kerb, forcelive=False):
+    db = getdb(forcelive);
     return True if (db.students.lookup(kerb) or db.whitelist.lookup(kerb)) else False
 
-def is_admin(kerb):
-    db = getdb()
+def is_admin(kerb, forcelive=False):
+    db = getdb(forcelive)
     return db.admins.lucky({'kerb': kerb})
 
-def send_message(sender, recipient, typ, content):
-    db = getdb()
+def send_message(sender, recipient, typ, content, forcelive=False):
+    db = getdb(forcelive)
     db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content}], resort=False)
 
-def log_event(kerb, event, detail={}, status=0):
-    db = getdb()
+def log_event(kerb, event, detail={}, status=0, forcelive=False):
+    db = getdb(forcelive)
     db.events.insert_many([{'kerb': kerb, 'timestamp': datetime.datetime.now(), 'status': status, 'event': event, 'detail': detail}], resort=False)
+
+def pretty_name(s):
+    if 'preferred_name' not in s:
+        return s.get('kerb', 'unkown')
+    if 'preferred_pronouns' in s:
+        return s['preferred_name']
+    return "%s (%s)" % (s['preferred_name'], s['preferred_pronouns'])
 
 def email_address(s):
     return s['email'] if s.get('email') else s['kerb'] + '@mit.edu'
 
-def next_match_date(class_id):
+def next_match_date(class_id, forcelive=False):
     import datetime
 
-    db = getdb()
+    db = getdb(forcelive)
     match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
     if match_dates:
         today = datetime.datetime.now().date()
@@ -300,6 +314,8 @@ def next_match_date(class_id):
             return match_dates[0].strftime("%b %-d")
     return ""
 
+# TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
+# Then this function could simply return the preferred value if it is <= 8 and None otherwise
 def max_size_from_prefs(prefs):
     if not 'size' in prefs:
         return None
@@ -414,8 +430,8 @@ def member_row(s):
 def student_row(s):
     return [_str(s.get(k,"")) for k in student_row_cols]
 
-def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
-    db = getdb()
+def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False, forcelive=False):
+    db = getdb(forcelive)
     G = []
     mv = 0 if instructor_view else 3
     for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
@@ -476,13 +492,14 @@ class Student(UserMixin):
         self._db = getdb()
         data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None:
+            now = datetime.datetime.now()
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
             data['full_name'] = full_name
             data['id'] = -1
             data['new'] = True
-            data['last_login'] =  datetime.datetime.now()
-            data['last_seen'] = data['last_login']
+            data['last_login'] =  now
+            data['last_seen'] = now
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", student_welcome)
             log_event (kerb, 'new')
@@ -541,17 +558,11 @@ class Student(UserMixin):
 
     @property
     def pretty_name(self):
-        if not self.preferred_name:
-            return self.kerb
-        if not self.preferred_pronouns:
-            return self.preferred_name
-        return "%s (%s)" % (self.preferred_name, self.preferred_pronouns)
+        return pretty_name(self.__dict__)
 
     @property
     def email_address(self):
-        if not self.email:
-            return self.kerb + "@mit.edu"
-        return self.email
+        return email_address(self.__dict__)
 
     @property
     def stale_login(self):
@@ -608,7 +619,7 @@ class Student(UserMixin):
                 c = self.class_data[k]
                 if c['status'] == 0 or c['status'] == 3:
                     log_event(self.kerb, 'pool', {'class_id': c['class_id']})
-                    flash_info(self._pool(c['class_id']))
+                    flash_notify(self._pool(c['class_id']))
                     n += 1
         if not n:
             "You are either in a group or have already requested a match in all of your classes"
@@ -627,10 +638,15 @@ class Student(UserMixin):
             log_event (self.kerb, 'unpool', {'class_id': class_id})
             return self._unpool(class_id)
 
-    def match(self, class_id):
+    def matchasap(self, class_id):
         with DelayCommit(self):
             log_event (self.kerb, 'match', {'class_id': class_id})
-            return self._match(class_id)
+            return self._matchasap(class_id)
+
+    def matchnow(self, group_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'matchnow', {'group_id': group_id})
+            return self._matchnow(group_id)
 
     def create_group(self, class_id, options, public=True):
         with DelayCommit(self):
@@ -643,33 +659,19 @@ class Student(UserMixin):
             return self._edit_group(group_id, options)
 
     def accept_invite(self, invite):
-        sid = self._db.students.lookup(invite['kerb'], projection='id')
-        if sid is None:
-            raise ValueError("Unknown student.")
-        g = self._db.groups.lucky({'id': invite['group_id']}, projection=3)
-        if g is None:
-            raise ValueError("Group not found.")
-        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': sid}, projection="id"):
-            raise ValueError("The student who created the invitation is no longer a member of the group.")
-        if g['year'] != current_year() or g['term'] != current_term():
-            raise ValueError("This invitation is from a previous term.")
-        gid = self._db.grouplist.lucky({'class_number': g['class_number'], 'year': g['year'], 'term': g['term'], 'student_id': self.id}, projection='group_id')
-        if gid is not None:
-            if gid != g['id']:
-                raise ValueError("You are currently a mamber of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
-        if not g['class_number'] in self.classes:
-            self.classes.append(g['class_number'])
-            self.save()
-        elif self.class_data[g['class_number']]['status'] == 5:
-            raise ValueError("Unable to process invitation, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
-        if gid == g['id']:
-            self.send_message('', 'accepted', "You are currently a member of the <b>%s</b> pset group <b>%s</b>.  Welcome back!" % (g['class_number'], g['group_name']))
-        else:
-            self.join(g['id'])
-            self.send_message('', 'accepted', "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (g['class_number'], g['group_name']))
-        self.update_toggle('ct', g['class_number'])
-        self.update_toggle('ht', 'partner-header')
-        log_event (self.kerb, 'accept', detail={'group_id':gid})
+        with DelayCommit(self):
+            log_event (self.kerb, 'accept', detail={'group_id': invite['group_id'], 'inviter': invite['kerb']})
+            return self._accept_invite(invite)
+
+    def approve_request(self, request_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'approve', detail={'request_id': request_id})
+            return self._approve_request(request_id)
+
+    def deny_request(self, request_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'deny', detail={'request_id': request_id})
+            return self._deny_request(request_id)
 
     def update_toggle(self, name, value):
         if not name:
@@ -705,6 +707,7 @@ class Student(UserMixin):
         year = current_year()
         term = current_term()
         class_ids = set()
+        now = datetime.datetime.now()
         for class_number in self.classes:
             query = { 'class_number': class_number, 'year': year, 'term': term}
             class_id = self._db.classes.lucky(query, projection='id')
@@ -716,7 +719,8 @@ class Student(UserMixin):
                 # make sure derived data is up to date (it should be but kerb was not getting set at one point)
                 r['class_number'], r['year'], r['term'], r['kerb'] = class_number, year, term, self.kerb
             else:
-                r = { 'class_id': class_id, 'student_id': self.id, 'year': year, 'term': term, 'class_number': class_number, 'kerb': self.kerb, 'status': 0 }
+                r = { 'class_id': class_id, 'year': year, 'term': term, 'class_number': class_number,
+                      'student_id': self.id, 'kerb': self.kerb, 'status': 0, 'status_timestamp': now }
             # if user was just added to the class (e.g. via an invitation) we may not have any class_data for it
             if class_number in self.class_data:
                 r['properties'] = self.class_data[class_number].get('properties', {})
@@ -724,6 +728,7 @@ class Student(UserMixin):
                 r['strengths'] = self.class_data[class_number].get('strengths', {})
             else: 
                 r['properties'], r['preferences'], r['strengths'] = {}, {}, {}
+                r
             if oldr:
                 if r != oldr:
                     self._db.classlist.update(oldr,r)
@@ -734,12 +739,10 @@ class Student(UserMixin):
                 self._db.classes.update({'id': class_id}, {'size': n})
                 log_event (self.kerb, 'add', detail={'class_id': class_id})
             class_ids.add(class_id)
-
         for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
             if class_id not in class_ids:
                 group_id = self._db.grouplist.lucky({'class_id': class_id, 'student_id': self.id},projection='group_id')
                 if group_id is not None:
-                    print("member of a group being dropped!")
                     class_number = self._db.classes.lucky({'id': class_id}, projection='class_number')
                     group_name = self._db.groups.lucky({'id': group_id}, projection='group_name')
                     flash_error("You were not removed from the class <b>%s</b> because you are currently a member of the pset group <b>%s</b> in that class.  Please leave the group first." % (class_number, group_name))
@@ -752,8 +755,37 @@ class Student(UserMixin):
         self._reload()
         return "Changes saved!"
 
+    def _accept_invite(self, invite):
+        sid = self._db.students.lookup(invite['kerb'], projection='id')
+        if sid is None:
+            raise ValueError("Unknown student.")
+        g = self._db.groups.lucky({'id': invite['group_id']}, projection=3)
+        if g is None:
+            raise ValueError("Group not found.")
+        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': sid}, projection="id"):
+            raise ValueError("The student who created the invitation is no longer a member of the group.")
+        if g['year'] != current_year() or g['term'] != current_term():
+            raise ValueError("This invitation is from a previous term.")
+        gid = self._db.grouplist.lucky({'class_number': g['class_number'], 'year': g['year'], 'term': g['term'], 'student_id': self.id}, projection='group_id')
+        if gid is not None:
+            if gid != g['id']:
+                raise ValueError("You are currently a mamber of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % g['class_number'])
+        if not g['class_number'] in self.classes:
+            self.classes.append(g['class_number'])
+            self.save()
+        elif self.class_data[g['class_number']]['status'] == 5:
+            raise ValueError("Unable to process invitation, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
+        if gid == g['id']:
+            self.send_message('', 'accepted', "You are currently a member of the <b>%s</b> pset group <b>%s</b>.  Welcome back!" % (g['class_number'], g['group_name']))
+        else:
+            self.join(g['id'])
+            self.send_message('', 'accepted', "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (g['class_number'], g['group_name']))
+        self.update_toggle('ct', g['class_number'])
+        self.update_toggle('ht', 'partner-header')
+        return "ok"
+
     def _join(self, group_id):
-        g = self._db.groups.lucky({'id': group_id}, projection=['class_id', 'class_number', 'year', 'term', 'group_name'])
+        g = self._db.groups.lucky({'id': group_id}, projection=3)
         if not g:
             app.logger.warning("User %s attempted to join non-existent group %s" % (self.kerb, group_id))
             raise ValueError("Group not found in database")
@@ -763,17 +795,139 @@ class Student(UserMixin):
             raise ValueError("Group not found in any of your classes for this term")
         if c in self.groups:
             app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
-            raise ValueError("You are already a mamber of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
+            raise ValueError("You are already a member of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
         if self.class_data[c]['status'] == 5:
             app.logger.warning("User %s attempted to join group %s in class %s but is currently being matched" % (self.kerb, group_id, c))
             raise ValueError("Unable to join group, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1}, resort=False)
+        return self.__join(g)
+
+    def _matchnow(self, group_id):
+        g = self._db.groups.lucky({'id': group_id}, projection=3)
+        if not g:
+            app.logger.warning("User %s attempted to join non-existent group %s" % (self.kerb, group_id))
+            raise ValueError("Group not found in database")
+        c = g['class_number']
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to join group %s in class %s not in their class list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in any of your classes for this term")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to join group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
+            raise ValueError("You are already a member of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
+        if self.class_data[c]['status'] == 5:
+            app.logger.warning("User %s attempted to join group %s in class %s but is currently being matched" % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
+        if g['visibility'] != 2:
+            app.logger.warning("User %s attempted to join group %s in class %s but the group does not allow automatic membership" % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group in <b>%s</b>, this group no longer allows automatic membership. You may be able to try again with a different group." % g['class_number'])
+        if g['max'] and g['size'] >= g['max']:
+            app.logger.warning("User %s attempted to join group %s in class %s but the group no longer has space available." % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group in <b>%s</b> as there is no longer a slot available.  You may be able to try again with a different group." % g['class_number'])
+        return self.__join(g)
+
+    def _matchasap(self, group_id):
+        g = self._db.groups.lucky({'id': group_id}, projection=3)
+        if not g:
+            app.logger.warning("User %s attempted to match non-existent group %s" % (self.kerb, group_id))
+            raise ValueError("Group not found in database")
+        c = g['class_number']
+        if not c in self.classes:
+            app.logger.warning("User %s attempted to match group %s in class %s not in their class list" % (self.kerb, group_id, c))
+            raise ValueError("Group not found in any of your classes for this term")
+        if c in self.groups:
+            app.logger.warning("User %s attempted to match group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
+            raise ValueError("You are already a member of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
+        now = datetime.datetime.now()
+        if self.class_data[c]['status'] == 5 or (self.class_data[c]['status'] == 3 and self.class_data[c]['status_timestamp'] + datetime.timedelta(days=int(1)) > now):
+            app.logger.warning("User %s attempted to match group %s in class %s but is currently being matched in that class" % (self.kerb, group_id, c))
+            raise ValueError("Unable to request match, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
+        if g['visibility'] != 1:
+            app.logger.warning("User %s attempted to match group %s in class %s but the group does not grant membership by permission" % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group in <b>%s</b>, this group no longer allows membership by permission. You may be able to try again with a different group." % g['class_number'])
+        if g['request_id']:
+            app.logger.warning("User %s attempted to match group %s in class %s but the group has not responded to a previous request" % (self.kerb, group_id, c))
+            raise ValueError("Unable to join group in <b>%s</b>, this group does not currently allows membership by permission. You may be able to try again with a different group." % g['class_number'])
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 3, 'status_timestamp': now}, resort=False)
+        r = {'timestamp': now, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb}
+        self._db.requests.insert_many([r])
+        self._db.groups.update({'id': group_id}, {'request_id': r['id']})
+        approve_link = url_for(".approve_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
+        deny_link = url_for(".deny_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
+        request_msg = permission_request .format(class_number=g['class_number'], group_name=g['group_name'], approve_link=approve_link, deny_link=deny_link)
+        self._notify_group(g['id'], "A student in %s is looking for a pset group" % g['class_number'], request_msg, '')
+        self._reload()
+        return "Sent emails requesting a match in %s.  You will be notified as soon as we receive a response (or check back in 24 hours)." % c
+
+    def _approve_request(self, request_id):
+        r = self._db.requests.lucky({'id': request_id}, projection=3)
+        if not r:
+            app.logger.warning("User %s attempted to approve non-existent request %s" %(self.kerb, request_id))
+            raise ValueError("Request not found")
+        g = self._db.groups.lucky({'id': r['group_id']}, projection=3)
+        if not g:
+            app.logger.warning("User %s attempted to approve request %s for non-existent group %s" %(self.kerb, r['id'], r['group_id']))
+            raise ValueError("Group not found")
+        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': self.id}):
+            app.logger.warning("User %s attempted to approve request %s for group %s that they no longer belong to" %(self.kerb, r['id'], r['group_id']))
+            raise ValueError("You are not a member of this group")
+        if g['request_id'] != r['id']:
+            return "This request has already been handled by you or another group member, but thanks for responding!"
+        s = self._db.classlist.lucky({'class_id': g['class_id'], 'student_id': r['student_id']})
+        if not s or s['status'] not in [2,3]:
+            return "It appears the student requesting permission is no longer looking for a partner, but thanks for responding!"
+        s = self._db.students.lucky({'id': r['student_id']})
+        assert s
+        now = datetime.datetime.now()
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 1, 'status_timestamp': now})
+        self._db.grouplist.insert_many([{'class_id': g['class_id'], 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'],
+                                         'group_id': g['id'], 'student_id': r['student_id'], 'kerb': r['kerb']}])        
+        self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None})
+        hello_msg1 = "%s has joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], g['class_number'])
+        hello_msg2 = "<br>You can contact your new partner at %s." % email_address(s)
+        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
+        self.send_message('', 'approved', hello_msg1)
+        send_message('', r['kerb'], 'approved', "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (g['class_number'], g['group_name']))
+        self.update_toggle('ct', g['class_number'])
+        self.update_toggle('ht', 'partner-header')
+        self._reload()
+        return "Thanks for responding!"
+
+    def _deny_request(self, request_id):
+        r = self._db.requests.lucky({'id': request_id}, projection=3)
+        if not r:
+            app.logger.warning("User %s attempted to approve non-existent request %s" %(self.kerb, request_id))
+            raise ValueError("Request not found")
+        g = self._db.groups.lucky({'id': r['group_id']}, projection=3)
+        if not g:
+            app.logger.warning("User %s attempted to deny request %s for non-existent group %s" %(self.kerb, r['id'], r['group_id']))
+            raise ValueError("Group not found")
+        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': self.id}):
+            app.logger.warning("User %s attempted to deny request %s for group %s that they no longer belong to" %(self.kerb, r['id'], r['group_id']))
+            raise ValueError("You are not a member of this group")
+        if g['request_id'] != r['id']:
+            return "This request has already been handled by you or another group member, but thanks for responding!"
+        now = datetime.datetime.now()
+        self._db.groups.update({'id': r['group_id'], 'request_id': r['id'], 'visibility': 1}, {'request_id': None, 'visibility': 0})
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 0, 'status_timestamp': now})
+        notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], g['class_number'])
+        self._notify_group(g['id'], "pset partner notification", notify_msg, notify_msg)
+        notify_msg = "The group in %s we contacted on your behalf is no longer accepting new members.  Check your partner options for that class to see if other groups have open slots." % g['class_number']
+        send_message('', r['kerb'], 'denied', notify_msg)
+        send_email([email_address(r)], "pset patner notification", notify_msg + signature)
+        self.update_toggle('ct', g['class_number'])
+        self.update_toggle('ht', 'partner-header')
+        self._reload()
+        return "Thanks for responding!"
+
+    def __join(self, g):
+        now = datetime.datetime.now()
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1, 'status_timestamp': now}, resort=False)
         r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
-        r['group_id'], r['student_id'], r['kerb'] = group_id, self.id, self.kerb
+        r['group_id'], r['student_id'], r['kerb'] = g['id'], self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         # note that size of group will be updated by _notify_group
-        self._notify_group(group_id, "Say hello to your new pset partner!",
-                           "%s has joined your pset group %s in %s!<br>You can contact your new partner at %s." % (self.pretty_name, g['group_name'], g['class_number'], self.email_address))
+        hello_msg1 = "%s has joined your pset group <b>%s</b> in <b>%s</b>!" % (self.pretty_name, g['group_name'], g['class_number'])
+        hello_msg2 = "<br>You can contact your new partner at %s." % self.email_address
+        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
         self._reload()
         return "Welcome to <b>%s</b>!" % g['group_name']
 
@@ -789,18 +943,19 @@ class Student(UserMixin):
         if not c in self.groups:
             app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, c))
             raise ValueError("Group not found in your list of groups for this term.")
+        now = datetime.datetime.now()
         r = self._db.grouplist.lucky({'group_id': group_id, 'student_id': self.id})
         self._db.grouplistleft.insert_many([r], resort=False)
         self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id}, resort=False)
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0}, resort=False)
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0, 'status_timestamp': now}, resort=False)
         msg = "You have been removed from the group <b>%s</b> in <b>%s</b>." % (g['group_name'], c)
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
             self._db.groups.delete({'id': group_id}, resort=False)
-            msg += " You were the only member of this group, so it has been disbanded."
+            msg += " You were the only member, so the group was disbanded."
         else:
             # note that size of group will be updated by _notify_group
-            self._notify_group(group_id, "pset partner notification",
-                           "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number']))
+            leave_msg = "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number'])
+            self._notify_group(group_id, "pset partner notification", leave_msg, leave_msg)
         self._reload()
         return msg
 
@@ -819,11 +974,9 @@ class Student(UserMixin):
             app.logger.warning("User %s attempted to join the pool for class %s but is currently being matched" % (self.kerb, c))
             raise ValueError("Unable to join pool, you are currently in the process of being matched in <b>%s</b>." % c)
         d = next_match_date(class_id)
-        if self.class_data[c]['status'] == 4:
-            msg = "We are already working on an urgent match for you in %s and have sent emails to a number of groups. If none respond we will put you in the <b>%s</b> match pool." % (c,d)
-        else:
-            msg = "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2}, resort=False)
+        msg = "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(c, d)
+        now = datetime.datetime.now()
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2, 'status_timestamp': now}, resort=False)
         self._reload()
         return msg
 
@@ -846,25 +999,10 @@ class Student(UserMixin):
             raise ValueError("You are and not in the match pool for %s." % c)
         d = next_match_date(class_id)
         msg = "You have been removed from the match pool for <b>%s</b> on <b>%s</b>." %(c, d)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 0}, resort=False)
+        now = datetime.datetime.now()
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 0, 'status_timestamp': now}, resort=False)
         self._reload()
         return msg
-
-    def _match(self, class_id):
-        c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
-        if not c:
-            raise ValueError("Class not found in database.")
-        if not c in self.classes:
-            app.logger.warning("User %s attempted to join the pool for class %s not in their class list" % (self.kerb, class_id))
-            raise ValueError("Class not found in your list of classes for this term.")
-        if c in self.groups:
-            app.logger.warning("User %s requested a match for class %s but is already a member of group %s in that class" % (self.kerb, class_id, self.group_data[c]['id']))
-            raise ValueError("You are currrently a member of the group %s in %s, you must leave that group before requesting a match." % (self.group_data[c]['group_name'], c))
-        if self.class_data[c]['status'] >= 3:
-            return "We are already working on a match for you in %s, please be patient." % c
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 3}, resort=False)
-        self._reload()
-        return "We will start working on a match for you in <b>%s</b>, you should receive an email from us within 24 hours." % c
 
     def _create_group(self, class_id, options=None, public=True):
         c = self._db.classlist.lucky({'class_id': class_id, 'student_id': self.id}, projection="class_number")
@@ -894,7 +1032,8 @@ class Student(UserMixin):
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1})
+        now = datetime.datetime.now()
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1, 'status_timestamp': now})
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
 
@@ -922,35 +1061,52 @@ class Student(UserMixin):
         limit = max_size_from_prefs(prefs)
         if any([g['visibility'] != visibility, g['editors'] != editors, g['preferences'] != prefs]):
             self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': limit}, resort=False)
-            self._notify_group(group_id, "pset partner notification",
-                               "%s updated the settings for the pset group %s in %s." % (self.preferred_name, g['group_name'], g['class_number']))
+            notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], g['class_number'])
+            self._notify_group(group_id, "pset partner notification", notify_msg, notify_msg)
             self._reload()
             return "Updated the group <b>%s</b>!" % g['group_name']
         else:
             return "No changes made."
 
-    def _notify_group(self, group_id, subject, message):
+    def _notify_group(self, group_id, subject, email_message, announce_message):
         """ Notifies members of group other than self and updates group size (so must be called for leave/join!) """
         S = list(students_in_group(group_id,projection=["kerb", "email"]))
         T = [s for s in S if s['kerb'] != self.kerb]
         self._db.groups.update({'id': group_id}, {'size': len(S)}, resort=False)
         if not T:
             return
-        self._db.messages.insert_many([{'type': 'notify', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in T], resort=False)
-        send_email([email_address(s) for s in T], subject, message + signature)
+        if announce_message:
+            self._db.messages.insert_many([{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in T], resort=False)
+        if email_message:
+            send_email([email_address(s) for s in T], subject, email_message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
-        classes = self._db.classlist.search({ 'student_id': self.id, 'year': year, 'term': term},
-            projection=['class_id', 'class_number', 'properties', 'preferences', 'strengths', 'status'],
-            )
+        classes = self._db.classlist.search({ 'student_id': self.id, 'year': year, 'term': term})
+        now = datetime.datetime.now()
         for r in classes:
             # we could also group instructor names and match_dates from classes, but not necessary right now
             r['id'] = r['class_id'] # just so we don't get confused
             r['next_match_date'] = next_match_date(r['class_id'])
-            if not r['preferences']:
-                r['preferences'] = self.preferences
-                r['strengths'] = self.strengths
+            # timeout expired request status
+            if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=int(1)) < now:
+                r['status'] = 0
+            if r['status'] in [0,2]:
+                # Suggest matches for groups with relative compatibility > -162
+                candidates = [g for g in rank_groups(r['class_id'], self.kerb) if g[1] >= 1 and g[2] >= -162]
+                suggest = [g for g in candidates if g[1] == 1]
+                if suggest:
+                    r['permission_match'] = suggest[0][0]
+                    # print("permission match: %s" % r['permission_match'])
+                suggest = [g for g in candidates if g[1] == 2]
+                if suggest:
+                    r['automatic_match'] = suggest[0][0]
+                    # print("automatic match: %s" % r['automatic_match'])
+                suggest = [g for g in candidates if g[1] == 3]
+                if suggest:
+                    r['public_match'] = suggest[0][0]
+                    # print("public match: %s" % r['public_match'])
+
             class_data[r["class_number"]] = r
         return class_data
 

@@ -4,6 +4,13 @@ from collections import defaultdict
 from math import sqrt, floor
 from functools import lru_cache
 
+# cols from student table relevant to matching
+student_properties = ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments", "timezone"]
+
+# preferences relevent to matching other than size
+affinities = ["gender_affinity", "confidence_affinity", "commitment_affinity", "departments_affinity", "year_affinity"]
+styles = ["forum", "start", "style"]
+
 class MatchError(ValueError):
     pass
 
@@ -183,7 +190,7 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
     Creates groups for all classes in a given year and term.
     """
     db = getdb(forcelive)
-    student_data = {rec["id"]: {key: rec.get(key) for key in ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments", "timezone"]} for rec in db.students.search(projection=3)}
+    student_data = {rec["id"]: {key: rec.get(key) for key in student_properties} for rec in db.students.search(projection=3)}
     clsid = clsrec["id"]
     to_match = {}
     # Status:
@@ -271,9 +278,71 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
         gset = set(groups.values())
         return [[S.kerb for S in group.students] for group in gset], removed
 
-affinities = ["gender", "confidence_affinity", "commitment_affinity", "departments_affinity", "year_affinity"]
-styles = ["forum", "start", "style"]
+# TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
+def size_pref_from_size(size):
+    if size <= 2:
+        return '2'
+    if size <= 4:
+        return '3'
+    if size <= 8:
+        return '5'
+    return 9
 
+def group_member (db, class_id, kerb, g=None):
+    """
+    Create a student object for a student in the group g (where g is a dictionary from db.groups.search).
+    The students preferences are updated to reflect the groups preferences when specified, as well as its current size
+    """
+    student_data = db.students.lookup(kerb, student_properties)
+    rec = db.classlist.lucky({"class_id": class_id, 'kerb': kerb}, ["properties", "preferences", "strengths"])
+    if not rec:
+        return None
+    properties = dict(rec["properties"])
+    properties.update(student_data)
+    if g:
+        for k in styles + ['size']:
+            if k in g['preferences']:
+                if k not in rec['preferences']:
+                    rec['strengths'][k] = 3
+                elif rec['preferences'][k] != g['preferences'][k]:
+                    rec['strengths'][k] = 1 # if student actually preferred something other than the group preference, make the strength weak
+                rec['preferences'][k] = g['preferences'][k]
+    return Student(properties, rec['preferences'], rec['strengths'])
+
+def rank_groups (class_id, kerb, forcelive=False):
+    """
+    Given a class and a student, returns a list of groups that could accomodate the student ranked by relative compatibility,
+    where relative compatibility is the change in compatibility score for the group that results form adding the student.
+    returns a list of triples (group_id, visibility, relative compatibility)
+
+    Groups with visibility=0 or size=max are excluded, as are groups the student previously left, but public groups are included.
+    This is only for the purpose of informing the student, students should never by put into a public group by the system.
+
+    Because we are dealing with existing groups rather than forming new ones we override student preferences for start/style/forum/size
+    with whatever the group preferences if specified, since they presumably agreed to them (but we adjust the strength based on
+    the students preferences for the class).  In addition, if the group has no preferred size we will make it 1 larger than it is now
+    (this is needed to make sure it conflicts with prospective students who want a different size).
+    """
+
+    db = getdb(forcelive)
+    res = []
+    G = [g for g in db.groups.search({'class_id': class_id, 'visibility': {'$gte': 1}, 'request_id': None}, projection=['id','group_name','visibility','size','max', 'preferences']) if
+         g['max'] is None or g['size'] < g['max']] # TODO write a SQL query to handle the size filter
+    G = [g for g in G if not db.grouplistleft.lucky({'group_id': g['id'], 'kerb': kerb}, projection='id')]
+    student = group_member(db, class_id, kerb)
+    for g in G:
+        if not 'size' in g['preferences']:
+            g['preferences']['size'] = size_pref_from_size(g['size']+1) # default is to prefer to be 1 larger than we are
+        # We expect the student is not already in a group in this class, but we may as well handle this case
+        students = [group_member(db, class_id, k, g) for k in db.grouplist.search({'group_id': g['id']}, projection='kerb') if k != kerb]
+        if not students:
+            continue
+        if len(students) == 1: # compatibility of a 1-student group is not really well-defined, treat as 0
+            delta = Group(students + [student]).compatibility()
+        else:
+            delta = Group(students + [student]).compatibility() - Group(students).compatibility()
+        res.append((g['id'], g['visibility'], delta))
+    return sorted(res, key=lambda x: x[2], reverse=True)
 
 class Student(object):
     def __init__(self, properties, preferences, strengths):
@@ -369,7 +438,7 @@ class Student(object):
             elif pref == '9':
                 satisfied = (9 <= len(G))
             if satisfied:
-                return (len(G) - 1) * 3**s
+                return 3**s
             elif s == 5:
                 return -10**6
             else:
@@ -383,7 +452,7 @@ class Student(object):
                 satisfied = any(check(T) for T in others)
             if satisfied:
                 # scale for appropriate comparison with other qualities
-                return (len(G) - 1) * 3**s
+                return 3**s
             elif s == 5:
                 return -10**6
             else:
@@ -404,6 +473,7 @@ class Student(object):
 
 class Group(object):
     def __init__(self, students):
+        """ Creates an instance of Group from a list of instances of Student (which should all be in the same class) """
         self.students = students
 
     def by_id(self, n):
@@ -433,6 +503,14 @@ class Group(object):
         return sum(all(available) for available in zip(*hour_data))
 
     @lru_cache(2)
+    def secondary_schedule_score(self):
+        n = len(self.students)
+        if n < 3:
+            return 0
+        hour_data = [[S.hours for S in self.students[:i]+self.students[i+1:]] for i in range(n)]
+        return round(sum([sum(all(available) for available in zip(*hour_data[i])) for i in range(n)]) / n)
+
+    @lru_cache(2)
     def schedule_score(self):
         """
         Score based on how much overlap there is in the hours scheduled
@@ -447,11 +525,15 @@ class Group(object):
 
     @lru_cache(10)
     def contribution(self, student):
-        return sum(student.score(q, self) for q in affinities + styles)
+        return sum(student.score(q, self) for q in affinities + styles + ['size'])
 
     @lru_cache(2)
     def compatibility(self):
-        return sum(self.contribution(student) for student in self.students) + self.schedule_score()
+        # note that we don't want to average primary and secondary scores we want to sum them
+        # averaging will potentially make a horrible primary score half as bad and we don't want to do that (especially when computing deltas)
+        # this potentially favors groups of size 3 over groups of size 2 (which have no secondary score), but that's OK
+        schedule_score = self.schedule_score() if len(self.students) < 3 else (self.schedule_score() + self.secondary_schedule_score())
+        return sum(self.contribution(student) for student in self.students) + schedule_score
 
     def evaluate_swap(self, thisid, otherid, othergrp):
         if self == othergrp:

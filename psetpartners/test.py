@@ -38,7 +38,15 @@ def populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
     from . import db
     mydb = db
 
+    choice = input("Are you sure? This will destroy the existing test database? [y/n] ").lower()
+    if not choice or choice[0] != 'y':
+        print("No changes made.")
+        return
+
     with DelayCommit(mydb):
+        # copy classes from live 
+        mydb.test_classes.delete({}, resort=False)
+        mydb.test_classes.insert_many(list(db.classes.search({'year': current_year(), 'term': current_term()}, projection=3)), resort=False)
         _populate_sandbox(num_students, max_classes, prefprob)
         db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
     print("Done!")
@@ -66,23 +74,21 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
             else:
                 return 1 if randint(0,1) else 5
 
-    choice = input("Are you sure? This will destroy the existing test database? [y/n] ").lower()
-    if not choice or choice[0] != 'y':
-        print("No changes made.")
-        return
-
     npref = prefprob-1 if prefprob > 1 else 1
     db = getdb() # we will still explicitly reference test_ tables just to be doubly sure we don't wipe out the production DB
-
     db.test_events.delete({}, resort=False)
     db.test_messages.delete({}, resort=False)
+    db.test_requests.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
+    db.test_instructors.delete({}, resort=False)
     db.test_groups.delete({}, resort=False)
     db.test_classlist.delete({}, resort=False)
     db.test_grouplist.delete({}, resort=False)
-    print("Deleted all records in test_students, test_groups, test_classlist, and test_grouplist.")
+    print("Deleted all records in test database.")
     year, term = current_year(), current_term()
+    # copy classes from live db
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
+    now = datetime.datetime.now()
     S = []
     names = set()
     for n in range(num_students):
@@ -196,7 +202,7 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
                     prefs[pa] = rand(student_preferences[pa])[0]
                     strengths[pa] = randint(1,5)
             c = { 'class_id': classes[i]['id'], 'student_id': student_id, 'kerb': s['kerb'], 'class_number': classes[i]['class_number'],
-                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props, 'status': 0 }
+                  'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props, 'status': 0, 'status_timestamp': now }
             S.append(c)
     db.test_classlist.insert_many(S, resort=False)
     S = []
@@ -239,27 +245,28 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
             n = 0
             for k in eds:
                 sid = db.test_students.lookup(k,projection="id")
-                # make creator didn't leave to join another group
+                # make sure creator didn't leave to join another group
                 if db.test_classlist.lucky({'class_id': cid, 'student_id': sid},projection='status'):
-                    db.test_groups.update({'id':gid},{'editors':[]})
+                    db.test_groups.update({'id':gid},{'editors':[]}, resort=False)
                     continue
                 S.append({'class_id': cid, 'student_id': sid, 'kerb': k, 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 n += 1
-                db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1}, resort=False)
+                db.test_classlist.update({'class_id': cid, 'student_id': sid}, {'status': 1, 'status_timestamp': now}, resort=False)
             while True:
                 if g['max'] and n >= g['max']:
                     break
                 s = rand(list(db.test_classlist.search({'class_id': cid, 'status': 0},projection=["student_id", "kerb"])))
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 n += 1
-                db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1}, resort=False)
+                db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1, 'status_timestamp': now}, resort=False)
                 if randint(0,n-1):
                     break
+            db.test_groups.update({'id': g['id']}, {'size': n}, resort=False)
         db.test_grouplist.insert_many(S, resort=False)
     # put most of the students not already in a group into the pool
     for s in db.test_classlist.search(projection=["id","status"]):
         if s['status'] == 0 and randint(0,9):
-            db.test_classlist.update({'id':s['id']},{'status':2}, resort=False)
+            db.test_classlist.update({'id':s['id']},{'status':2, 'status_timestamp': now}, resort=False)
 
     # take instructors from classes table for current term
     S = []
