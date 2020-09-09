@@ -160,7 +160,7 @@ def date_and_daytimes_to_times(date, s, tz):
 
 def naive_utcoffset(tz):
     if isinstance(tz, str):
-        if tz == DEFAULT_TIMEZONE_NAME or not tz:
+        if tz == DEFAULT_TIMEZONE_NAME:
             tz = DEFAULT_TIMEZONE
         tz = pytz.timezone(tz)
     for h in range(10):
@@ -213,6 +213,9 @@ def format_input_errmsg(err, inp, col):
 
 def flash_info(msg):
     flash(msg, "info")
+
+def flash_notify(msg):
+    flash(msg, "notify")
 
 def flash_instruct(msg):
     flash(msg, "instruct")

@@ -170,13 +170,14 @@ function makeURLtester(id, test_id, test_anchor, errmsg) {
 
 function flashTop(msg, category) {
   const p = document.createElement('p'), pt = document.createTextNode(msg);
-  const l = document.createElement('l'), lt = document.createTextNode(' [ok]');
+  const l = document.createElement('l'), lt = document.createTextNode(category=='error' ? ' [dismiss]' : ' [ok]');
   p.classList.add('flash-'+category); p.appendChild(pt); p.appendChild(l);
   l.classList.add('flash-after'); l.appendChild(lt);  l.onclick = function(e) { p.remove(); };
   document.getElementById('flash-top').appendChild(p);
 }
 function flashAnnounce(msg) { flashTop(msg, 'announce'); }
 function flashInstruct(msg) { flashTop(msg, 'instruct'); }
+function flashNotify(msg) { flashTop(msg, 'notify'); }
 function flashError(msg) { flashTop(msg, 'error'); }
 
 // TODO: We currently display only one bottom messages of each type at a time, fix this
@@ -192,7 +193,7 @@ function flashInfo(msg) {
     flashInfo.p.firstChild.textContent=msg;
     jQuery(flashInfo.p).show();
   }
-  jQuery(flashInfo.p).fadeOut(3000);
+  jQuery(flashInfo.p).fadeOut(6000);
 }
 
 function flashWarning(msg) {
@@ -205,7 +206,7 @@ function flashWarning(msg) {
     flashWarning.p.firstChild.textContent=msg;
     jQuery(flashWarning.p).show();
   }
-  jQuery(flashWarning.p).fadeOut(3000);
+  jQuery(flashWarning.p).fadeOut(6000);
 }
 
 function flashCancel(msg) {
@@ -218,7 +219,7 @@ function flashCancel(msg) {
     flashCancel.p.firstChild.textContent=msg;
     jQuery(flashCancel.p).show();
   }
-  jQuery(flashCancel.p).fadeOut(3000);
+  jQuery(flashCancel.p).fadeOut(6000);
 }
 
 window.Clipboard = (function(window, document, navigator) {
