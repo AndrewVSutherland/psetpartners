@@ -549,9 +549,9 @@ function partneredActionButtons1(c, gid, edit) {
   return btab;
 }
 
-function partneredActionButtons2(c, gid, emails) {
+function partneredActionButtons2(c, gid, emails, show_invite_link) {
   let btab = '<table class="btab">\n<tbody><tr>';
-  btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
+  if ( show_invite_link ) btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
   btab += `<td><label class="paction"><a href="mailto:${emails}?subject=${c} pset group">email group</a></label>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
@@ -583,7 +583,7 @@ function setPartnerPanes() {
       const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
       const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
       $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
-      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(',')));
+      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(','), g.members.length < g.max));
       continue;
     }
     const cdata = classData[c];
