@@ -229,7 +229,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         </tr></tbody></table>
     </div>
       <table class="ctab"><tbody><tr>
-        <td><button type="button" class="confirm" id="partner-confirm-button" value='' onclick="submitStudentForm(this.value);"></button></td>
+        <td><button type="button" class="confirm" id="partner-confirm-button" value='' onclick="submitStudentForm(this.value,this);"></button></td>
         <td><button type="button" class="submit" id="partner-cancel-button" onclick="hideConfirm();">nevermind</button></td>
       </tr></tbody></table>
     </div>
@@ -241,8 +241,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
   <div style="display:inline-block;">
   <table class="submit">
     <tr>
-      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save');" disabled tabindex="40">save</button></td>
-      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel');" disabled tabindex="41">reset</button></td>
+      <td><button type="button" class="submit default" id="save" onclick="submitStudentForm('save',this);" disabled tabindex="40">save</button></td>
+      <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel',this);" disabled tabindex="41">reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
       <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
     </tr>
@@ -1037,8 +1037,10 @@ function resetAffinityPrefs () {
 
 var submitting = false;
 
-function submitStudentForm(value) {
+function submitStudentForm(value, e) {
   submitting = true;
+  $('.confirm,.submit').prop('disabled',true);//prop('disabled',true); // prevent double-clicking
+  e.style.color='black'; e.style.cursor='auto';
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   $('input[name="ctx-submit"]').val(value);
   // clear the names of inputs we don't need to send back
