@@ -181,34 +181,59 @@ def loginas(kerb):
                 session['displayname'] = data['full_name']
     displayname = session['displayname']
     user = Instructor(kerb, displayname) if is_instructor(kerb) else Student(kerb, displayname)
-    session["kerb"] = kerb
-    session["affiliation"] = "student" if user.is_student else "staff"
+    session['kerb'] = kerb
+    session['affiliation'] = "student" if user.is_student else "staff"
     login_user(user, remember=False)
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
-@app.route("/admin/<class_number>")
 @login_required
-def admin(class_number):
-    from .dbwrapper import getdb
+@app.route("/admin")
+@app.route("/admin/<class_number>")
+@app.route("/admin/<class_number>/<forcelive>")
+@login_required
+def admin(class_number='',forcelive=''):
+    from .dbwrapper import getdb, students_groups_in_class
+    from .student import student_row, student_row_cols
     from .utils import current_term, current_year
 
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
-        app.logger.critical("Unauthorized admin/%s attempted by %s." % (class_number, current_user.kerb))
+        app.logger.critical("Unauthorized access to admin/%s attempted by %s." % (class_number, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
-    db = getdb()
-    c = db.classes.lucky({'class_number': class_number, 'year': current_year(), 'term': current_term()})
-    if not c:
-        return render_template("404.html", message="Class %s not found for the current term" % class_number)
-    user = Instructor(c['instructor_kerbs'][0], c['instructor_names'][0])
-    return render_template(
-        "instructor.html",
-        options=template_options(),
-        maxlength=maxlength,
-        ctx=session.pop("ctx",""),
-        user=user,
-    )
+    if class_number == 'live':
+        class_number = ''
+        forcelive = 'live'
+    forcelive = True if forcelive=='live' else False 
+    db = getdb(forcelive)
+    user = Instructor(session['kerb'], session['displayname'])
+    if not class_number:
+        classes=[''] + list(db.classes.search({'year': current_year(), 'term': current_term()},projection='class_number'))
+        return render_template(
+            "admin.html",
+            options=template_options(),
+            maxlength=maxlength,
+            ctx=session.pop("ctx",""),
+            counts=get_counts(classes,opts=['status', 'visibility'],forcelive=forcelive),
+            user=user,
+            forcelive=forcelive,
+        )
+    else:
+        classes = list(db.classes.search({'class_number': class_number, 'year': current_year(), 'term': current_term()},projection=3))
+        if not classes:
+            return render_template("404.html", message="Class %s not found for the current term" % class_number)
+        for c in classes:
+            c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols, forcelive=forcelive)])
+            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+        return render_template(
+            "instructor.html",
+            options=template_options(),
+            maxlength=maxlength,
+            ctx=session.pop("ctx",""),
+            classes=classes,
+            user=user,
+            forcelive=forcelive,
+        )
 
 @app.route("/environ")
 def environ():
@@ -284,8 +309,8 @@ def testenviron():
     r = ["%s = %s" %(k, request.environ[k]) for k in request.environ]
     return '<br>'.join(r)
 
-allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence"]
-allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "max"]
+allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence", "status"]
+allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "size", "max"]
 
 
 @app.route("/_acknowledge")

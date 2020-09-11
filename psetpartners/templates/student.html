@@ -1017,14 +1017,11 @@ function updateHoursCompatible(e) {
 
 function checkChanges(e) {
   if ( ! e.target.name ) return;
-  console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
+  //console.log (e.target.name + ' changed to ' + (e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   const change = $('#student').serialize() != $('#student').data('initial');
   $('#student button.submit').prop('disabled',!change);
   showSaveErrorMessage();
-  console.log("change = "+change);
-  console.log("pending = "+pending);
   if ( change != pending ) { pending = change; setPartnerPanes(); }
-  console.log("pending = "+pending);
   if ( studentAffinities.find(x => x === e.target.name) || studentClassAffinities.find(x => x === e.target.name.split('-')[0]) )
     showAffinityPreferences();
   if ( (e.target.name.startsWith('pref') || e.target.name.startsWith('spref')) && e.target.name.split('-')[2] == '0' )  showApplyPreferences();
@@ -1038,9 +1035,10 @@ function resetAffinityPrefs () {
 var submitting = false;
 
 function submitStudentForm(value, e) {
+  if (submitting) return;
   submitting = true;
   $('.confirm,.submit').prop('disabled',true);//prop('disabled',true); // prevent double-clicking
-  e.style.color='black'; e.style.cursor='auto';
+  e.style.color='black'; e.style.cursor='wait';
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   $('input[name="ctx-submit"]').val(value);
   // clear the names of inputs we don't need to send back

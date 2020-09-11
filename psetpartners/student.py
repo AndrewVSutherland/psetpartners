@@ -335,6 +335,9 @@ def student_counts(iter, opts):
         hours = [0 for i in range(168)]
     if count_departments:
         departments = {}
+    count_status = 'status' in opts
+    if count_status:
+        status = {}
     pref_opts = [ opt for opt in counts if opt in student_preferences ]
     prop_opts = [ opt for opt in counts if opt in student_class_properties ]
     base_opts = [ opt for opt in counts if opt not in pref_opts and opt not in prop_opts ]
@@ -356,13 +359,28 @@ def student_counts(iter, opts):
         if count_departments:
             for dept in r.get('departments',[]):
                 departments[dept] = departments[dept]+1 if dept in departments else 1
+        if count_status:
+            val = r.get('status',0)
+            status[val] = status[val]+1 if val in status else 1
         n += 1
     if count_hours:
         counts['hours'] = hours
     if count_departments:
         counts['departments'] = departments
+    if count_status:
+        counts['status'] = status
     counts["students"] = n
     return counts
+
+def student_visibility_counts(iter):
+    """
+    Returns students counts within a class according to status and group visibility
+    """
+    vcounts = {}
+    for g in iter:
+        v = g['visibility']
+        vcounts[v] = vcounts[v]+g['size'] if v in vcounts else g['size']
+    return vcounts
 
 def group_visibility_counts(class_number, year=current_year(), term=current_term(), forcelive=False):
     """ 
@@ -395,19 +413,21 @@ def get_counts(classes, opts, year=current_year(), term=current_term(), forceliv
     counts = {}
     if '' in classes:
         counts[''] = student_counts(db.students.search(), opts)
-        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term})
-        counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
-        counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
-        counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term})
-        counts['']['visibility'], counts['']['capacity'] = group_visibility_counts('')
+        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term}, forcelive=forcelive)
+        counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term}, forcelive=forcelive)
+        counts['']['groups'] = count_rows('groups', {'year': year, 'term': term}, forcelive=forcelive)
+        counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term}, forcelive=forcelive)
+        counts['']['visibility'], counts['']['capacity'] = group_visibility_counts('', forcelive=forcelive)
+        counts['']['students_visibility'] = student_visibility_counts(db.groups.search({'year': year, 'term': term}, projection=["size", "visibility"]))
     for c in classes:
         if c:
             cid = db.classes.lucky({'class_number': c, 'year': year, 'term': term}, projection="id")
-            counts[c] = student_counts(students_in_class(cid), opts)
-            counts[c]['groups'] = count_rows('groups',{'class_id': cid})
-            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid})
+            counts[c] = student_counts(students_in_class(cid, forcelive=forcelive), opts)
+            counts[c]['groups'] = count_rows('groups',{'class_id': cid}, forcelive=forcelive)
+            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid}, forcelive=forcelive)
             counts[c]['next_match_date'] = next_match_date(cid)
-            counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
+            counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term, forcelive=forcelive)
+            counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': cid}, projection=["size", "visibility"]))
             counts[c]['class_id'] = cid
     return counts
 
@@ -878,7 +898,7 @@ class Student(UserMixin):
         self._db.grouplist.insert_many([{'class_id': g['class_id'], 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'],
                                          'group_id': g['id'], 'student_id': r['student_id'], 'kerb': r['kerb']}])        
         self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None})
-        hello_msg1 = "%s has joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], g['class_number'])
+        hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], g['class_number'])
         hello_msg2 = "<br>You can contact your new partner at %s." % email_address(s)
         self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
         self.send_message('', 'approved', hello_msg1)
@@ -922,7 +942,7 @@ class Student(UserMixin):
         r['group_id'], r['student_id'], r['kerb'] = g['id'], self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         # note that size of group will be updated by _notify_group
-        hello_msg1 = "%s has joined your pset group <b>%s</b> in <b>%s</b>!" % (self.pretty_name, g['group_name'], g['class_number'])
+        hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (self.pretty_name, g['group_name'], g['class_number'])
         hello_msg2 = "<br>You can contact your new partner at %s." % self.email_address
         self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
         self._reload()
@@ -951,7 +971,7 @@ class Student(UserMixin):
             msg += " You were the only member, so the group was disbanded."
         else:
             # note that size of group will be updated by _notify_group
-            leave_msg = "%s (kerb=%s) has left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number'])
+            leave_msg = "%s (kerb=%s) left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number'])
             self._notify_group(group_id, "pset partner notification", leave_msg, leave_msg)
         self._reload()
         return msg
