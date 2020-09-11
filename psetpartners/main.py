@@ -161,6 +161,8 @@ def login():
         (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor,current_user.full_name))
     if next:
         return redirect(next)
+    if current_user.is_admin:
+        return redirect(url_for(".admin"))
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @app.route("/loginas/<kerb>")
@@ -189,9 +191,8 @@ def loginas(kerb):
 @login_required
 @app.route("/admin")
 @app.route("/admin/<class_number>")
-@app.route("/admin/<class_number>/<forcelive>")
 @login_required
-def admin(class_number='',forcelive=''):
+def admin(class_number=''):
     from .dbwrapper import getdb, students_groups_in_class
     from .student import student_row, student_row_cols
     from .utils import current_term, current_year
@@ -201,11 +202,7 @@ def admin(class_number='',forcelive=''):
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
-    if class_number == 'live':
-        class_number = ''
-        forcelive = 'live'
-    forcelive = True if forcelive=='live' else False 
-    db = getdb(forcelive)
+    db = getdb()
     user = Instructor(session['kerb'], session['displayname'])
     if not class_number:
         classes=[''] + list(db.classes.search({'year': current_year(), 'term': current_term()},projection='class_number'))
@@ -214,16 +211,15 @@ def admin(class_number='',forcelive=''):
             options=template_options(),
             maxlength=maxlength,
             ctx=session.pop("ctx",""),
-            counts=get_counts(classes,opts=['status', 'visibility'],forcelive=forcelive),
+            counts=get_counts(classes,opts=['status', 'visibility']),
             user=user,
-            forcelive=forcelive,
         )
     else:
         classes = list(db.classes.search({'class_number': class_number, 'year': current_year(), 'term': current_term()},projection=3))
         if not classes:
             return render_template("404.html", message="Class %s not found for the current term" % class_number)
         for c in classes:
-            c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols, forcelive=forcelive)])
+            c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
         return render_template(
             "instructor.html",
@@ -232,7 +228,6 @@ def admin(class_number='',forcelive=''):
             ctx=session.pop("ctx",""),
             classes=classes,
             user=user,
-            forcelive=forcelive,
         )
 
 @app.route("/environ")
@@ -246,6 +241,8 @@ def index():
         if current_user.is_student:
             return redirect(url_for(".student"))
         elif current_user.is_instructor:
+            if current_user.is_admin:
+                return redirect(url_for(".admin"))
             return redirect(url_for(".instructor"))
         else:
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        

@@ -13,7 +13,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% if user.is_admin %}
 
-<p style="font-size:120%;"><b>{{classes[0].class_number}}</b> {{', '.join(classes[0].instructor_names)}} <a style="float:right; font-size:16px;" href="{{url_for('.admin') + ('/live' if forcelive else '')}}">return</a></p>
+<p style="font-size:120%;"><b>{{classes[0].class_number}}</b> {{', '.join(classes[0].instructor_names)}} <a style="float:right; font-size:16px;" href="{{url_for('.admin') + ('/live' if forcelive else '')}}">index</a></p>
 
 
 {% else %}
