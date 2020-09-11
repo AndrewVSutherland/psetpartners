@@ -3,15 +3,22 @@
 
 {% block content %}
 
-{% if not user.is_authenticated %}
+{% if not user.is_authenticated or not user.is_instructor %}
 
-<h3>User "{{user.kerb}}" not authenticated.</h3>
+<h3>User "{{user.kerb}}" is not authorized to access this page.</h3>
 
 This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a>.
 
 {% else %}
 
-<h2>{{user.preferred_name}}</h2>
+{% if user.is_admin %}
+
+<p style="font-size:120%;"><b>{{classes[0].class_number}}</b> {{', '.join(classes[0].instructor_names)}} <a style="float:right; font-size:16px;" href="{{url_for('.admin') + ('/live' if forcelive else '')}}">index</a></p>
+
+
+{% else %}
+
+<h3>{{user.preferred_name}}</h3>
 
 {% if (user.classes|length) == 0 %}
 <p>You do not have access to this site because Touchstone has not identified you as a student and you are not listed as an instructor of one of the classes using the site this term.  For the {{current_term_pretty}} term only classes in course 18 are using pset partners.</p>
@@ -20,6 +27,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 If you are an instructor or staff member outside of course 18 interested in using pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.  We plan to expand the site beyond course 18 in the spring.
 </p>
 {% else %}
+
 {% if (user.classes|length) == 1 %}
 <p align="justify">According to our records, you are teaching <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b>.</p>
 {% else %}
@@ -31,33 +39,32 @@ If you are an instructor or staff member outside of course 18 interested in usin
 {% endfor %}
 </ul>
 {% endif %}
+{% endif %}
+{% endif %}
 
 <p>
-The table below lists the <label class="highlight" id="num-students">?</label> students who have this course listed in their pset partner profile; this does not necessarily mean that they have registered for the course.  Bold group names denote public groups whose membership is visible to all students; other groups are visible only to instructors and the members of the group.
-</p><p>
-Please contact <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a> if you have any questions or concerns.
+The table below lists the <label class="highlight" id="students">?</label> students in <label class="highlight" id="class_number">?</label> using pset partners.  Bold group names denote public groups.
 </p>
 <h3 style="text-align:center;" id="student-table-heading">?</h3>
 
 <table class="mtab" id="student-table">
-  <head><tr>
+  <thead><tr>
     <th id="name" class="sortable">name</th>
     <th id="depts" class="sortable">depts</th>
     <th id="year" class="sortable">year</th>
     <th id="email" class="sortable">email</th>
     <th id="status" class="sortable">status</th>
     <th id="group" class="sortable">group</th>
-  </tr></head>
+  </tr></thead>
   <tbody id="student-rows"></tbody>
 </table>
 
-{% endif %}
 {% endif %}
 
 <script>
 // jshint ignore:start
 const isLive = {{ livesite|tojson|safe }};
-const classes = {{user.classes|tojson|safe}};
+const classes = {{ classes|tojson|safe }};
 const toggles = {{ user.toggles|tojson|safe }};
 // jshint ignore:end
 /* global classes, toggles, isLive */
@@ -89,12 +96,13 @@ function renderRows() {
     <td style="text-align:right;">${row.email}</td>
     <td>${row.status}</td>
     <td style="text-align:left;">${row.group}</td>
-   <tr>`).join('');
+   </tr>`).join('');
 }
 
 function toggleClass(i) {
   if ( i < 0 ) i = 0;
-  $('#num-students').html(''+classRows[i].length);
+  $('#students').html(''+classRows[i].length);
+  $('#class_number').html(''+classes[i].class_number);
   $('#match-date').html(classes[i].next_match_date);
   $('#student-table-heading').html(classes[i].class_number + ' ' + classes[i].class_name);
   $('#student-rows').html(renderRows(classRows[i]));

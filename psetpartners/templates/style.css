@@ -212,30 +212,24 @@ th.sortable:hover {
 }
 
 th.sortable::after {
-  display:inline-block;
-  content: ""; //"◆";
-  font-size: 70%;
-  padding-left: 4px;
-  vertical-align: top;
-  margin-top: 1px;
+  content: ""; //content: "◆";
+  font-size: 90%;
+  padding-left: 16px;
+  vertical-align: 5%;
 }
 
 th.sortable.asc::after {
-  display:inline-block;
   content: "▼";
   font-size: 90%;
   padding-left: 2px;
-  vertical-align: top;
-  margin-top: 0.5px;
+  vertical-align: 5%;
 }
 
 th.sortable.desc::after {
-  display:inline-block;
   content: "▲";
   font-size: 90%;
   padding-left: 2px;
-  vertical-align: top;
-  margin-top: 0px;
+  vertical-align: 5%;
 }
 
 h1 {
