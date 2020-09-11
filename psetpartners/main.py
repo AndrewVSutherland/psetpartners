@@ -194,7 +194,7 @@ def loginas(kerb):
 @login_required
 def admin(class_number=''):
     from .dbwrapper import getdb, students_groups_in_class
-    from .student import student_row, student_row_cols
+    from .student import student_row, student_row_cols, next_match_date
     from .utils import current_term, current_year
 
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
@@ -221,6 +221,7 @@ def admin(class_number=''):
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+            c.pop('match_dates')
         return render_template(
             "instructor.html",
             options=template_options(),
@@ -439,6 +440,7 @@ def instructor():
         "instructor.html",
         options=template_options(),
         maxlength=maxlength,
+        classes=current_user.classes,
         ctx=session.pop("ctx",""),
     )
 
