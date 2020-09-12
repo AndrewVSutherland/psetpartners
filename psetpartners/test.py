@@ -33,7 +33,7 @@ test_departments = ['6', '8', '7', '20', '5', '9', '10', '1', '3', '2', '16',  '
 
 big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
 
-def populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
+def populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3):
     """ generates a random student population for testing (destorys existing test data) """
     from . import db
     mydb = db
@@ -51,7 +51,7 @@ def populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
         db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
     print("Done!")
 
-def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
+def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3):
     from random import randint
 
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
@@ -211,7 +211,7 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
         kerbs = list(db.test_classlist.search({'class_id':c['id']},projection='kerb'))
         n = len(kerbs)
         creators = set()
-        for i in range(n//10):
+        for i in range(n//(groupsize+1)):
             while True:
                 name = generate_group_name(c['id'])
                 if name in names:
@@ -255,11 +255,14 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3):
             while True:
                 if g['max'] and n >= g['max']:
                     break
-                s = rand(list(db.test_classlist.search({'class_id': cid, 'status': 0},projection=["student_id", "kerb"])))
+                L = list(db.test_classlist.search({'class_id': cid, 'status': 0},projection=["student_id", "kerb"]))
+                if not L:
+                    break
+                s = rand(L)
                 S.append({'class_id': cid, 'student_id': s['student_id'], 'kerb': s['kerb'], 'group_id': gid, 'year': year, 'term': term, 'class_number': cnum})
                 n += 1
                 db.test_classlist.update({'class_id': cid, 'student_id': s['student_id']}, {'status': 1, 'status_timestamp': now}, resort=False)
-                if randint(0,n-1):
+                if randint(0,groupsize-1)==0:
                     break
             db.test_groups.update({'id': g['id']}, {'size': n}, resort=False)
         db.test_grouplist.insert_many(S, resort=False)
