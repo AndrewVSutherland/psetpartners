@@ -195,7 +195,7 @@ def loginas(kerb):
 @app.route("/admin/<class_number>")
 @login_required
 def admin(class_number=''):
-    from .dbwrapper import getdb, students_groups_in_class
+    from .dbwrapper import getdb, students_groups_in_class, count_rows
     from .student import student_row, student_row_cols, next_match_date
     from .utils import current_term, current_year
 
@@ -222,6 +222,7 @@ def admin(class_number=''):
             return render_template("404.html", message="Class %s not found for the current term" % class_number)
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
+            c['groups'] = count_rows('groups', {'class_id': c['id']})
             c['next_match_date'] = next_match_date(c)
             c.pop('match_dates')
         return render_template(
