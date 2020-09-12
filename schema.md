@@ -96,6 +96,7 @@ kerb                  | text        | kerberos ud of student (copied from studen
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied for convenience)
+timestamp             | timestamp   | when the student left the group
 
 ## grouplistleft
 (rows are moved here from grouplist whenver a student leaves a group)

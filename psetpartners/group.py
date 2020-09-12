@@ -2,7 +2,7 @@ import datetime
 from psycodict import DelayCommit
 from .app import send_email, livesite
 from .utils import current_term, current_year
-from .dbwrapper import getdb, count_rows
+from .dbwrapper import getdb, count_rows, get_forcelive
 
 group_preferences = [ 'start', 'style', 'forum', 'size' ]
 
@@ -37,8 +37,8 @@ and either join a public group or weaken the strength your required preferences 
 and click the "match me asap" button.
 """
 
-def student_url(class_number, forcelive=False):
-    url = "https://psetpartners.mit.edu/student" if (livesite() or forcelive) else "https://psetpartners-test.mit.edu/student"
+def student_url(class_number):
+    url = "https://psetpartners.mit.edu/student" if (livesite() or get_forcelive()) else "https://psetpartners-test.mit.edu/student"
     return url if not class_number else url + "/" + class_number
 
 def generate_group_name(class_id, year=current_year(), term=current_term()):
@@ -60,11 +60,12 @@ def generate_group_name(class_id, year=current_year(), term=current_term()):
             continue
         return name
 
-def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
+def create_group (class_id, kerbs, match_run=0, group_name=''):
     from .student import max_size_from_prefs, email_address, signature, log_event
 
-    db = getdb(forcelive)
+    db = getdb()
     c = db.classes.lucky({'id': class_id})
+    assert c, "Class id %s not found" % class_id
 
     g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'] }
     g['visibility'] = 2  # unlisted by default
@@ -72,11 +73,13 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
     g['editors'] = []    # everyone can edit
 
     students = [db.students.lookup(kerb, projection=['kerb','email','preferences', 'id']) for kerb in kerbs]
+    assert all(students), "Student in %s not found" % kerbs
     g['preferences'] = {}
     for p in group_preferences:
         v = { s['preferences'][p] for s in students if p in s['preferences'] }
         if len(v) == 1:
             g['preferences'][p] = list(v)[0]
+    g['size'] = len(kerbs)
     g['max'] = max_size_from_prefs(g['preferences'])
     g['match_run'] = match_run
 
@@ -85,41 +88,64 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False):
         print("creating group %s with members %s" % (g['group_name'], kerbs))
         # sanity check
         assert all([db.classlist.lucky({'class_id': class_id, 'student_id': s['id']},projection='status')==5 for s in students])
-        db.groups.insert_many([g])
+        db.groups.insert_many([g], resort=False)
         gs = [{'class_id': class_id, 'group_id': g['id'], 'student_id': s['id'], 'kerb': s['kerb'],
                'class_number': c['class_number'], 'year': c['year'], 'term': c['term']} for s in students]
-        db.grouplist.insert_many(gs)
+        db.grouplist.insert_many(gs, resort=False)
         now = datetime.datetime.now()
         for s in students:
-            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now})
-        log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs}, forcelive=forcelive)
+            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now}, resort=False)
+        log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
         print("created group %s with members %s" % (g['group_name'], kerbs))
 
     cnum = g['class_number']
     message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cnum, g['group_name'])
     db.messages.insert_many([{'type': 'newgroup', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb':''} for s in students], resort=False)
     subject = new_group_subject.format(class_number=g['class_number'])
-    url = student_url(g['class_number'], forcelive=forcelive)
+    url = student_url(g['class_number'])
     body = new_group_email.format(class_number=g['class_number'],url=url)
-    send_email([email_address(s) for s in students], subject, body + signature, forcelive=forcelive)
+    send_email([email_address(s) for s in students], subject, body + signature)
     return g
  
-def process_matches (matches, forcelive=False, match_run=-1):
+def process_matches (matches, match_run=-1):
     """
     Takes a dictionary returned by all_matches, keys are class_id's, values are objects with attributes
     groups = list of lists of kerbes, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
     only means there was only one member of the pool, requirement means a required preference could not be satisifed
     """
-    db = getdb(forcelive)
+    from .student import Student
+    from .match import rank_groups
+
+    db = getdb()
     if match_run < 0:
         r = db.globals.lookup('match_run')
         match_run = r['value']+1 if r else 0
     db.globals.update({'key':'match_run'},{'timestamp': datetime.datetime.now(), 'value': match_run}, resort=False)
 
-    n = 0
+    m = n = o = 0
     for class_id in matches:
+        class_number = db.classes.lucky({'id': class_id}, projection="class_number")
+        assert class_number
+        print("Processing results for %s (%d)" % (class_number, class_id))
         for kerbs in matches[class_id]['groups']:
-            g = create_group(class_id, kerbs, match_run=match_run, forcelive=forcelive)
-            print("Created group %s (%s) in %s with %s members: %s" % (g['group_name'], g['id'], g['class_number'], len(kerbs), kerbs))
-            n += 1
-    print("Created %d new groups in match_run %d" % (n, match_run))
+            g = create_group(class_id, kerbs, match_run=match_run)
+            print("Created group %s (%d) in %s (%d) with %s members: %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
+            m += 1
+        for kerb in matches[class_id]['unmatched']:
+            class_number = db.classes.lucky({'id': class_id}, projection="class_number")
+            assert class_number, "Class id %s not found" % class_id
+            assert db.students.lookup(kerb), "Student %s not found" % kerb
+            S = [t for t in rank_groups(class_id, kerb) if t[1] == 2]
+            db.classlist.update({'class_id': class_id, 'kerb': kerb}, {'status': 0}, resort=False)
+            if S and S[0][2] > -1000:
+                group_id = S[0][0]
+                group_name = db.groups.lucky({'id': group_id}, projection="group_name")
+                s = Student(kerb)
+                assert not s.new
+                s.join(group_id)
+                print("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, class_number, class_id))
+                n += 1
+            else:
+                print("Unable to match %s in %s (id=%d)" % (kerb, class_number, class_id))
+                o += 1
+    print("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))

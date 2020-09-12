@@ -4,25 +4,37 @@ from . import db
 from .app import livesite
 
 # TODO: get rid of this once the .count method in psycodict is fixed!
-def count_rows(table, query={}, forcelive=False):
-    _db = getdb(forcelive)
+def count_rows(table, query={}):
+    _db = getdb()
     return sum(1 for _ in _db[table].search(query, projection="id"))
 
 _db = None
-warn_forcelive=False
+_forcelive = False
+_warn_forcelive = False
+
+def set_forcelive(forcelive):
+    global _db, _forcelive
+    _forcelive = forcelive
+    _db = None
+    _db = getdb()
+
+def get_forcelive():
+    global _forcelive
+    return _forcelive
 
 def getdb(forcelive=False):
-    global _db, warn_forcelive
+    global _db, _forcelive, _warn_forcelive
 
-    if livesite():
-        return db
-    if forcelive:
-        if not warn_forcelive:
-            warn_forcelive=True
-            print("forclive=True!")
-        return db
     if _db is None:
-        _db = PsetPartnersTestDB(db)
+        if livesite():
+            _db = db
+        elif _forcelive:
+            if not _warn_forcelive:
+                _warn_forcelive=True
+                print("_forclive=True!")
+            _db = db
+        else:
+            _db = PsetPartnersTestDB(db)
     return _db
 
 # list of tablenames X we want to redirect to test_X
@@ -78,8 +90,8 @@ def SQLWrapper(str,map={}):
 
 #TODO: handle query and projection args to these functions (we fake projection at the moment)
 
-def students_in_class(class_id, projection=[], forcelive=False):
-    s, cs = ("students", "classlist") if livesite() or forcelive else ("test_students", "test_classlist")
+def students_in_class(class_id, projection=[]):
+    s, cs = ("students", "classlist") if livesite() or get_forcelive() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
             'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status']
@@ -95,16 +107,16 @@ WHERE {cs}.{class_id} = %s
     return DBIterator(db._execute(cmd, [class_id]), cols, projection)
 
 # this will return multiple rows for students in more than one group (which should not happen), empty groups will not be returned
-def students_groups_in_class(class_id, projection=[], forcelive=False):
-    s, cs, cgs, g = ("students", "classlist", "grouplist", "groups") if livesite() or forcelive else ("test_students", "test_classlist", "test_grouplist", "test_groups")
+def students_groups_in_class(class_id, projection=[]):
+    s, cs, cgs, g = ("students", "classlist", "grouplist", "groups") if livesite() or get_forcelive() else ("test_students", "test_classlist", "test_grouplist", "test_groups")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['student_id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
-            'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status', 'group_id', 'group_name', 'visibility']
+            'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status', 'group_id', 'group_name', 'visibility', 'size', 'max']
     cmd = SQLWrapper(
         """
 SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
        {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status},
-       {g}.{id}, {g}.{group_name}, {g}.{visibility}
+       {g}.{id}, {g}.{group_name}, {g}.{visibility}, {g}.{size}, {g}.{max}
 FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
          LEFT JOIN {cgs} on {cgs}.{student_id} = {s}.{id} AND {cgs}.{class_id} = {cs}.{class_id}
          LEFT JOIN {g} on {g}.{id} = {cgs}.{group_id}
@@ -114,8 +126,8 @@ WHERE {cs}.{class_id} = %s
     )
     return DBIterator(db._execute(cmd, [class_id]), cols, projection)
 
-def students_in_group(group_id, projection=[], forcelive=False):
-    s, g = ("students", "grouplist") if livesite() or forcelive else ("test_students", "test_grouplist")
+def students_in_group(group_id, projection=[]):
+    s, g = ("students", "grouplist") if livesite() or get_forcelive() else ("test_students", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
             'location', 'timezone', 'hours']
@@ -130,8 +142,8 @@ WHERE {g}.{group_id} = %s
     )
     return DBIterator(db._execute(cmd, [group_id]), cols, projection)
 
-def groups_in_class(class_id, projection=[], forcelive=False):
-    g, c = ("groups", "grouplist") if livesite() or forcelive else ("test_groups", "test_grouplist")
+def groups_in_class(class_id, projection=[]):
+    g, c = ("groups", "grouplist") if livesite() or get_forcelive() else ("test_groups", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['group_name', 'visibility', 'preferences', 'strengths']
     cmd = SQLWrapper(

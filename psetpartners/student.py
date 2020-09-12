@@ -37,6 +37,8 @@ student_row_cols = [
     'status',
     'group_name',
     'visibility',
+    'size',
+    'max',
 ]
 
 student_welcome = """<b>Welcome to pset partners!</b>
@@ -256,35 +258,35 @@ def course_number_key(s):
         return 27*27*27 + 27*27*(ord(r.group(2)[0])-ord('A')+1) + 27*(ord(r.group(2)[1])-ord('A')+1) + ord(r.group(2)[2])-ord('A')+1
     return 27*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')+1) if r.group(2) != '' else 0)
 
-def current_classes(year=current_year(), term=current_term(), forcelive=False):
-    db = getdb(forcelive)
+def current_classes(year=current_year(), term=current_term()):
+    db = getdb()
     classes = [(r['class_number'], r['class_name']) for r in db.classes.search({'year': year, 'term': term}, projection=['class_number', 'class_name'])]
     return sorted(classes)
 
-def departments(forcelive=False):
-    db = getdb(forcelive)
+def departments():
+    db = getdb()
     departments = [(r['course_number'], r['course_name']) for r  in db.departments.search({}, projection=['course_number', 'course_name'])]
     return sorted(departments, key = lambda x: course_number_key(x[0]))
 
-def is_instructor(kerb, forcelive=False):
-    db = getdb(forcelive)
+def is_instructor(kerb):
+    db = getdb()
     return True if db.instructors.lucky({'kerb':kerb},projection="id") else False
 
-def is_whitelisted(kerb, forcelive=False):
-    db = getdb(forcelive);
+def is_whitelisted(kerb):
+    db = getdb();
     return True if (db.students.lookup(kerb) or db.whitelist.lookup(kerb)) else False
 
-def is_admin(kerb, forcelive=False):
-    db = getdb(forcelive)
+def is_admin(kerb):
+    db = getdb()
     return db.admins.lucky({'kerb': kerb})
 
-def send_message(sender, recipient, typ, content, forcelive=False):
-    db = getdb(forcelive)
+def send_message(sender, recipient, typ, content):
+    db = getdb()
     now = datetime.datetime.now()
     db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': recipient, 'type': typ, 'content': content, 'timestamp': now}], resort=False)
 
-def log_event(kerb, event, detail={}, status=0, forcelive=False):
-    db = getdb(forcelive)
+def log_event(kerb, event, detail={}, status=0):
+    db = getdb()
     db.events.insert_many([{'kerb': kerb, 'timestamp': datetime.datetime.now(), 'status': status, 'event': event, 'detail': detail}], resort=False)
 
 def pretty_name(s):
@@ -297,11 +299,21 @@ def pretty_name(s):
 def email_address(s):
     return s['email'] if s.get('email') else s['kerb'] + '@mit.edu'
 
-def next_match_date(class_id, forcelive=False):
+def next_match_date(class_id):
     import datetime
 
-    db = getdb(forcelive)
-    match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
+    if isinstance(class_id,dict):
+        if 'match_dates' in class_id:
+            match_dates = class_id['match_dates']
+        if 'id' in class_id:
+            db = getdb()
+            match_dates = db.classes.lucky({'id': class_id['id']}, projection='match_dates')
+        if 'class_id' in class_id:
+            db = getdb()
+            match_dates = db.classes.lucky({'id': class_id['class_id']}, projection='match_dates')
+    else:
+        db = getdb()
+        match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
     if match_dates:
         today = datetime.datetime.now().date()
         match_dates = [d for d in match_dates if d >= today]
@@ -382,12 +394,12 @@ def student_visibility_counts(iter):
         vcounts[v] = vcounts[v]+g['size'] if v in vcounts else g['size']
     return vcounts
 
-def group_visibility_counts(class_number, year=current_year(), term=current_term(), forcelive=False):
+def group_visibility_counts(class_number, year=current_year(), term=current_term()):
     """ 
     Returns two dictionaries of group counts for the specified class, indexed by visibility (set class_number='' for all classes.
     The first dictionary includes all groups, the second only includes groups to which members can be added (size < max)
     """
-    db = getdb(forcelive)
+    db = getdb()
     vcounts, wcounts = {}, {}
     if class_number:
         for g in db.groups.search({'year': year, 'term': term, 'class_number': class_number}, projection=['visibility','size','max']):
@@ -403,30 +415,30 @@ def group_visibility_counts(class_number, year=current_year(), term=current_term
                 wcounts[v] = wcounts[v]+1 if v in wcounts else 1
     return vcounts, wcounts
 
-def get_counts(classes, opts, year=current_year(), term=current_term(), forcelive=False):
+def get_counts(classes, opts, year=current_year(), term=current_term()):
     """ 
     Returns a dictionary of count dictionaries indexed by class numbers in classes ('' indicates totals across all classes).
     Each count dictionary includes keys for student preferences and properties, as well as counts of classes and groups,
     as well as students in those classes and gorups, visibility and capacity counts, and the next_match_date for each class.
     """
-    db = getdb(forcelive);
+    db = getdb();
     counts = {}
     if '' in classes:
         counts[''] = student_counts(db.students.search(), opts)
-        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term}, forcelive=forcelive)
-        counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term}, forcelive=forcelive)
-        counts['']['groups'] = count_rows('groups', {'year': year, 'term': term}, forcelive=forcelive)
-        counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term}, forcelive=forcelive)
-        counts['']['visibility'], counts['']['capacity'] = group_visibility_counts('', forcelive=forcelive)
+        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term})
+        counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
+        counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
+        counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term})
+        counts['']['visibility'], counts['']['capacity'] = group_visibility_counts('')
         counts['']['students_visibility'] = student_visibility_counts(db.groups.search({'year': year, 'term': term}, projection=["size", "visibility"]))
     for c in classes:
         if c:
             cid = db.classes.lucky({'class_number': c, 'year': year, 'term': term}, projection="id")
-            counts[c] = student_counts(students_in_class(cid, forcelive=forcelive), opts)
-            counts[c]['groups'] = count_rows('groups',{'class_id': cid}, forcelive=forcelive)
-            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid}, forcelive=forcelive)
+            counts[c] = student_counts(students_in_class(cid), opts)
+            counts[c]['groups'] = count_rows('groups',{'class_id': cid})
+            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid})
             counts[c]['next_match_date'] = next_match_date(cid)
-            counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term, forcelive=forcelive)
+            counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
             counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': cid}, projection=["size", "visibility"]))
             counts[c]['class_id'] = cid
     return counts
@@ -445,8 +457,8 @@ def member_row(s):
 def student_row(s):
     return [_str(s.get(k,"")) for k in student_row_cols]
 
-def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False, forcelive=False):
-    db = getdb(forcelive)
+def class_groups(class_number, opts, year=current_year(), term=current_term(), visibility=None, instructor_view=False):
+    db = getdb()
     G = []
     mv = 0 if instructor_view else 3
     for g in db.groups.search({'class_number': class_number, 'year': year, 'term': term, 'visibility' : {'$gte': mv} }, projection=['id']+[o for o in opts if o in db.groups.col_type]):
@@ -962,6 +974,7 @@ class Student(UserMixin):
             raise ValueError("Group not found in your list of groups for this term.")
         now = datetime.datetime.now()
         r = self._db.grouplist.lucky({'group_id': group_id, 'student_id': self.id})
+        r['timestamp'] = now
         self._db.grouplistleft.insert_many([r], resort=False)
         self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id}, resort=False)
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0, 'status_timestamp': now}, resort=False)
@@ -1086,16 +1099,19 @@ class Student(UserMixin):
             return "No changes made."
 
     def _notify_group(self, group_id, subject, email_message, announce_message):
-        """ Notifies members of group other than self and updates group size (so must be called for leave/join!) """
+        """ Notifies members of group and updates group size (so must be called for leave/join!) """
         S = list(students_in_group(group_id,projection=["kerb", "email"]))
-        T = [s for s in S if s['kerb'] != self.kerb]
         self._db.groups.update({'id': group_id}, {'size': len(S)}, resort=False)
-        if not T:
+        if not S:
             return
         if announce_message:
-            self._db.messages.insert_many([{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in T], resort=False)
+            # only message group memebers other than self
+            messages = [{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S if s['kerb'] != self.kerb ]
+            if messages:
+                self._db.messages.insert_many(messages, resort=False)
         if email_message:
-            send_email([email_address(s) for s in T], subject, email_message + signature)
+            # email all group memebers, including self if applicable (this won't apply if self just left)
+            send_email([email_address(s) for s in S], subject, email_message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
@@ -1109,21 +1125,23 @@ class Student(UserMixin):
             if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=int(1)) < now:
                 r['status'] = 0
             if r['status'] in [0,2]:
-                # Suggest matches for groups with relative compatibility > -162
-                candidates = [g for g in rank_groups(r['class_id'], self.kerb) if g[1] >= 1 and g[2] >= -162]
-                suggest = [g for g in candidates if g[1] == 1]
-                if suggest:
-                    r['permission_match'] = suggest[0][0]
-                    # print("permission match: %s" % r['permission_match'])
-                suggest = [g for g in candidates if g[1] == 2]
-                if suggest:
-                    r['automatic_match'] = suggest[0][0]
-                    # print("automatic match: %s" % r['automatic_match'])
-                suggest = [g for g in candidates if g[1] == 3]
-                if suggest:
-                    r['public_match'] = suggest[0][0]
-                    # print("public match: %s" % r['public_match'])
-
+                # Don't make suggestions to students who have left 2 or more groups in the class recently
+                S=list(self._db.grouplistleft.search({'class_id':r['class_id'], 'student_id': self.id},projection='timestamp'))
+                if len(S) < 2 or S[-2] + datetime.timedelta(hours=19) < now:
+                    # Suggest matches for groups with relative compatibility > -162
+                    candidates = [g for g in rank_groups(r['class_id'], self.kerb) if g[1] >= 1 and g[2] >= -162]
+                    suggest = [g for g in candidates if g[1] == 1]
+                    if suggest:
+                        r['permission_match'] = suggest[0][0]
+                        # print("permission match: %s" % r['permission_match'])
+                    suggest = [g for g in candidates if g[1] == 2]
+                    if suggest:
+                        r['automatic_match'] = suggest[0][0]
+                        # print("automatic match: %s" % r['automatic_match'])
+                    suggest = [g for g in candidates if g[1] == 3]
+                    if suggest:
+                        r['public_match'] = suggest[0][0]
+                        # print("public match: %s" % r['public_match'])
             class_data[r["class_number"]] = r
         return class_data
 
@@ -1139,7 +1157,11 @@ class Student(UserMixin):
             g['members'] = sorted([member_row(s) for s in members])
             g['can_edit'] = True if self.kerb in g['editors'] or g['editors'] == [] else False;
             token = generate_timed_token({'kerb':self.kerb, 'group_id': str(g['id'])}, 'invite')
-            g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
+            # Don't freak out on url_for failures, we want to be able to call this interactively for testing purposes
+            try:
+                g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
+            except RuntimeError:
+                print("Unable to create invitation link")
             group_data[g['class_number']] = g
         return group_data
 
@@ -1196,7 +1218,7 @@ class Instructor(UserMixin):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
-            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+            c['next_match_date'] = next_match_date(c)
         return sorted(classes, key = lambda x: x['class_number'])
 
     @property

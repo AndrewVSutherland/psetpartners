@@ -186,6 +186,8 @@ def loginas(kerb):
     session['kerb'] = kerb
     session['affiliation'] = "student" if user.is_student else "staff"
     login_user(user, remember=False)
+    if current_user.is_admin:
+        return redirect(url_for(".admin"))
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
 @login_required
@@ -220,7 +222,7 @@ def admin(class_number=''):
             return render_template("404.html", message="Class %s not found for the current term" % class_number)
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
-            c['next_match_date'] = c['match_dates'][0].strftime("%b %-d")
+            c['next_match_date'] = next_match_date(c)
             c.pop('match_dates')
         return render_template(
             "instructor.html",
