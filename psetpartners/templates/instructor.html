@@ -44,7 +44,7 @@ If you are an instructor or staff member outside of course 18 interested in usin
 
 {% if classes|length %}
 <p>
-The table below lists the <label class="highlight" id="students">?</label> students in <label class="highlight" id="class_number">?</label> using pset partners.  Bold group names denote public groups.
+The table below lists the <label class="highlight" id="students">?</label> students and <label class="highlight" id="groups">?</label> groups in <label class="highlight" id="class_number">?</label> using pset partners during the <b>{{current_term_pretty}}</b> term.
 </p>
 <h3 style="text-align:center;" id="student-table-heading">?</h3>
 
@@ -103,13 +103,14 @@ function renderRows() {
     <td>${row.year}</td>
     <td style="text-align:right;"><a href="mailto:${row.email}@mit.edu">  ${row.email}@mit.edu</a></td>
     <td style="text-align:left;${row.group ? '' : 'font-style:italic; font-size:90%; color:#555;'}">${row.group||('&nbsp;&nbsp;'+statusPretty[row.status])+(row.status==2?' for '+date:'')}</td>
-    <td style="text-align:left;">${visibilityPretty[row.visibility]}${row.full?' (full)':''}</td>
+    <td style="text-align:left;">${row.group ? visibilityPretty[row.visibility] + (row.full?' (full)':'') : ''}</td>
    </tr>`).join('');
 }
 
 function toggleClass(i) {
   if ( i < 0 ) i = 0;
   $('#students').html(''+classRows[i].length);
+  $('#groups').html(''+classes[i].groups);
   $('#class_number').html(''+classes[i].class_number);
   $('#match-date').html(classes[i].next_match_date);
   $('#student-table-heading').html(classes[i].class_number + ' ' + classes[i].class_name);
@@ -129,10 +130,12 @@ function headerClick (e) {
 function colCompare(a,b,col,dir)
 {
   if ( a[col] == b[col] ) {
+    if (col == 'depts' ) return colCompare(a,b,'year',dir)
     if (col == 'visibility') return colCompare(a,b,'full',dir);
     if (col == 'full') return colCompare(a,b,'group',dir);
     if (col == 'group') return colCompare(a,b,'status',dir)
     if (col == 'name' ) return colCompare(a,b,'kerb',dir)
+
   }
   return a[col] < b[col] ? -dir : dir;
 }
