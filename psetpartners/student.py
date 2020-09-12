@@ -1218,6 +1218,7 @@ class Instructor(UserMixin):
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
+            c['groups'] = count_rows('groups', {'class_id': c['id']})
             c['next_match_date'] = next_match_date(c)
         return sorted(classes, key = lambda x: x['class_number'])
 
