@@ -13,7 +13,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% if user.is_admin %}
 
-<p style="font-size:120%;"><b>{{classes[0].class_number}}</b> {{', '.join(classes[0].instructor_names)}} <a style="float:right; font-size:16px;" href="{{url_for('.admin') + ('/live' if forcelive else '')}}">index</a></p>
+<p style="font-size:120%;"><b>{{classes[0].class_number}}</b> {{', '.join(classes[0].instructor_names)}} <a style="float:right; font-size:16px;" href="{{url_for('.admin')}}">index</a></p>
 
 
 {% else %}
@@ -42,6 +42,7 @@ If you are an instructor or staff member outside of course 18 interested in usin
 {% endif %}
 {% endif %}
 
+{% if classes|length %}
 <p>
 The table below lists the <label class="highlight" id="students">?</label> students in <label class="highlight" id="class_number">?</label> using pset partners.  Bold group names denote public groups.
 </p>
@@ -53,8 +54,8 @@ The table below lists the <label class="highlight" id="students">?</label> stude
     <th id="depts" class="sortable">depts</th>
     <th id="year" class="sortable">year</th>
     <th id="email" class="sortable">email</th>
-    <th id="status" class="sortable">status</th>
     <th id="group" class="sortable">group</th>
+    <th id="visibility" class="sortable">type</th>
   </tr></thead>
   <tbody id="student-rows"></tbody>
 </table>
@@ -74,7 +75,11 @@ let classIndex = 0;
 let classSort = [];
 let classRows = [];
 
-const statusPretty = ['-', 'member', 'in pool', 'matching', 'matching', 'matching'];
+const visibilityPretty = ['invitation', 'permission', 'automatic', 'public']
+const statusPretty = ['no action', 'member', 'in pool', 'match requested', 'matching', 'matching'];
+
+// student_row_cols = [ 'full_name', 'preferred_name', 'preferred_pronouns', 'departments', 'year', 'kerb', 'status',
+//                      'group_name', 'visibility', 'size', 'max']
 
 function formatRow(s) {
   return {
@@ -82,20 +87,23 @@ function formatRow(s) {
     name: s[0] || s[1] || s[5],
     depts: s[3],
     year:  s[4] == '5' ? 'G' : (s[4]||'-'),
-    email: `<a href="mailto:${s[5]}@mit.edu">  ${s[5]}@mit.edu</a>`,
-    status: statusPretty[parseInt(s[6]||'0')],
-    group: parseInt(s[8]) > 2 ? '<b>' + s[7] + '</b>' : s[7]
+    email: s[5],
+    group: s[7],
+    status: parseInt(s[6]||'0'),
+    visibility: parseInt(s[8]||'0'),
+    full: s[10] ? parseInt(s[10]) <= parseInt(s[9]||'0') : false,
   };
 }
 
 function renderRows() {
+  date = classes[classIndex].next_match_date;
   return classRows[classIndex].map(row => `<tr>
     <td style="text-align:left;">${row.name}</td>
     <td>${row.depts.split(' ').join(', ')}</td>
     <td>${row.year}</td>
-    <td style="text-align:right;">${row.email}</td>
-    <td>${row.status}</td>
-    <td style="text-align:left;">${row.group}</td>
+    <td style="text-align:right;"><a href="mailto:${row.email}@mit.edu">  ${row.email}@mit.edu</a></td>
+    <td style="text-align:left;${row.group ? '' : 'font-style:italic; font-size:90%; color:#555;'}">${row.group||('&nbsp;&nbsp;'+statusPretty[row.status])+(row.status==2?' for '+date:'')}</td>
+    <td style="text-align:left;">${visibilityPretty[row.visibility]}${row.full?' (full)':''}</td>
    </tr>`).join('');
 }
 
@@ -120,7 +128,12 @@ function headerClick (e) {
 
 function colCompare(a,b,col,dir)
 {
-  if ( a[col] == b[col] ) return a.name == b.name ? (a.kerb < b.kerb ? -dir : dir) : (a.name < b.name ? -dir : dir);
+  if ( a[col] == b[col] ) {
+    if (col == 'visibility') return colCompare(a,b,'full',dir);
+    if (col == 'full') return colCompare(a,b,'group',dir);
+    if (col == 'group') return colCompare(a,b,'status',dir)
+    if (col == 'name' ) return colCompare(a,b,'kerb',dir)
+  }
   return a[col] < b[col] ? -dir : dir;
 }
 
@@ -160,5 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 </script>
+{% endif %}
 
 {% endblock %}

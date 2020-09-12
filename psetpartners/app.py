@@ -238,18 +238,23 @@ def css():
 #           Mail             #
 ##############################
 
-def send_email(to, subject, message, forcelive=False):
+def send_email(to, subject, message, cc=[]):
     from html2text import html2text
+    from .dbwrapper import get_forcelive
 
     if isinstance(to,str):
         to = [to]
 
-    if (not forcelive and not livesite()) or under_construction():
+    bcc = ['drew@math.mit.edu'] # TODO remove or setup a separate account for these
+    if (not get_forcelive() and not livesite()) or under_construction():
         # TODO just return here rather than spamming drew
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
-        to = ['drew@math.mit.edu']
-    if not livesite():
-        print("forcing live email!")
+        to = bcc
+        cc = []
+        bcc = []
+    else:
+        if get_forcelive():
+            print("forcing live email!")
 
     sender = "psetpartnersnoreply@math.mit.edu"
     app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
@@ -260,6 +265,7 @@ def send_email(to, subject, message, forcelive=False):
             body=html2text(message),
             sender=sender,
             recipients=to,
-            bcc=['drew@math.mit.edu'] # TODO remove or setup a separate account for these
+            cc=cc,
+            bcc=bcc,
         )
     )

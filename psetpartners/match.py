@@ -1,7 +1,7 @@
 from .dbwrapper import getdb
 from .utils import hours_from_default, current_year, current_term
 from collections import defaultdict
-from math import sqrt, floor
+from math import sqrt, floor, ceil
 from functools import lru_cache
 
 # cols from student table relevant to matching
@@ -89,7 +89,7 @@ def evaluate_swaps(groups):
     return improvements
 
 def run_swaps(to_match, groups, improvements):
-    while improvements[0][0] > 0:
+    while improvements and improvements[0][0] > 0:
         # improvements is sorted so that the best swap is first.
         changed = []
         # execute_swap swaps the first entry of improvements, removing all affected values from improvements and inserting them into change, then returns the largest changed value.
@@ -154,25 +154,28 @@ def refine_groups(to_match, groups):
         unsatisfied = []
         for group in G:
             # Failed matching based on student requirements; throw them out of the pool
-            unsat = [S for S in group.students if group.contribution(S) < 0]
+            unsat = [S for S in group.students if group.contribution(S) < -162]
             if unsat:
                 rerun = True
-                unsatisfied.extend([(U.kerb, "requirement") for U in unsat])
                 sat = [S for S in group.students if S not in unsat]
-                new_group = Group(sat)
-                if len(new_group) == 1:
-                    raise NotImplementedError
+                if len(sat) <= 1:
+                    # give up on this group, we will try to match its former members after all groups have been formed
+                    unsat = [S for S in group.students]
+                    sat = []
+                else:
+                    new_group = Group(sat)
+                    for S in sat:
+                        groups[S.id] = new_group
                 for U in unsat:
                     del groups[U.id]
-                for S in sat:
-                    groups[S.id] = new_group
+                unsatisfied .extend([U.kerb for U in unsat])
         if rerun:
             improvements = evaluate_swaps(groups)
             run_swaps(to_match, groups, improvements)
         return unsatisfied
 
-def match_all(preview=False, forcelive=False, verbose=True):
-    db = getdb(forcelive)
+def match_all(preview=False, verbose=True):
+    db = getdb()
     year = current_year()
     term = current_term()
     results = {}
@@ -181,15 +184,15 @@ def match_all(preview=False, forcelive=False, verbose=True):
         if n:
             if verbose:
                 print("\nMatching %d students in pool for %s %s" % (n, clsrec['class_number'], clsrec['class_name']))
-            groups, unmatched = matches(clsrec, preview, forcelive, verbose)
+            groups, unmatched = matches(clsrec, preview, verbose)
             results[clsrec['id']] = {'groups': groups, 'unmatched': unmatched}
     return results
 
-def matches(clsrec, preview=False, forcelive=False, verbose=True):
+def matches(clsrec, preview=False, verbose=True):
     """
     Creates groups for all classes in a given year and term.
     """
-    db = getdb(forcelive)
+    db = getdb()
     student_data = {rec["id"]: {key: rec.get(key) for key in student_properties} for rec in db.students.search(projection=3)}
     clsid = clsrec["id"]
     to_match = {}
@@ -215,7 +218,7 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
         if verbose:
             print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
             print("Only student %s unmatched" % S.kerb)
-        return [], [(S.kerb, "only")]
+        return [], [S.kerb]
     elif N in [2, 3]:
         # Only one way to group
         G = Group(list(to_match.values()))
@@ -223,11 +226,6 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
             groups[S.id] = G
         # Might violate a requirement
         unmatched = refine_groups(to_match, groups)
-        G = next(iter(groups.values()))
-        if verbose:
-            print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
-            print(G)
-        return [[S.kerb for S in G.students]], unmatched
     else:
         # We first need to determine which size groups to create
         for limit in [9, 5, 3, 2]:
@@ -269,14 +267,16 @@ def matches(clsrec, preview=False, forcelive=False, verbose=True):
         #print(groups)
         improvements = evaluate_swaps(groups)
         run_swaps(to_match, groups, improvements)
-        removed = refine_groups(to_match, groups)
-        # Print warnings for groups with low compatibility and for non-satisfied requirements
-        if verbose:
-            print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
-            for grp in set(groups.values()):
-                print(grp)
-        gset = set(groups.values())
-        return [[S.kerb for S in group.students] for group in gset], removed
+        unmatched = refine_groups(to_match, groups)
+    # Print warnings for groups with low compatibility and for non-satisfied requirements
+    if verbose:
+        print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
+        for grp in set(groups.values()):
+            print(grp)
+        if unmatched:
+            print("Unmatched: %s" % unmatched)
+    gset = set(groups.values())
+    return [[S.kerb for S in group.students] for group in gset], unmatched
 
 # TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
 def size_pref_from_size(size):
@@ -286,7 +286,7 @@ def size_pref_from_size(size):
         return '3'
     if size <= 8:
         return '5'
-    return 9
+    return '9'
 
 def group_member (db, class_id, kerb, g=None):
     """
@@ -309,7 +309,7 @@ def group_member (db, class_id, kerb, g=None):
                 rec['preferences'][k] = g['preferences'][k]
     return Student(properties, rec['preferences'], rec['strengths'])
 
-def rank_groups (class_id, kerb, forcelive=False):
+def rank_groups (class_id, kerb):
     """
     Given a class and a student, returns a list of groups that could accomodate the student ranked by relative compatibility,
     where relative compatibility is the change in compatibility score for the group that results form adding the student.
@@ -324,7 +324,7 @@ def rank_groups (class_id, kerb, forcelive=False):
     (this is needed to make sure it conflicts with prospective students who want a different size).
     """
 
-    db = getdb(forcelive)
+    db = getdb()
     res = []
     G = [g for g in db.groups.search({'class_id': class_id, 'visibility': {'$gte': 1}, 'request_id': None}, projection=['id','group_name','visibility','size','max', 'preferences']) if
          g['max'] is None or g['size'] < g['max']] # TODO write a SQL query to handle the size filter
@@ -431,18 +431,24 @@ class Student(object):
         if quality == "size":
             if pref == '2':
                 satisfied = (len(G) == 2)
+                d = 0 if satisfied else max(len(G)/2,2/len(G))
             elif pref == '3':
                 satisfied = (3 <= len(G) <= 4)
+                d = 0 if satisfied else max(len(G)/4,3/len(G))
             elif pref == '5':
                 satisfied = (5 <= len(G) <= 8)
+                d = 0 if satisfied else max(len(G)/8,5/len(G))
             elif pref == '9':
                 satisfied = (9 <= len(G))
+                d = 0 if satisfied else 9/len(G)
+            else:
+                assert False, "Invalid preference %s, should be a string in ['2','3','4','9'] or none" % pref
             if satisfied:
                 return 3**s
             elif s == 5:
                 return -10**6
             else:
-                return 0
+                return -ceil(2*d)^s
         # Affinities aren't linear
         if quality in affinities:
             if pref == '2':
