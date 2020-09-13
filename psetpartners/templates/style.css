@@ -609,13 +609,34 @@ ul.group-desc {
   list-style: none;
 }
 ul.group-desc li {
-  margin: 5px 0px 5px 25px;
+  margin: 25px 0px 5px 0;
 }
-ul.group-desc li::before, ul.group-members li::before {
+ul.faq {
+  margin-top: 20px;
+  padding: 0;
+  list-style: none;
+  font-weight: bold;
+  font-size: 110%;
+}
+ul.faq li {
+  margin: 5px 0 25px 0;
+}
+ul.faq p {
+  font-weight: normal;
+  font-size: 16px;
+  margin: 12px 0 5px 19px;
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+ul.group-desc li::before, ul.group-members li::before, ul.faq li::before {
   content: "●";
   padding-right: 3px;
   vertical-align: 6%;
   color: #70172e; /*var(--mit-maroon);*/
+}
+ul.faq li::before {
+  padding-right: 8px;
 }
 
 @-moz-document url-prefix(){

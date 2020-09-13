@@ -984,7 +984,7 @@ class Student(UserMixin):
             msg += " You were the only member, so the group was disbanded."
         else:
             # note that size of group will be updated by _notify_group
-            leave_msg = "%s (kerb=%s) left the pset group %s in %s." % (self.preferred_name, self.kerb, g['group_name'], g['class_number'])
+            leave_msg = "%s (kerb=%s) left the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, self.kerb, g['group_name'], g['class_number'])
             self._notify_group(group_id, "pset partner notification", leave_msg, leave_msg)
         self._reload()
         return msg

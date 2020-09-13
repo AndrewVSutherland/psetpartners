@@ -442,7 +442,7 @@ class Student(object):
                 satisfied = (9 <= len(G))
                 d = 0 if satisfied else 9/len(G)
             else:
-                assert False, "Invalid preference %s, should be a string in ['2','3','4','9'] or none" % pref
+                assert False, "Invalid size preference %s, should be a string in ['2','3','4','9'] or none" % pref
             if satisfied:
                 return 3**s
             elif s == 5:
@@ -535,7 +535,7 @@ class Group(object):
 
     @lru_cache(2)
     def compatibility(self):
-        # note that we don't want to average primary and secondary scores we want to sum them
+        # note that we don't want to average primary and secondary schedule scores, we want to sum them
         # averaging will potentially make a horrible primary score half as bad and we don't want to do that (especially when computing deltas)
         # this potentially favors groups of size 3 over groups of size 2 (which have no secondary score), but that's OK
         schedule_score = self.schedule_score() if len(self.students) < 3 else (self.schedule_score() + self.secondary_schedule_score())
