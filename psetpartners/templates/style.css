@@ -628,8 +628,23 @@ ul.faq p {
   text-align: justify;
   text-justify: inter-word;
 }
-
-ul.group-desc li::before, ul.group-members li::before, ul.faq li::before {
+ul.about {
+  margin-top: 10px;
+  margin-left: 20px;
+  padding: 0;
+  list-style: none;
+}
+ul.about li {
+  margin: 0px 0px 10px 0px;
+}
+ul.faq p {
+  font-weight: normal;
+  font-size: 16px;
+  margin: 12px 0 5px 19px;
+  text-align: justify;
+  text-justify: inter-word;
+}
+ul.group-desc li::before, ul.group-members li::before, ul.faq li::before, ul.about li::before {
   content: "●";
   padding-right: 3px;
   vertical-align: 6%;
