@@ -252,6 +252,10 @@ def _str(s):
         return ' '.join([str(t) for t in s])
     return str(s) if s is not None else ""
 
+def class_number_key(s):
+    a = s.split('.')
+    return (int(a[0]), '.'.join(a[1:]))
+
 def course_number_key(s):
     r = COURSE_NUMBER_RE.match(s)
     if r.group(1) == '':
@@ -261,7 +265,7 @@ def course_number_key(s):
 def current_classes(year=current_year(), term=current_term()):
     db = getdb()
     classes = [(r['class_number'], r['class_name']) for r in db.classes.search({'year': year, 'term': term}, projection=['class_number', 'class_name'])]
-    return sorted(classes)
+    return sorted(classes, key = lambda r: class_number_key(r[0]))
 
 def departments():
     db = getdb()
