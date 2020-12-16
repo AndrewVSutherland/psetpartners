@@ -161,6 +161,6 @@ id                    |	bigint      | unique identifier automatically assigned b
 timestamp             | timestamp   | timestamp of response
 survey_id             | bigint      | id of survey
 kerb                  | text        | kerberos id of respondent
-responses             | jsonb       | dictionary of responses
+response             | jsonb       | dictionary of responses
 
 
