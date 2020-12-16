@@ -707,7 +707,7 @@ def logout():
     if not livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
-        resp = make_response(render_template("thankyou.html"),message="You have been loggedout.")
+        resp = make_response(render_template("thankyou.html",message="You have been loggedout."))
     resp.set_cookie('sessionID','',expires=0)
     return resp
 
