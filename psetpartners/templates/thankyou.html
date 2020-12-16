@@ -3,6 +3,10 @@
 
 {% block content %}
 
-  <h4>You have been logged out.  Have a nice day!</h4>
+  {% if message %}
+  <h4>{{message|safe}}</h4>
+  {% endif %}
+
+  <h4>Have a nice day!</h4>
 
 {% endblock %}
