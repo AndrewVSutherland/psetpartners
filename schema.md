@@ -159,7 +159,7 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres
 timestamp             | timestamp   | timestamp of response
-survey_id             | text        | id of survey
+survey_id             | bigint      | id of survey
 kerb                  | text        | kerberos id of respondent
 responses             | jsonb       | dictionary of responses
 
