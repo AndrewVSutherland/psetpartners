@@ -80,7 +80,7 @@ year		      | smallint    | year of class (copied from classes table for conveni
 term                  | smallint    | term of class (copied from classes table for convenience)
 properties            | jsonb       | class-specific student properties such as commentment/confidence that may have associated affinity preferences (names should not collide with student properties)
 preferences           |	jsonb       | copied from student preferences initially but may be modified
-strengths             | jsonb       | copied from studnet strengths initially but may then be modified
+strengths             | jsonb       | copied from student strengths initially but may then be modified
 status                | smallint    | 0 = unmatched, no pending gaction, 1 = in a group, 2 = in pool, 3 = match requested, 4 = unused, 5 = pool match in progress
 status_timestamp      | timestamp   | set whenever status changes (currently used mainly to timeout match requests after 24 hours)
 		
@@ -144,4 +144,23 @@ timestamp             | timestamp   | timestamp of request (in MIT time, no time
 group_id              | bigint      | id of group to whom reqeust was made
 student_id            | bigint      | id of student on whose behalf the request was made
 kerb                  | text        | kerberos id of student on whose behalf the request was made
+
+## surveys
+
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+name                  | text        | name of survey (e.g. "End of term survey")
+start                 | date        | start of survey window
+end                   | end         | end of survey window
+
+## survey_responses
+Column                | Type        |  Notes
+----------------------|-------------|-------
+id                    |	bigint      | unique identifier automatically assigned by postgres
+timestamp             | timestamp   | timestamp of response
+survey_id             | bigint      | id of survey
+kerb                  | text        | kerberos id of respondent
+response             | jsonb       | dictionary of responses
+
 
