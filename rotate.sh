@@ -1,0 +1,9 @@
+mv flasklog.8 flasklog.9
+mv flasklog.7 flasklog.8
+mv flasklog.6 flasklog.7
+mv flasklog.5 flasklog.6
+mv flasklog.4 flasklog.5
+mv flasklog.3 flasklog.4
+mv flasklog.2 flasklog.3
+mv flasklog.1 flasklog.2
+mv flasklog flasklog.1
