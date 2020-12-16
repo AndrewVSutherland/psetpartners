@@ -84,6 +84,7 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3)
     db.test_groups.delete({}, resort=False)
     db.test_classlist.delete({}, resort=False)
     db.test_grouplist.delete({}, resort=False)
+    db.test_survey_responses.delete({}, resort=False)
     print("Deleted all records in test database.")
     year, term = current_year(), current_term()
     # copy classes from live db

@@ -657,6 +657,48 @@ def save_changes(raw_data):
         return False
     return True
 
+@app.route("/survey")
+@login_required
+def survey():
+    import datetime
+    from .dbwrapper import getdb
+
+    if not current_user.is_authenticated:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    db = getdb()
+    today = datetime.date.today()
+    survey = db.surveys.lucky({'start':{'$lte':today},'end':{'$gte':today}},projection=3)
+    if not survey:
+        return render_template("thankyou.html", message="No surveys are currently active, but thanks for checking!")
+    survey['response'] = db.survey_responses.lucky({'survey_id': survey['id'], 'kerb':current_user.kerb}, projection="response")
+    print(survey)
+    log_event(current_user.kerb,"survey")
+    return render_template(
+        "survey.html",
+        options=template_options(),
+        maxlength=maxlength,
+        survey=survey
+    )
+
+@app.route("/save/survey", methods=["POST"])
+@login_required
+def save_survey():
+    import datetime
+    from .dbwrapper import getdb
+
+    r = {}
+    r['response'] = request.form.to_dict()
+    r['survey_id'] = r['response'].pop('survey_id')
+    r['kerb'] = current_user.kerb
+    r['timestamp'] = datetime.datetime.now()
+    print(r)
+    db = getdb()
+    db.survey_responses.upsert({'survey_id': r['survey_id'],'kerb': r['kerb']}, r)
+    log_event(current_user.kerb,"surveyed")
+    return render_template("thankyou.html", message='Your responses have been recorded.  You can update them by revisiting the <a href="%s">survey link</a>.' % url_for(".survey"))
+
 @app.route("/logout")
 @login_required
 def logout():
@@ -665,7 +707,7 @@ def logout():
     if not livesite():
         resp = make_response(redirect(url_for(".index")))
     else:
-        resp = make_response(render_template("goodbye.html"))
+        resp = make_response(render_template("thankyou.html"),message="You have been loggedout.")
     resp.set_cookie('sessionID','',expires=0)
     return resp
 
