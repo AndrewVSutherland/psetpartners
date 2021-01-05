@@ -165,6 +165,23 @@ def login():
         return redirect(url_for(".admin"))
     return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
 
+@app.route("/switchrole")
+@login_required
+def switch_role():
+    if not current_user.is_authenticated:
+        return redirect(url_for('.index'))
+    if current_user.is_student:
+        user = Instructor(current_user.kerb, current_user.full_name)
+        session['affiliation'] = "staff"
+        login_user(user, remember=False)
+    elif current_user.is_instructor:
+        user = Student(current_user.kerb, current_user.full_name)
+        session['affiliation'] = "student"
+        login_user(user, remember=False)
+    else:
+        return redirect(url_for('.index'))        
+    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
+
 @app.route("/loginas/<kerb>")
 @login_required
 def loginas(kerb):
