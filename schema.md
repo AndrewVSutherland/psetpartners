@@ -16,6 +16,7 @@ course_number         | text        | Course number, e.g. 18
 Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    | bigint      | unique identifier automatically assigned by postgres
+active                | boolean     | true once owner opts in, not visible to students until then
 class_name            | text        | Course name, e.g. Algebra I
 class_number          | text        | Course number, e.g. 18.701
 year                  | smallint    | Calendar year
