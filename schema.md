@@ -20,9 +20,9 @@ class_name            | text        | Course name, e.g. Algebra I
 class_number          | text        | Course number, e.g. 18.701
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
-instructor_names[]    | text[]      | list of instructor names
-instructor_kerbs[]    | text[]      | list of instructor kerbs
-homepage              | text        | course homepage
+owner_kerb            | text[]      | responsible faculty (only one who can edit instructor kerbs)
+instructor_kerbs[]    | text[]      | list of instructor kerbs who can view pset groups for the class
+homepage              | text        | course homepage (not currently used)
 match_dates           | date[] 	    | matching dates (only future dates are relevant)
 size                  | smallint    | number of rows in classlist with class_id = id (read/write ratio is high, so worth maintaining)
 
@@ -38,14 +38,14 @@ gender                | text        | optional, currently female, male, or non-b
 hours                 | boolean[]   | a list of 7x24=168 booleans indicating hours available to pset (in timezone)
 kerb                  |	text	    | kerberos id (lookup column for this table)
 location              | text        | currently near or far (but will eventually include dorms, ILGs, etc...
-name                  |	text        | e.g. Johnathan Smith
+full_name             |	text        | e.g. "Smith, Johnathan" (or "Johnathan Smith") taken from Touchstone/people API
 preferred_name        | text        | e.g. John Smith
 preferred_pronouns    | text	    | e.g. they/them
 preferences           |	jsonb	    | dictionary of preferences (see Preferences tab)
 strengths             | jsonb       | dictionary of preference strength (values are integers from 0 to 10)
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
 year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
-blocked_student_ids   | bigint[]    | list of student ids this student will never be put in a group with
+blocked_kerbs         | text[]      | list of kerbs of students this student will never be put in a group with (not currently used)
 			
 ## groups
 
