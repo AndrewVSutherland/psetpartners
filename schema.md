@@ -17,14 +17,15 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    | bigint      | unique identifier automatically assigned by postgres
 active                | boolean     | true once owner opts in, not visible to students until then
-class_name            | text        | Course name, e.g. Algebra I
-class_number          | text        | Course number, e.g. 18.701
+class_name            | text        | Class name, e.g. Algebra I
+class_number          | text        | Class number (of master subject)
+class_numbers         | text[]      | Class numbers (all cross listings, including master subject)
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
 owner_kerb            | text[]      | responsible faculty (only one who can edit instructor kerbs)
 instructor_kerbs[]    | text[]      | list of instructor kerbs who can view pset groups for the class
 homepage              | text        | course homepage (not currently used)
-match_dates           | date[] 	    | matching dates (only future dates are relevant)
+match_date            | date 	    | next match date (automatically advances a week at a time unless explicitly set)
 size                  | smallint    | number of rows in classlist with class_id = id (read/write ratio is high, so worth maintaining)
 
 ## instructors
