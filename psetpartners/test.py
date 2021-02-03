@@ -31,9 +31,12 @@ test_timezones = ["US/Samoa", "US/Hawaii", "Pacific/Marquesas", "America/Adak", 
 
 test_departments = ['6', '8', '7', '20', '5', '9', '10', '1', '3', '2', '16',  '14', '12', '4', '11', '22', '24', '21', '17']
 
-big_classes = [ '18.02', '18.03', '18.06', '18.404', '18.600' ]
+big_classes = [ '1.00', '2.001', '3.091', '4.021', '5.111', '5.112', '6.0001', '6.002', '6.004', '6.033', '6.034',
+    '7.012', '7.013', '7.014', '7.015', '7.016', '7.26', '8.01', '8.02', '8.033', '9.13', '9.40', '9.85', '10.00', '10.01',
+    '12.400', '14.01', '14.02', '15.025', '15.034', '16.001',     '16.002', '16.003', '16.004',
+    '18.01', '18.02', '18.03', '18.06', '18.404', '18.600', '22.00', '22.01', '24.09' ]
 
-def populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3):
+def populate_sandbox(num_students=5000, active_classes=500, max_classes_per_student=6, prefprob=3, groupsize=4):
     """ generates a random student population for testing (destorys existing test data) """
     from . import db
     mydb = db
@@ -44,17 +47,19 @@ def populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3):
         return
 
     with DelayCommit(mydb):
-        # copy classes from live 
+        # copy classes from live database for current term
         mydb.test_classes.delete({}, resort=False)
-        mydb.test_classes.insert_many(list(db.classes.search({'year': current_year(), 'term': current_term()}, projection=3)), resort=False)
-        _populate_sandbox(num_students, max_classes, prefprob)
-        db.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
+        mydb.test_classes.insert_many(list(mydb.classes.search({'year': current_year(), 'term': current_term()}, projection=3)), resort=False)
+        _populate_sandbox(num_students,active_classes, max_classes_per_student, prefprob)
+        mydb.globals.update({'key':'sandbox'},{'timestamp': datetime.datetime.now(), 'value':{'students':num_students}}, resort=False)
     print("Done!")
 
-def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3):
+def _populate_sandbox(num_students=5000, active_classes=500, max_classes_per_student=6, prefprob=3, groupsize=4):
     from random import randint
 
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
+
+    assert num_students < 10000
 
     def rand(x):
         return x[randint(0,len(x)-1)]
@@ -81,20 +86,51 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3)
     db.test_requests.delete({}, resort=False)
     db.test_students.delete({}, resort=False)
     db.test_instructors.delete({}, resort=False)
+    db.test_classes.delete({}, resort=False)
     db.test_groups.delete({}, resort=False)
     db.test_classlist.delete({}, resort=False)
     db.test_grouplist.delete({}, resort=False)
     db.test_survey_responses.delete({}, resort=False)
+    db.test_classes.update({},{'active':False,'owner_kerb':'','instructor_kerbs':[]})
+    db.test_classes.update({},{'size':0})
     print("Deleted all records in test database.")
+
+    if num_students < 10*active_classes:
+        active_classes = num_students // 5
+        print ("Reduced active classes to %d to ensure an average of at least 10 students per class" % active_classes)
+
+    num_classes = db.test_classes.count()
+    if active_classes > num_classes:
+        db.test_classes.update({'active':True})
+        print ("Only %d classes available in the current term, using all of them." % num_classes)
+        active_classes = num_classes
+    else:
+        for i in range(active_classes):
+            class_id = db.test_classes.random({'active': False})
+            db.test_classes.update({'active': True})
+    if num_students > 100*active_classes:
+        num_students = 100*active_classes
+        print("Reduced number of_students to %d to ensure an average of no more than 100 students per class"%num_students)
+
     year, term = current_year(), current_term()
-    # copy classes from live db
+
+    num_instructors = 2*num_classes // 3
+    S = [{ 'kerb' : "p%04d" % n, 'full_name': 'Professor ' + db.profnames.random() } for n in range(num_instructors)]
+    for r in S:
+        r['preferred_name'] = r['full_name']
+    db.test_instructors.insert_many(S, resort=False)
+    for class_id in db.test_classes.search(projection="id"):
+        kerb = "p%04d" % randint(0,num_instructors-1)
+        db.test_classes.update({'id': class_id}, {'owner_kerb': kerb, 'instructor_kerbs': [kerb]})
+    print ("Created %d instructors and assigned them to %d classes" % (num_instructors, num_classes))
+
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
     now = datetime.datetime.now()
     S = []
     names = set()
     for n in range(num_students):
         s = blank_student.copy()
-        s['kerb'] = "test%03d" % n
+        s['kerb'] = "s%04d" % n
         while True:
             firstname = db.names.random()
             name = db.math_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
@@ -167,7 +203,7 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3)
             c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
             if not c in classes:
                 classes.append(c)
-            for m in range(2,max_classes):
+            for m in range(2,max_classes_per_student):
                 if randint(0,2*m-2):
                     break;
                 c = db.test_classes.random({'year': year, 'term': term}, projection=['id', 'class_number'])
@@ -271,12 +307,3 @@ def _populate_sandbox(num_students=1000, max_classes=6, prefprob=3, groupsize=3)
     for s in db.test_classlist.search(projection=["id","status"]):
         if s['status'] == 0 and randint(0,9):
             db.test_classlist.update({'id':s['id']},{'status':2, 'status_timestamp': now}, resort=False)
-
-    # take instructors from classes table for current term
-    S = []
-    for r in db.test_classes.search({'year': current_year(), 'term': current_term()},projection=['class_number', 'instructor_kerbs','instructor_names']):
-        if r['instructor_kerbs']:
-            for i in range(len(r['instructor_kerbs'])):
-                kerb, name = r['instructor_kerbs'][i], r['instructor_names'][i]
-                S.append({'kerb':kerb,'preferred_name':name,'full_name':name,'departments':['18'],'toggles':{}})
-    db.test_instructors.insert_many(S, resort=False)             

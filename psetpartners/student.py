@@ -91,13 +91,15 @@ departments_options = [
   ( '22', 'Nuclear Science and Engineering'),
   ( '24', 'Linguistics and Philosophy'),
   ( 'CMS', 'Comparative Media Studies'),
+  ( 'HST', 'Health Sciences and Technology'), 
   ( 'IDS', 'Data, Systems, and Society'),
   ( 'IMES', 'Medical Engineering and Science'),
   ( 'MAS', 'Media Arts and Sciences'),
   ( 'SCM', 'Supply Chain Management'),
   ( 'STS', 'Science, Technology, and Society'),
   ( 'WGS', "WGS Women's and Gender Studies"),
-  ];
+  ]
+course_number_index = { departments_options[i][0]: i for i in range(len(departments_options)) }
 
 year_options = [
     (1, "first year"),
@@ -248,27 +250,21 @@ def default_value(typ):
         return {}
     return None
 
-CLASS_NUMBER_RE = re.compile(r"^(\d+).(S?)(\d+)([A-Z]*)")
-COURSE_NUMBER_RE = re.compile(r"^(\d*)([A-Z]*)")
-
 def _str(s):
     if isinstance(s,list):
         return ' '.join([str(t) for t in s])
     return str(s) if s is not None else ""
 
+def course_number_key(s):
+    return course_number_index.get(s,len(course_number_index))
+
 def class_number_key(s):
     a = s.split('.')
-    return (int(a[0]), '.'.join(a[1:]))
-
-def course_number_key(s):
-    r = COURSE_NUMBER_RE.match(s)
-    if r.group(1) == '':
-        return 27*27*27 + 27*27*(ord(r.group(2)[0])-ord('A')+1) + 27*(ord(r.group(2)[1])-ord('A')+1) + ord(r.group(2)[2])-ord('A')+1
-    return 27*int(r.group(1)) + ((ord(r.group(2)[0])-ord('A')+1) if r.group(2) != '' else 0)
+    return (course_number_key(a[0]), '.'.join(a[1:]))
 
 def current_classes(year=current_year(), term=current_term()):
     db = getdb()
-    classes = [(r['class_number'], r['class_name']) for r in db.classes.search({'year': year, 'term': term}, projection=['class_number', 'class_name'])]
+    classes = [(r['class_number'], r['class_name']) for r in db.classes.search({'active': True, 'year': year, 'term': term}, projection=['class_number', 'class_name'])]
     return sorted(classes, key = lambda r: class_number_key(r[0]))
 
 def departments():
@@ -297,12 +293,17 @@ def log_event(kerb, event, detail={}, status=0):
     db = getdb()
     db.events.insert_many([{'kerb': kerb, 'timestamp': datetime.datetime.now(), 'status': status, 'event': event, 'detail': detail}], resort=False)
 
-def pretty_name(s):
-    if 'preferred_name' not in s:
-        return s.get('kerb', 'unknown')
-    if 'preferred_pronouns' in s:
+def preferred_name(s):
+    if s.get('preferred_name'):
         return s['preferred_name']
-    return "%s (%s)" % (s['preferred_name'], s['preferred_pronouns'])
+    t = s['full_name'].split(',')
+    if len(t) == 2:
+        return t[1].strip() + ' ' + t[0]
+    return s['full_name'] if s.get('full_name') else s['kerb']
+
+def pretty_name(s):
+    name = preferred_name(s)
+    return "%s (%s)" % (name, s['preferred_pronouns']) if s.get('preferred_pronouns') else name
 
 def email_address(s):
     return s['email'] if s.get('email') else s['kerb'] + '@mit.edu'
@@ -527,12 +528,13 @@ class Student(UserMixin):
         self._db = getdb()
         data = self._db.students.lucky({"kerb":kerb}, projection=3)
         if data is None:
-            now = datetime.datetime.now()
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
             data['full_name'] = full_name
+            data['preferred_name'] = preferred_name(data)
             data['id'] = -1
             data['new'] = True
+            now = datetime.datetime.now()
             data['last_login'] =  now
             data['last_seen'] = now
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
@@ -542,7 +544,7 @@ class Student(UserMixin):
             data['new'] = False
             if not data.get('full_name'):
                 data['full_name'] = full_name
-            log_event (kerb, 'load', detail={'student_id': data['id']})
+            data['preferred_name'] = preferred_name(data)
         cleanse_student_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -610,8 +612,11 @@ class Student(UserMixin):
             return False
 
     def seen(self):
-        self._db.students.update({'kerb': self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)
-        log_event (self.kerb, 'seen')
+        now = datetime.datetime.now()
+        if self.last_seen is None or self.last_seen + datetime.timedelta(hours=1) < now:
+            self.last_seen = now
+            self._db.students.update({'kerb': self.kerb},{'last_seen':now}, resort=False)
+            log_event (self.kerb, 'seen')
 
     def login(self):
         self._db.students.update({'kerb': self.kerb},{'last_login':datetime.datetime.now()}, resort=False)
@@ -874,7 +879,7 @@ class Student(UserMixin):
             app.logger.warning("User %s attempted to match group %s in class %s but is already a member of group %s" % (self.kerb, group_id, c, self.group_data[c]['id']))
             raise ValueError("You are already a member of the group %s in class %s, you must leave that group before joining a new one." % (self.group_data[c]['group_name'], c))
         now = datetime.datetime.now()
-        if self.class_data[c]['status'] == 5 or (self.class_data[c]['status'] == 3 and self.class_data[c]['status_timestamp'] + datetime.timedelta(days=int(1)) > now):
+        if self.class_data[c]['status'] == 5 or (self.class_data[c]['status'] == 3 and self.class_data[c]['status_timestamp'] + datetime.timedelta(days=1) > now):
             app.logger.warning("User %s attempted to match group %s in class %s but is currently being matched in that class" % (self.kerb, group_id, c))
             raise ValueError("Unable to request match, you are currently in the process of being matched in <b>%s</b>." % g['class_number'])
         if g['visibility'] != 1:
@@ -1130,7 +1135,7 @@ class Student(UserMixin):
             r['id'] = r['class_id'] # just so we don't get confused
             r['next_match_date'] = next_match_date(r['class_id'])
             # timeout expired request status
-            if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=int(1)) < now:
+            if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=1) < now:
                 r['status'] = 0
             if r['status'] in [0,2]:
                 # Don't make suggestions to students who have left 2 or more groups in the class recently
@@ -1187,18 +1192,23 @@ class Instructor(UserMixin):
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
             data['full_name'] = full_name
+            data['preferred_name'] = preferred_name(data)
             data['id'] = -1
             data['new'] = True
+            now = datetime.datetime.now()
+            data['last_login'] =  now
+            data['last_seen'] = now
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", new_instructor_welcome)
-            log_event (kerb, 'load', {'instructor_id': data['id']})
+            log_event (kerb, 'new', {'instructor':True})
         else:
             data['new'] = False
             if not data.get('full_name'):
                 data['full_name'] = full_name
+            data['preferred_name'] = preferred_name(data)
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", old_instructor_welcome)
-            log_event (kerb, 'new', {'instructor':True})
+
         cleanse_instructor_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -1292,8 +1302,11 @@ class Instructor(UserMixin):
             return self.last_login < r['timestamp']
 
     def seen(self):
-        self._db.instructors.update({'kerb':self.kerb},{'last_seen':datetime.datetime.now()}, resort=False)
-        log_event (self.kerb, 'seen', {'instructor':True})
+        now = datetime.datetime.now()
+        if self.last_seen is None or self.last_seen + datetime.timedelta(hours=1) < now:
+            self.last_seen = now
+            self._db.instructors.update({'kerb':self.kerb},{'last_seen':now}, resort=False)
+            log_event (self.kerb, 'seen', {'instructor':True})
 
     def login(self):
         self._db.instructors.update({'kerb':self.kerb},{'last_login':datetime.datetime.now()}, resort=False)

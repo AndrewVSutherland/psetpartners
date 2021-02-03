@@ -5,7 +5,7 @@ from math import sqrt, floor, ceil
 from functools import lru_cache
 
 # cols from student table relevant to matching
-student_properties = ["id", "kerb", "blocked_student_ids", "gender", "hours", "year", "departments", "timezone"]
+student_properties = ["id", "kerb", "blocked_kerbs", "gender", "hours", "year", "departments", "timezone"]
 
 # preferences relevent to matching other than size
 affinities = ["gender_affinity", "confidence_affinity", "commitment_affinity", "departments_affinity", "year_affinity"]
@@ -380,7 +380,7 @@ class Student(object):
         INPUT:
 
         - ``quality`` -- one of the keys for the ``preferences`` dictionary,
-            or one of a few other contributing factors: "hours", "blocked_student_ids"
+            or one of a few other contributing factors: "hours", "blocked_kerbs"
         - ``G`` -- a Group, which may or may not contain this student.
         """
         if isinstance(G, Student):
@@ -389,12 +389,12 @@ class Student(object):
             if quality in styles:
                 a, s = self.preferences.get(quality, (None, 0))
                 b, _ = T.preferences.get(quality, (None, 0))
-            elif quality in ["blocked_student_ids"] + affinities:
+            elif quality in ["blocked_kerbs"] + affinities:
                 prop = quality.replace("_affinity", "")
                 a = self.properties.get(prop)
                 b = T.properties.get(prop)
-            if quality == "blocked_student_ids":
-                return not (T.properties.get("id") in a)
+            if quality == "blocked_kerbs":
+                return not (T.properties.get("kerb") in a)
             if a is None or b is None:
                 # If we don't know the relevant quantity for one of the students
                 # it doesn't contribute positively but also doesn't impose a
@@ -421,7 +421,7 @@ class Student(object):
             raise RuntimeError
 
         others = [T for T in G.students if T.id != self.id]
-        if quality == "blocked_student_ids":
+        if quality == "blocked_kerbs":
             if not all(check(T) for T in others):
                 return -10**10
             return 0
@@ -557,7 +557,7 @@ class Group(object):
 
     def print_warnings(self):
         for S in self.students:
-            for quality in affinities + styles + ["blocked_student_ids"]:
+            for quality in affinities + styles + ["blocked_kerbs"]:
                 if S.score(quality, self) < 0:
                     print("Group breaks %s's %s requirement" % (S.kerb, quality))
         overlap = self.schedule_overlap()

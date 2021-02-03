@@ -29,11 +29,8 @@ maxlength = {
     'description': MAX_TEXT_LEN,
     'group_name' : MAX_SHORT_NAME_LEN,
     'homepage': MAX_URL_LEN,
-    'instructor_names': 4,
-    'instructor_name' : MAX_SHORT_NAME_LEN,
     'kerb': MAX_ID_LEN,
-    'instructor_kerbs': 4,
-    'instructor_kerb' : MAX_SHORT_NAME_LEN,
+    'instructor_kerbs': 16,
     'preferred_name' : MAX_SHORT_NAME_LEN,
     'preferred_pronouns': MAX_SHORT_NAME_LEN,
 }
@@ -54,11 +51,19 @@ def domain():
     return urlparse(request.url).netloc
 
 def current_year():
-    return datetime.now().year
+    return datetime.now().year # calendar year, not academic year
 
 def current_term():
-    """ Returns the current/upcoming term, which is currently always 1 (spring) or 3 (fall)"""
-    return 1 if datetime.now().month < 6 else 3
+    """ Returns the current/upcoming term"""
+    today = (datetime.now().month, datetime.now().day)
+    if today <= (1,25):
+        return 0
+    if today <= (6,1):
+        return 1
+    if today <= (8,15):
+        return 2
+    if today <= (12,20):
+        return 3
 
 def current_term_pretty():
     return term_options[current_term()] + " " + str(current_year())
