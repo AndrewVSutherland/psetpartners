@@ -1,4 +1,4 @@
-def get_kerb_data (kerb, client_id, client_secret):
+def get_kerb_data (kerb, client_id, client_secret, raw=False):
     import requests
     from psetpartners import db
     from psetpartners.student import course_number_key
@@ -10,7 +10,9 @@ def get_kerb_data (kerb, client_id, client_secret):
     data = resp.get('item',{})
     if not data or data.get('kerberosId','') != kerb:
         return {}
-    res = { 'kerb':kerb }
+    if raw:
+        return data
+    res = { 'kerb': kerb }
     full_name = data.get('displayName','').strip()
     if full_name:
         res['full_name'] = full_name
