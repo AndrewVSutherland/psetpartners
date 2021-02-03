@@ -1,0 +1,1 @@
+pushd /home/psetpartners/psetpartners-git-test/ && git fetch && git checkout origin/test -f && git submodule update &&  popd
