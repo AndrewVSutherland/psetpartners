@@ -25,6 +25,8 @@ def get_forcelive():
 def getdb(forcelive=False):
     global _db, _forcelive, _warn_forcelive
 
+    if forcelive:
+        set_forcelive(forcelive)
     if _db is None:
         if livesite():
             _db = db
