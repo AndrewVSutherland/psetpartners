@@ -105,6 +105,24 @@ def SQLWrapper(str,map={}):
 
 #TODO: handle query and projection args to these functions (we fake projection at the moment)
 
+# returns data for students in classes for specified year and term
+def students_in_classes(year, term, projection=[]):
+    s, cs = ("students", "classlist") if livesite() or get_forcelive() else ("test_students", "test_classlist")
+    # note that the order of cols must match the order they appear in the SELECT below
+    cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
+            'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status']
+    cmd = SQLWrapper(
+        """
+SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
+       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}
+FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
+WHERE {cs}.{year} = %s AND {cs}.{term} = %s
+        """,
+        {'s':s, 'cs':cs}
+    )
+    return DBIterator(db._execute(cmd, [year, term]), cols, projection)
+
+# returns data for students in a particular class
 def students_in_class(class_id, projection=[]):
     s, cs = ("students", "classlist") if livesite() or get_forcelive() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
@@ -141,6 +159,7 @@ WHERE {cs}.{class_id} = %s
     )
     return DBIterator(db._execute(cmd, [class_id]), cols, projection)
 
+# returns data for students in a particular group
 def students_in_group(group_id, projection=[]):
     s, g = ("students", "grouplist") if livesite() or get_forcelive() else ("test_students", "test_grouplist")
     # note that the order of cols must match the order they appear in the SELECT below
@@ -156,17 +175,3 @@ WHERE {g}.{group_id} = %s
         {'s':s, 'g':g}
     )
     return DBIterator(db._execute(cmd, [group_id]), cols, projection)
-
-def groups_in_class(class_id, projection=[]):
-    g, c = ("groups", "grouplist") if livesite() or get_forcelive() else ("test_groups", "test_grouplist")
-    # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['group_name', 'visibility', 'preferences', 'strengths']
-    cmd = SQLWrapper(
-        """
-SELECT {g}.{group_name}, {g}.{visibility}, {g}.{preferences}, {g}.{strengths}
-FROM {c} INNER JOIN {s} ON {g}.{id} = {c}.{group_id}
-WHERE {c}.{class_id} = %s
-        """,
-        {'g':g, 'c':c}
-    )
-    return DBIterator(db._execute(cmd, [class_id]), cols, projection)
