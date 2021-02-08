@@ -48,7 +48,7 @@ from .utils import (
     timezones,
     list_of_strings,
 )
-from .test import sandbox_message
+from .test import sandbox_data
 
 
 def is_safe_url(target):
@@ -123,11 +123,11 @@ def login():
         displayname = request.environ.get("HTTP_DISPLAYNAME", "")
     else:
         if request.method != "POST" or request.form.get("submit") != "login":
-            return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
+            return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         kerb = request.form.get("kerb", "").lower()
         if not KERB_RE.match(kerb):
             flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
-            return render_template("login.html", maxlength=maxlength, sandbox_message=sandbox_message(), next=next)
+            return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         if kerb == "staff":
             affiliation = "staff"
         elif kerb == "affiliate":
@@ -224,7 +224,7 @@ def admin(class_number=''):
     db = getdb()
     user = Instructor(session['kerb'], session['displayname'])
     if not class_number:
-        classes=[''] + list(db.classes.search({'year': current_year(), 'term': current_term()},projection='class_number'))
+        classes=[''] + list(db.classes.search({'active':True, 'year': current_year(), 'term': current_term()},projection='class_number'))
         return render_template(
             "admin.html",
             options=template_options(),
@@ -271,7 +271,7 @@ def index():
         if livesite():
             return redirect(url_for(".login"))
         else:
-            return render_template("login.html", sandbox_message=sandbox_message(), maxlength=maxlength)
+            return render_template("login.html", sandbox=sandbox_data(), maxlength=maxlength)
     assert False
 
 @app.route("/test404")
@@ -329,7 +329,6 @@ def testenviron():
 
 allowed_copts = ["hours", "start", "style", "forum", "size", "commitment", "confidence", "status"]
 allowed_gopts = ["group_name", "visibility", "hours", "preferences", "strengths", "members", "size", "max"]
-
 
 @app.route("/_acknowledge")
 @login_required

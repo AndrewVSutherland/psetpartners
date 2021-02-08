@@ -263,7 +263,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 // jshint ignore:start
 const classesOptions = [
 {% for val, option in options.classes %}
-  { value: '{{val}}', label: '{{val}} {{option}}' },
+  { value: '{{val}}', label: "{{val}} {{option | safe}}" }, // option may have single quotes in it (but no double quotes!)
 {% endfor %}
 ];
 

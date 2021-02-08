@@ -110,13 +110,13 @@ def students_in_classes(year, term, projection=[]):
     s, cs = ("students", "classlist") if livesite() or get_forcelive() else ("test_students", "test_classlist")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender',
-            'location', 'timezone', 'hours', 'properties', 'preferences', 'strengths', 'status']
+            'location', 'timezone', 'hours', 'preferences', 'strengths']
     cmd = SQLWrapper(
         """
 SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
-       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}
-FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
-WHERE {cs}.{year} = %s AND {cs}.{term} = %s
+       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {s}.{preferences}, {s}.{strengths}
+FROM {s}
+WHERE EXISTS (SELECT FROM {cs} WHERE {cs}.{year} = %s AND {cs}.{term} = %s and {cs}.{student_id} = {s}.{id})
         """,
         {'s':s, 'cs':cs}
     )
