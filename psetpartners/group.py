@@ -2,7 +2,7 @@ import datetime
 from psycodict import DelayCommit
 from .app import send_email, livesite
 from .utils import current_term, current_year
-from .dbwrapper import getdb, count_rows, get_forcelive
+from .dbwrapper import getdb, get_forcelive
 
 group_preferences = [ 'start', 'style', 'forum', 'size' ]
 
@@ -41,24 +41,38 @@ def student_url(class_number):
     url = "https://psetpartners.mit.edu/student" if (livesite() or get_forcelive()) else "https://psetpartners-test.mit.edu/student"
     return url if not class_number else url + "/" + class_number
 
-def generate_group_name(class_id, year=current_year(), term=current_term()):
+def generate_group_name(class_id=None, year=current_year(), term=current_term(), class_names=set(), avoid_names=set()):
+    from random import randint
+    def rand(x):
+        return x[randint(0,len(x)-1)]
+
     db = getdb()
-    S = { g for g in db.groups.search({'class_id': class_id}, projection='group_name') }
-    A = { g.split(' ')[0] for g in S }
-    N = { g.split(' ')[1] for g in S }
-    acount = count_rows('positive_adjectives')
-    ncount = count_rows('plural_nouns')
-    while True:
-        a = db.positive_adjectives.random({})
-        if 2*len(A) < acount and a in A:
+    S = set(class_names)
+    if class_id is not None:
+        S.update({ g for g in db.groups.search({'class_id': class_id}, projection='group_name') })
+    Sa = { g.split(' ')[0].lower() for g in S }
+    Sn = { g.split(' ')[1].lower() for g in S }
+    N = list(db.plural_nouns.search({},projection="word"))
+    L = { w[0] for w in Sn }
+    if len(L) <= 20: # don't force 26 letters
+        N = [ n for n in N if not n[0] in L ]
+    for i in range(100):
+        n = rand(N)
+        if n in Sn:
             continue
-        n = db.plural_nouns.random({'firstletter':a[0]})
-        if 4*len(N) < ncount and n in N:
+        a = db.positive_adjectives.random({'firstletter':n[0]},projection="word")
+        if not a:
+            continue
+        if a in Sa:
             continue
         name = a.capitalize() + " " + n.capitalize()
-        if db.groups.lucky({'group_name': name, 'year': year, 'term': term}):
+        if i < 50 and name in avoid_names:
+            continue
+        if i < 50 and db.groups.lucky({'group_name': name, 'year': year, 'term': term}):
             continue
         return name
+    print("error in generate_group_name, L=%s, N=%s, class_names=%s, len(avoid_names)=%s:" % (L,N,class_names,len(avoid_names)))
+    raise NotImplementedError("Unable to generate group name!")
 
 def create_group (class_id, kerbs, match_run=0, group_name=''):
     from .student import max_size_from_prefs, email_address, signature, log_event
