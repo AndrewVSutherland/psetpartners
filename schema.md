@@ -25,7 +25,7 @@ term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=su
 owner_kerb            | text[]      | responsible faculty (only one who can edit instructor kerbs)
 instructor_kerbs[]    | text[]      | list of instructor kerbs who can view pset groups for the class
 homepage              | text        | course homepage (not currently used)
-match_date            | date 	    | next match date (automatically advances a week at a time unless explicitly set)
+match_dates           | date[] 	    | dates to match students in pool (sorted).  Least date >= today will be advertised as the pool date
 size                  | smallint    | number of rows in classlist with class_id = id (read/write ratio is high, so worth maintaining)
 
 ## instructors
