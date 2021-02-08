@@ -1,7 +1,7 @@
 import re, datetime
 from . import app
 from .app import debug_mode, livesite, send_email
-from .dbwrapper import getdb, students_in_class, students_groups_in_class, students_in_group, count_rows
+from .dbwrapper import getdb, students_in_classes, students_in_class, students_groups_in_class, students_in_group, count_rows
 from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from pytz import timezone, UnknownTimeZoneError
@@ -433,7 +433,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
     db = getdb();
     counts = {}
     if '' in classes:
-        counts[''] = student_counts(db.students.search(), opts)
+        counts[''] = student_counts(students_in_classes(year, term), opts)
         counts['']['classes'] = count_rows('classes', {'year': year, 'term': term})
         counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
         counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
