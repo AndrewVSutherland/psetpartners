@@ -178,6 +178,8 @@ def naive_utcoffset(tz):
             pass
 
 def hours_from_default(tz):
+    if not tz:
+        return 0
     delta = int(naive_utcoffset(tz).total_seconds()) - int(naive_utcoffset(DEFAULT_TIMEZONE).total_seconds())
     hours, remainder = divmod(abs(delta), 3600)
     if remainder > 1800:

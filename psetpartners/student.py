@@ -1,4 +1,4 @@
-import re, datetime
+import datetime
 from . import app
 from .app import debug_mode, livesite, send_email
 from .dbwrapper import getdb, students_in_classes, students_in_class, students_groups_in_class, students_in_group, count_rows
@@ -363,11 +363,15 @@ def student_counts(iter, opts):
     prop_opts = [ opt for opt in counts if opt in student_class_properties ]
     base_opts = [ opt for opt in counts if opt not in pref_opts and opt not in prop_opts ]
     n = 0
+    offs = {}
     for r in iter:
         if count_hours:
-            off = hours_from_default(r['timezone']) if r['timezone'] else 0
+            if not r['timezone'] in offs:
+                offs[r['timezone']] = hours_from_default(r['timezone'])
+            off = offs[r['timezone']]
             for i in range(168):
-                hours[(i-off) % 168] += 1 if r['hours'][i] else 0
+                if r['hours'][i]:
+                    hours[(i-off) % 168] += 1
         for opt in base_opts:
             val = str(r.get(opt,""))
             counts[opt][val] = (counts[opt][val]+1) if val in counts[opt] else 1
@@ -434,7 +438,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
     counts = {}
     if '' in classes:
         counts[''] = student_counts(students_in_classes(year, term), opts)
-        counts['']['classes'] = count_rows('classes', {'year': year, 'term': term})
+        counts['']['classes'] = count_rows('classes', {'active':True, 'year': year, 'term': term})
         counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
         counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
         counts['']['students_groups'] = count_rows('grouplist', {'year': year, 'term': term})
