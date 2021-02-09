@@ -279,7 +279,7 @@ def departments():
 
 def is_instructor(kerb):
     db = getdb()
-    return True if db.instructors.lucky({'kerb':kerb},projection="id") else False
+    return True if db.instructors.lookup(kerb) is not None else False
 
 def is_whitelisted(kerb):
     db = getdb();
@@ -639,8 +639,11 @@ class Student(UserMixin):
             content = ''.join(msg['content'].split('`')) # remove any backticks since we are using them as a separator
             flash_announce("%s`%s" % (msg['id'], content))
 
-    def acknowledge(self, msgid):
-        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
+    def acknowledge(self, msgid=None):
+        if msgid is None:
+            self._db.messages.update({'recipient_kerb': self.kerb},{'read':True}, resort=False)
+        else:
+            self._db.messages.update({'recipient_kerb': self.kerb, 'id': msgid},{'read':True}, resort=False)
         log_event (self.kerb, 'ok')
         return "ok"
 
@@ -737,7 +740,7 @@ class Student(UserMixin):
     def _reload(self):
         """ This function should be called after any updates to classlist or grouplist related this student """
         self.class_data = self._class_data()
-        self.classes = sorted(list(self.class_data))
+        self.classes = sorted(list(self.class_data),key=class_number_key)
         self.group_data = self._group_data()
         self.groups = sorted(list(self.group_data))
 
@@ -1116,7 +1119,7 @@ class Student(UserMixin):
             self._reload()
             return "Updated the group <b>%s</b>!" % g['group_name']
         else:
-            return "No changes made."
+            return "No changes made to group <b>%s</b>." % g['group_name']
 
     def _notify_group(self, group_id, subject, email_message, announce_message):
         """ Notifies members of group and updates group size (so must be called for leave/join!) """
@@ -1223,13 +1226,21 @@ class Instructor(UserMixin):
         for col, typ in self._db.instructors.col_type.items():
             if getattr(self, col, None) is None:
                 setattr(self, col, default_value(typ))
-        self.classes = self._class_data()
+        self._reload()
         assert self.kerb
 
-    def acknowledge(self, msgid):
-        self._db.messages.update({'id': msgid},{'read':True}, resort=False)
+    def acknowledge(self, msgid=None):
+        if msgid is None:
+            self._db.messages.update({'recipient_kerb': self.kerb},{'read':True}, resort=False)
+        else:
+            self._db.messages.update({'recipient_kerb': self.kerb, 'id': msgid},{'read':True}, resort=False)
         log_event (self.kerb, 'ok')
         return "ok"
+
+    def activate(self, class_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'activate', {'class_id': class_id})
+            return self._activate(class_id)
 
     def update_toggle(self, name, value):
         if not name:
@@ -1237,16 +1248,42 @@ class Instructor(UserMixin):
         if self.toggles.get(name) == value:
             return "ok"
         self.toggles[name] = value;
-        self._db.instructors.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
+        self._save_toggles()
         return "ok"
 
+    def _save_toggles(self):
+        self._db.instructors.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
+
+    def _reload(self):
+        """ This function should be called after any updates to classlist or grouplist related this student """
+        self.class_data = self._class_data()
+        self.classes = list(self.class_data)
+
+    def _activate(self, class_id):
+        c = self._db.classes.lucky({'id': class_id})
+        if c is None:
+            app.logger.warning("User %s attempted to activate non-existent class %s" % (self.kerb, class_id))
+            raise ValueError("Class not found in database.")
+        if not c['class_number'] in self.classes:
+            app.logger.warning("User %s attempted to activate a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c['owner_kerb'] != self.kerb:
+            app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
+            raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
+        msg = "<b>%s</b> is now active on pset partners!" %(' / '.join(c['class_numbers']))
+        self._db.classes.update({'id': class_id}, {'active': True})
+        self._reload()
+        return msg
+
     def _class_data(self, year=current_year(), term=current_term()):
+        class_data = {}
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['groups'] = count_rows('groups', {'class_id': c['id']})
             c['next_match_date'] = next_match_date(c)
-        return sorted(classes, key = lambda x: x['class_number'])
+            class_data[c['class_number']] = c
+        return class_data
 
     @property
     def is_student(self):

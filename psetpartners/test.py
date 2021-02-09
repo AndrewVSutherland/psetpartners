@@ -267,7 +267,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
     db.test_classlist.insert_many(S, resort=False)
     S = []
     names = set()
-    for c in db.test_classes.search({'active': True, 'year': year, 'term': term}, projection=['id', 'class_number']):
+    for c in db.test_classes.search({'active': True, 'year': year, 'term': term}, projection=['id', 'class_number', 'class_numbers']):
         kerbs = list(db.test_classlist.search({'class_id':c['id']},projection='kerb'))
         n = len(kerbs)
         creators = set()
