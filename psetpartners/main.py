@@ -459,9 +459,27 @@ def instructor():
         "instructor.html",
         options=template_options(),
         maxlength=maxlength,
-        classes=current_user.classes,
+        classes=[current_user.class_data[c] for c in current_user.classes],
         ctx=session.pop("ctx",""),
     )
+
+@app.route("/activate/<class_id>")
+@login_required
+def activate(class_id):
+    if not current_user.is_authenticated or not current_user.is_instructor:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    current_user.acknowledge()
+    try:
+        flash_notify(current_user.activate(class_id))
+    except Exception as err:
+        msg = "Error activing class {0}{1!r}".format(type(err).__name__, err.args)
+        log_event (current_user.kerb, 'activate', status=-1, detail={'class_id': class_id, 'msg': msg})
+        if debug_mode():
+            raise
+        flash_error(msg)
+    return redirect(url_for(".instructor"))
 
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
 PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
@@ -486,6 +504,8 @@ def save_student():
         # update the full_name supplied by Touchstone (in case this changes)
         if session.get("displayname",""):
             current_user.full_name = session["displayname"]
+        # treat the decision to save changes as acknowledgement of all unread messages
+        current_user.acknowledge()
         if not save_changes(raw_data):
             if submit != "save":
                 flash_error("The action you requested was not performed.")

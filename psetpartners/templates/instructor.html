@@ -15,34 +15,48 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <p style="font-size:120%;"><b>{{classes[0].class_number}}&nbsp;{{classes[0].owner_name}}&nbsp;({{', '.join(classes[0].instructor_kerbs)}})</b> <a style="float:right; font-size:16px;" href="{{url_for('.admin')}}">index</a></p>
 
-
 {% else %}
 
 <h3>{{user.preferred_name}}</h3>
 
-{% if (user.classes|length) == 0 %}
-<p>You do not have access to this site because Touchstone has not identified you as a student and you are not listed as an instructor of one of the classes using the site this term.  For the {{current_term_pretty}} term only classes in course 18 are using pset partners.</p>
-<p>Please <a href="mailto:psetpartners@mit.edu">contact us</a> if this information is incorrect.</p>
-<p>
-If you are an instructor or staff member interested in using pset partners, please contact <a href="mailto:drew@math.mit.edu">drew@math.mit.edu</a>.  We are working to expand the site beyond course 18 in the spring.
-</p>
-{% else %}
+{% if classes|length == 0 %}
+<p>You have reached this page because Touchstone has identified you as a non-student (affiliate, staff, or faculty) but you are not currently registered as an instructor on pset partners for a class that is offerred during the <b>{{current_term_pretty}}</b> term</p>
+<ul class="faq">
+<li>Instructors<p>If you are an instructor for a class this term, please accept our apologies for the inconvenience; the registration data provided to pset partners identifies only one responsible faculty member per class (even when the catolog lists multiple names).   Please contact the responsible faculty member for your course and ask them to add you as an instructor.  If you do not know who that is, or if it should be you, please <a href="mailto:psetpartners@mit.edu">contact us</a>.</p></li>
 
-{% if (user.classes|length) == 1 %}
-<p align="justify">According to our records, you are teaching <b>{{ user.classes[0]['class_number'] + " " + user.classes[0]['class_name']}}</b>.</p>
+<li>Students<p>If you reached this page it is because Touchstone identified you in a differerent role &mdash; this occaasionally happes to special students and/or cross-registered students.  Please <a href="mailto:psetpartners@mit.edu">contact us</a> so that we can update your pset partners profile.  In your eamil please include your name, kerberos identifier, and at least one subject number of a course you are registered for this term.</p></li>
+
+<li>Staff and affiliates<p>The pset partners website is only available to students and instructors, but please feel free to explore our <a href="https://psetpartners-test.mit.edu">test site</a> or browse our <a href="{{url_for('.faq')}}">FAQ</a>.
+</ul>
+{% else %}
+{% set inactive = classes|selectattr("active","false")|list %}
+{% if inactive %}
+<p align="justify">According to our records, you are the responsible faculty member for the following classes which are <b>not currently active</b> on pset partners:</p>
+<ul class="classlist">
+{% for c in inactive %}
+<li>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}<button type="button" class="confirm" id="activate-{{c['id']}}" value="{{c['id']}}" onclick="location.href='{{url_for('.activate',class_id=c['id'])}}';">activate</button></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% set active=classes|selectattr("active")|list %}
+{% if active %}
+{% if active|length == 1 %}
+<p align="justify">According to our records, you are teaching <b>{{ ' / '.join(classes[0]['class_numbers']) + " " + classes[0]['class_name']}}</b>.</p>
 {% else %}
 <p>According to our records, you are teaching the following classes this term:</p>
-<ul>
-{% for i in range(user.classes|length) %}
-{% set c = user.classes[i] %}
-<li style="margin:8px 0;"> <label class="clickable" onclick="toggleClass({{i}});">{{ c['class_number'] + ' ' + c['class_name']  }}</label></li>
+<ul class="classlist">
+{% for i in range(active|length) %}
+{% set c = classes[i] %}
+<li> <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}</label></li>
 {% endfor %}
 </ul>
 {% endif %}
 {% endif %}
 {% endif %}
+{% endif %}
 
-{% if classes|length %}
+{% if active|length %}
 <p>
 The table below lists the <label class="highlight" id="students">?</label> students and <label class="highlight" id="groups">?</label> groups in <label class="highlight" id="class_number">?</label> using pset partners during the <b>{{current_term_pretty}}</b> term.
 </p>
