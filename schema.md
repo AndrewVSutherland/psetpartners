@@ -18,8 +18,8 @@ Column                | Type        |  Notes
 id                    | bigint      | unique identifier automatically assigned by postgres
 active                | boolean     | true once owner opts in, not visible to students until then
 class_name            | text        | Class name, e.g. Algebra I
-class_number          | text        | Class number (of master subject)
-class_numbers         | text[]      | Class numbers (all cross listings, including master subject)
+class_number          | text        | Class number, e.g. 18.701 (master subject)
+class_numbers         | text[]      | Class numbers (includes master subject and all cross-listed subjects)
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
 owner_kerb            | text[]      | responsible faculty (only one who can edit instructor kerbs)
@@ -73,7 +73,8 @@ Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
-class_number	      | text        | class number (e.g. "18.701")
+class_number	      | text        | class number (copied from class)
+class_numbers         | text        | class numbers (copied from class)
 year                  | smallint    | year of class (e.g. 2020)
 term                  | smallint    | term of class (e.g. 3 = Fall)
 group_name            | text	    | custom name, editable by anyone in group
