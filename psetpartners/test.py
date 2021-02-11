@@ -142,6 +142,16 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
         n += 1
     print ("Created %d instructors and randomly assigned them to %d classes, now generating students..." % (num_instructors, n))
 
+    # make sure first few professors have at least one active class
+    for n in range(1,8):
+        if not db.test_classes.lucky({'active':True, 'owner_kerb': "p%03d" % n}):
+            p = S[n]
+            c = db.test_classes.random({'active':True}, projection=3)
+            kerbs = c['instructor_kerbs']
+            if not p['kerb'] in kerbs:
+                kerbs = [p['kerb']] + kerbs
+            db.test_classes.update({'id': c['id']}, {'owner_kerb': p['kerb'], 'owner_name': p['preferred_name'], 'instructor_kerbs': kerbs}, resort=False)
+
     blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
     now = datetime.datetime.now()
     S = []

@@ -28,8 +28,9 @@ from .student import (
     student_class_properties,
     strength_options,
     current_classes,
+    is_current_instructor,
     is_instructor,
-    is_whitelisted,
+    is_student,
     is_admin,
     get_counts,
     class_groups,
@@ -133,7 +134,7 @@ def login():
         elif kerb == "affiliate":
             affiliation = "affiliate"
         else:
-            affiliation = "staff" if is_instructor(kerb) else "student"
+            affiliation = "staff" if is_current_instructor(kerb) else "student"
         displayname = ""
 
     if not kerb or not affiliation:
@@ -144,7 +145,7 @@ def login():
 
     if affiliation == "student":
         user = Student(kerb, displayname)
-    elif is_whitelisted(kerb):
+    elif is_student(kerb):
         affiliation = "student"
         user = Student(kerb, displayname)
     elif affiliation == "staff":
@@ -170,6 +171,8 @@ def login():
 def switch_role():
     if not current_user.is_authenticated:
         return redirect(url_for('.index'))
+    if not current_user.dual_role:
+        return redirect(url_for('.index'))
     if current_user.is_student:
         user = Instructor(current_user.kerb, current_user.full_name)
         session['affiliation'] = "staff"
@@ -189,19 +192,24 @@ def loginas(kerb):
         app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
         return render_template("500.html", message="You are not authorized to perform this operation."), 500
     logout_user()
-    if livesite():
-        if 'people' in Configuration().options:
-            from .people import get_kerb_data
+    session['affiliation'] = ''
+    session['displayname'] = ''
+    if is_student(kerb):
+        session['affiliation'] = 'student'
+    elif is_instructor(kerb):
+        session['affiliation'] = 'staff'
+    elif 'people' in Configuration().options:
+        from .people import get_kerb_data
 
-            c = Configuration().options['people']
-            data = get_kerb_data(kerb, c['id'], c['secret'])
-            if data:
-                session['affiliation'] = "student"
-                session['displayname'] = data['full_name']
-    displayname = session['displayname']
-    user = Instructor(kerb, displayname) if is_instructor(kerb) else Student(kerb, displayname)
+        c = Configuration().options['people']
+        data = get_kerb_data(kerb, c['id'], c['secret'])
+        if data:
+            session['affiliation'] = data['affiliation']
+            session['displayname'] = data['full_name']
+    if not session['affiliation']:
+        session['affiliation'] = 'affiliate'
+    user = Student(kerb, session['displayname']) if session['affiliation'] == 'student' else Instructor(kerb, session['displayname'])
     session['kerb'] = kerb
-    session['affiliation'] = "student" if user.is_student else "staff"
     login_user(user, remember=False)
     if current_user.is_admin:
         return redirect(url_for(".admin"))
@@ -480,6 +488,43 @@ def activate(class_id):
             raise
         flash_error(msg)
     return redirect(url_for(".instructor"))
+
+@app.route("/save/class", methods=["POST"])
+@login_required
+def save_class():
+    raw_data = request.form
+    data = { col: val.strip() for col,val in raw_data.items() }
+    try:
+        class_id = int(data.pop("class_id"))
+    except Exception as err:
+        msg = "Error getting class_id: {0}{1!r}".format(type(err).__name__, err.args)
+        log_event (current_user.kerb, 'update', status=-1, detail={'data': data, 'msg': msg})
+        if debug_mode():
+            raise
+        flash_error(msg)
+        return redirect(url_for(".instructor"))
+
+    # if we are adding a new kerb that does not match an existing instructor, try to get the name via the people api
+    if data.get("add_kerb"):
+        from .dbwrapper import getdb
+        db = getdb()
+        if not db.instructors.lookup(data['add_kerb']) and 'people' in Configuration().options:
+            from .people import get_kerb_data
+            c = Configuration().options['people']
+            r = get_kerb_data(data['add_kerb'], c['id'], c['secret'])
+            if r and r.get("full_name"):
+                data["add_name"] = r["full_name"]
+    current_user.acknowledge()
+    try:
+        flash_notify(current_user.update_class(class_id, data))
+    except Exception as err:
+        msg = "Error updating class: {0}{1!r}".format(type(err).__name__, err.args)
+        log_event (current_user.kerb, 'update', status=-1, detail={'class_id': class_id, 'data': data, 'msg': msg})
+        if debug_mode():
+            raise
+        flash_error(msg)
+    return redirect(url_for(".instructor"))
+
 
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
 PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")

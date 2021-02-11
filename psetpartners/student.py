@@ -14,6 +14,7 @@ from .utils import (
     flash_announce,
     flash_notify,
     flash_error,
+    validate_class_name,
     )
 from .group import generate_group_name
 from .token import generate_timed_token
@@ -46,9 +47,7 @@ To begin, enter your preferred name and any other personal details you care to s
 Then select your location, timezone, the math classes you are taking this term, and hours of availability (include partial hours).<br>
 You can explore your options for finding pset partners using the Preferences and Partners buttons."""
 
-old_instructor_welcome = "<b>Welcome to pset partners!</b>"
-
-new_instructor_welcome = "<b>Welcome to pset partners!</b>"
+instructor_welcome = "<b>Welcome to pset partners!</b>"
 
 permission_request = """
 There is a student in {class_numbers} looking to join a pset group whose schedule and preferences appear to be a good fit for <b>{group_name}</b>.<br><br>
@@ -281,7 +280,11 @@ def is_instructor(kerb):
     db = getdb()
     return True if db.instructors.lookup(kerb) is not None else False
 
-def is_whitelisted(kerb):
+def is_current_instructor(kerb):
+    db = getdb()
+    return True if db.classes.lucky({'year': current_year(), 'term': current_term(), 'instructor_kerbs': {'$contains':kerb}}, projection="id") is not None else False
+
+def is_student(kerb):
     db = getdb();
     return True if (db.students.lookup(kerb) or db.whitelist.lookup(kerb)) else False
 
@@ -535,7 +538,7 @@ class Student(UserMixin):
             app.log_warning("Ignoring displayname (null) for kerb %s" % kerb);
             full_name = ""
         self._db = getdb()
-        data = self._db.students.lucky({"kerb":kerb}, projection=3)
+        data = self._db.students.lookup(kerb, projection=3)
         if data is None:
             data = { col: None for col in self._db.students.col_type }
             data['kerb'] = kerb
@@ -554,6 +557,7 @@ class Student(UserMixin):
             if not data.get('full_name'):
                 data['full_name'] = full_name
             data['preferred_name'] = preferred_name(data)
+        self.dual_role = is_current_instructor(kerb)
         cleanse_student_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -1198,9 +1202,9 @@ class Instructor(UserMixin):
         if not kerb:
             raise ValueError("kerb required to create new instructor")
         self._db = getdb()
-        data = self._db.instructors.lucky({'kerb': kerb}, projection=3)
+        data = self._db.instructors.lookup(kerb)
         if data is None:
-            data = { col: None for col in self._db.students.col_type }
+            data = { col: None for col in self._db.instructors.col_type }
             data['kerb'] = kerb
             data['full_name'] = full_name
             data['preferred_name'] = preferred_name(data)
@@ -1209,17 +1213,21 @@ class Instructor(UserMixin):
             now = datetime.datetime.now()
             data['last_login'] =  now
             data['last_seen'] = now
-            if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
-                send_message("", kerb, "welcome", new_instructor_welcome)
             log_event (kerb, 'new', {'instructor':True})
         else:
             data['new'] = False
             if not data.get('full_name'):
                 data['full_name'] = full_name
             data['preferred_name'] = preferred_name(data)
-            if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
-                send_message("", kerb, "welcome", old_instructor_welcome)
-
+        if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
+            send_message("", kerb, "welcome", instructor_welcome)
+        self.dual_role = is_student(kerb)
+        # copy student pofile data if relevant (they might change their name/pronouns)
+        if self.dual_role:
+            sdata = self._db.students.lookup(kerb)
+            for col in ['full_name', 'preferred_name', 'preferred_pronouns', 'email']:
+                if col in sdata:
+                    data[col] = sdata[col]
         cleanse_instructor_data(data)
         self.__dict__.update(data)
         assert self.kerb
@@ -1242,6 +1250,11 @@ class Instructor(UserMixin):
             log_event (self.kerb, 'activate', {'class_id': class_id})
             return self._activate(class_id)
 
+    def update_class(self, class_id, data):
+        with DelayCommit(self):
+            log_event (self.kerb, 'update', {'class_id': class_id, 'data': data})
+            return self._update_class(class_id, data)
+
     def update_toggle(self, name, value):
         if not name:
             return "no"
@@ -1252,7 +1265,7 @@ class Instructor(UserMixin):
         return "ok"
 
     def _save_toggles(self):
-        self._db.instructors.update({'id': self.id}, {'toggles': self.toggles}, resort=False)
+        self._db.instructors.update({'kerb': self.kerb}, {'toggles': self.toggles}, resort=False)
 
     def _reload(self):
         """ This function should be called after any updates to classlist or grouplist related this student """
@@ -1275,6 +1288,69 @@ class Instructor(UserMixin):
         self._reload()
         return msg
 
+    def _update_class(self, class_id, data):
+        c = self._db.classes.lucky({'id': class_id})
+        if c is None:
+            app.logger.warning("User %s attempted to update non-existent class %s" % (self.kerb, class_id))
+            raise ValueError("Class not found in database.")
+        if not c['class_number'] in self.classes:
+            app.logger.warning("User %s attempted to update a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
+            raise ValueError("Class not found in your list of classes for this term.")
+        if c['owner_kerb'] != self.kerb:
+            app.logger.warning("User %s attempted to update a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
+            raise ValueError("Error updating class, your kerberos id does not match that of the owner of this class -- this is probably a bug, please contact psetpartners@mit.edu.")
+        if data.get('remove_kerb'):
+            kerb = data['remove_kerb']
+            if kerb == self.kerb:
+                app.logger.warning("User %s attempted to remove their own kerb from class %s (%s) they own" % (self.kerb, c['class_number'], class_id))
+                raise ValueError("Error updating class, owner kerb cannot be removed -- this is probably a bug, please contact psetpartners@mit.edu.")
+            if kerb not in c['instructor_kerbs']:
+                app.logger.warning("User %s attempted to remove %s from class %s (%s) but this kerb is not present" % (self.kerb, kerb, c['class_number'], class_id))
+                raise ValueError("Error removing <b>%s</b> from <b>%s</b>, instructor not found." % (kerb, ' / '.join(c['class_numbers'])))
+            c['instructor_kerbs'] = [k for k in c['instructor_kerbs'] if k != kerb]
+        if data.get('add_kerb') and data['add_kerb'] not in c['instructor_kerbs']:
+            kerb = data['add_kerb']
+            if data.get('add_name') and not self._db.instructors.lookup(kerb) and not self._db_students.lookup(kerb):
+                if ',' in data['add_name']:
+                    s = data['add_name'].split(',')
+                    preferred_name = s[1].strip() + ' ' + s[0].strip()
+                    full_name = data['add_name']
+                else:
+                    preferred_name = data['add_name']
+                    full_name = ""
+                self._db.instructors.insert_many([{'kerb':kerb, 'full_name': full_name, 'preferred_name': preferred_name}], resort=False)
+            c['instructor_kerbs'].append(kerb)
+        if data.get('class_name'):
+            class_name = data['class_name']
+            if not validate_class_name(data['class_name']):
+                app.logger.warning("User %s attempted change the name of class %s (%s) to invalid name %s" % (self.kerb, c['class_number'], class_id, class_name))
+                raise ValueError('The class name "%s" is invalid.' % class_name)
+            c['class_name'] = class_name
+        if data.get('match_delta'):
+            if data['match_delta'].lower() == "none":
+                if self._db.classlist.lucky({'class_id': class_id, 'status': 2}):
+                    app.logger.warning("User %s attempted to set null match date for class %s (%s) with students in the pool" % (self.kerb, c['class_number'], class_id))
+                    raise ValueError("Unable to clear next match date for %s, there are currently students in the pool." % ' / '.join(c['class_numbers']))
+                match_dates = []
+            else:
+                delta = int(data['match_delta'])
+                today = datetime.datetime.now().date()
+                match_dates = [d for d in c['match_dates'] if d >= today]
+                if match_dates == []:
+                    if delta < 0:
+                        app.logger.warning("User %s attempted to set match date <= today for class %s (%s) with students in the pool" % (self.kerb, c['class_number'], class_id))
+                        raise ValueError("Unable to set next match date for %s, invalid date." % ' / '.join(c['class_numbers']))
+                    match_dates = [today + datetime.timedelta(days=delta)]
+                else:
+                    match_dates[0] = match_dates[0]+datetime.timedelta(days=delta)
+                    for i in range(1,len(match_dates)):
+                        match_dates[i] = match_dates[i-1]+datetime.timedelta(days=7)
+            c['match_dates'] = match_dates
+        msg = "<b>%s</b> has been updated." % ' / '.join(c['class_numbers'])
+        self._db.classes.update({'id': class_id}, c)
+        self._reload()
+        return msg
+
     def _class_data(self, year=current_year(), term=current_term()):
         class_data = {}
         classes = list(self._db.classes.search({ 'instructor_kerbs': {'$contains': self.kerb}, 'year': year, 'term': term},projection=3))
@@ -1282,6 +1358,12 @@ class Instructor(UserMixin):
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['groups'] = count_rows('groups', {'class_id': c['id']})
             c['next_match_date'] = next_match_date(c)
+            c['instructor_names'] = []
+            for k in c['instructor_kerbs']:
+                r = self._db.students.lookup(k)
+                if not r:
+                    r = self._db.instructors.lookup(k)
+                c['instructor_names'].append((r['preferred_name'] if r.get('preferred_name') else r.get('full_name',"")) if r else "")
             class_data[c['class_number']] = c
         return class_data
 

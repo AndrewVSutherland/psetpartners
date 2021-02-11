@@ -15,8 +15,8 @@ DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
 
-MAX_SHORT_NAME_LEN = 48 # used for preferred name and group names
-MAX_LONG_NAME_LEN = 96 # used for class names
+MAX_SHORT_NAME_LEN = 40 # used for preferred name and group names
+MAX_LONG_NAME_LEN = 60 # used for class names
 MAX_ID_LEN = 16 # used for kerbs and course numbers
 MAX_TEXT_LEN = 256
 MAX_URL_LEN = 256
@@ -45,7 +45,7 @@ posint_range_re = re.compile(posint_range_re_string)
 daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
-
+class_name_re = re.compile(r"[a-zA-Z0-9 ,.;:?!/@#'()\-]+")
 
 def domain():
     return urlparse(request.url).netloc
@@ -85,6 +85,9 @@ def localize_time(t, newtz=None):
 def cleanse_dashes(s):
     # replace unicode variants of dashes (which users might cut-and-paste) with ascii dashes
     return '-'.join(re.split(dash_re,s))
+
+def validate_class_name(s):
+    return class_name_re.fullmatch(s) and len(s) > 3 and len(s) <= MAX_LONG_NAME_LEN
 
 #TODO: handle strings encoding lists of strings that may contain commas
 def list_of_strings(inp):
