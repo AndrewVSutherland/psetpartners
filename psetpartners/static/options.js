@@ -234,3 +234,7 @@ const studentPlaceholders = {
 };
 
 const profileOptions = [ 'expand', 'collapse' ];
+
+const kerbRE = new RegExp('^([a-z0-9_]+)$');
+const classnameRE = new RegExp("^([a-zA-Z0-9 ,.;:?!/@#'()\-]+)$");
+

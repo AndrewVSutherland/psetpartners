@@ -22,6 +22,7 @@ def get_kerb_data (kerb, client_id, client_secret, raw=False):
     affiliations = data.get('affiliations',[])
     for a in affiliations:
         if a.get('type','') == 'student':
+            res['affiliation'] = 'student'
             year = a.get('classYear',None)
             year = 5 if year == 'G' else ( int(year) if year in ['1','2','3','4'] else None )
             if year:
@@ -33,4 +34,8 @@ def get_kerb_data (kerb, client_id, client_secret, raw=False):
             email = a.get('email','').strip()
             if email and not email.endswith('@mit.edu'):
                 res['email'] = email
+        elif a.get('type','') == 'staff' and res.get('affiliation','') != 'student':
+            res['affiliation'] = 'staff'
+        elif a.get('type','') == 'affiliate' and res.get('affiliation','') not in ['student', 'staff']:
+            res['affiliation'] = 'affiliate'
     return res
