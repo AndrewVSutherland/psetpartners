@@ -1270,7 +1270,7 @@ class Instructor(UserMixin):
     def _reload(self):
         """ This function should be called after any updates to classlist or grouplist related this student """
         self.class_data = self._class_data()
-        self.classes = list(self.class_data)
+        self.classes = sorted(list(self.class_data),key=class_number_key)
 
     def _activate(self, class_id):
         c = self._db.classes.lucky({'id': class_id})
