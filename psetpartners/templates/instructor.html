@@ -65,7 +65,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <b>Instructors</b>:
           {% set n = c['instructor_kerbs']|length %}
           {% for j in range(n) %}
-            {% if c['instructor_names'][j] %}
+            {% if c[instructor_names] and c['instructor_names'][j] %}
               {{ c['instructor_kerbs'][j] + " (" + c['instructor_names'][j] + (")," if j+1 < n else ")") }}
             {% else %}
               {{ c['instructor_kerbs'][j] + ("," if j+1 < n else "") }}
