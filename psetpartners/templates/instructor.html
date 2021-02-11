@@ -17,11 +17,13 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
+<h3>{{user.preferred_name}}</h3>
+
+{% endif %}
+
 {% set active=classes|selectattr("active","true")|list %}
 {% set inactive = classes|selectattr("active","false")|list %}
 {% set owned = classes|selectattr("owner_kerb", "equalto", user.kerb)|list %}
-
-<h3>{{user.preferred_name}}</h3>
 
 {% if classes|length == 0 %}
 <p>You have reached this page because Touchstone has identified you as a non-student (affiliate, staff, or faculty) but you are not currently registered as an instructor on pset partners for a class that is offerred during the <b>{{current_term_pretty}}</b> term</p>
@@ -108,7 +110,6 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 </li>
 {% endfor %}
 </ul>
-{% endif %}
 {% endif %}
 {% endif %}
 {% endif %}
