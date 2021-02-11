@@ -765,7 +765,7 @@ ul.group-members li::before {
 }
 
 .toggler-nav:not(.toggle-active):hover {
-  border: 2px solid var(--mit-maroon);
+  background: var(--mit-pink);
   cursor: pointer;
 }
 /* END toggler */
