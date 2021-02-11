@@ -250,6 +250,12 @@ def admin(class_number=''):
             c['groups'] = count_rows('groups', {'class_id': c['id']})
             c['next_match_date'] = next_match_date(c)
             c.pop('match_dates')
+            c['instructor_names'] = []
+            for k in c['instructor_kerbs']:
+                r = db.students.lookup(k)
+                if not r:
+                    r = db.instructors.lookup(k)
+                c['instructor_names'].append((r['preferred_name'] if r.get('preferred_name') else r.get('full_name',"")) if r else "")
         return render_template(
             "instructor.html",
             options=template_options(),
