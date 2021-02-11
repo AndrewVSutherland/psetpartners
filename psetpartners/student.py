@@ -1310,7 +1310,7 @@ class Instructor(UserMixin):
             c['instructor_kerbs'] = [k for k in c['instructor_kerbs'] if k != kerb]
         if data.get('add_kerb') and data['add_kerb'] not in c['instructor_kerbs']:
             kerb = data['add_kerb']
-            if data.get('add_name') and not self._db.instructors.lookup(kerb) and not self._db_students.lookup(kerb):
+            if data.get('add_name') and not self._db.instructors.lookup(kerb) and not self._db.students.lookup(kerb):
                 if ',' in data['add_name']:
                     s = data['add_name'].split(',')
                     preferred_name = s[1].strip() + ' ' + s[0].strip()
