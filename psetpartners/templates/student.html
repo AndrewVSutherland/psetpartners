@@ -1037,7 +1037,7 @@ var submitting = false;
 function submitStudentForm(value, e) {
   if (submitting) return;
   submitting = true;
-  $('.confirm,.submit').prop('disabled',true);//prop('disabled',true); // prevent double-clicking
+  $('.confirm,.submit').prop('disabled',true); // prevent double-clicking
   e.style.color='black'; e.style.cursor='wait';
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   $('input[name="ctx-submit"]').val(value);

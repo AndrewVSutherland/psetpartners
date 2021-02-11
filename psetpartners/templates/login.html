@@ -7,7 +7,7 @@
 
   <h2>Welcome to the sandbox!</h2>
 
-  <p>This is the pset partners test site.  You can login as an existing student using a user identifier of the form <b>s</b><i>n</i>, where <i>n</i> is a four digit number from 0001 to {{sandbox['students']}} (e.g. <b>s0123</b>), as an instructor using a user identifier of the form <b>p</b><i>n</i> where <i>n</i> is a three digit number form 001 to {{sandbox['instructors']}} (e.g. <b>p007</b>, or as a new student using any other user identifier you like.</p>
+  <p>This is the pset partners test site.  You can login as an existing student using a user identifier of the form <b>s</b><i>n</i>, where <i>n</i> is a four digit number from 0001 to {{sandbox['students']}} (e.g. <b>s0123</b>), as an instructor using a user identifier of the form <b>p</b><i>n</i> where <i>n</i> is a three digit number form 001 to {{sandbox['instructors']}} (e.g. <b>p007</b>), or as a new student using any other user identifier you like.</p>
   <p>On the live site your user identifier will automatically be set to your kerberos identifier following touchstone authentication.  Only registered MIT students and staff are able to access the live site, but anyone can play in the sandbox.  Note that all information in the sandbox database is accessible to everyone (just like a real sandbox), so please do not enter any private information.</p>
   <p>The sandbox database is randomly refreshed at unpredictable intervals, so don't get too attached to any of the information you enter.</p>
   <p>The sandbox was refreshed on {{ sandbox['date'] }} at {{ sandbox['time'] }}  with a new population of {{ sandbox['students'] }} students and {{ sandbox['instructors'] }} instructors.</p>
@@ -18,7 +18,7 @@
         <td class="caption" style="width:110px" tabindex="1">User identifier:</td>
         <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="validateKerb(this.value)" maxlength="{{maxlength['kerb']}}" /></td>
         <td><button class="save" id="login" name="submit" type="submit" value="login" disabled>Login</button></td>
-        <td><label class="alertinfo" id="badid" style="display:none;">Identifier must be alphanumeric</label></td>
+        <td><label class="alertinfo" id="badid" style="display:none;">invalid identifier</label></td>
       </tr>
     </table>
   </form>
@@ -30,17 +30,15 @@
 {% endif %}
 
 <script>
-const kerb_re = new RegExp('^([a-z0-9]+)$')
 function validateKerb(kerb) {
-  if ( kerb_re.test(kerb) && kerb.length >= 3 ) {
+  if ( kerbRE.test(kerb) && kerb.length >= 3 ) {
     $('#login').prop('disabled',false);
     $('#badid').hide();
   } else {
     $('#login').prop('disabled',true);
-    if ( kerb_re.test(kerb) ) $('#badid').hide(); else $('#badid').show();
+    if ( kerbRE.test(kerb) ) $('#badid').hide(); else $('#badid').show();
   }
 }
-
 </script>
 
 {% endblock %}

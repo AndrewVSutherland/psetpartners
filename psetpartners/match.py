@@ -37,7 +37,7 @@ def initial_assign(to_match, sizes):
         for S in G.students:
             groups[S.id] = G
     for m in [9,5,2]:
-        # 9-5-2 is one of my favorite card games.  See https://debitcardcasino.ca/games/2018/04/19/9-5-2-rules-canada/ for a version of the rules.
+        # 9-5-2 (aka Sergeant Major) is one of my favorite card games
         while sizes[m]:
             add(sizes[m], m, sizes[0])
     remainder = sizes[3] + sizes[0]

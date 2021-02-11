@@ -6,10 +6,10 @@ from .dbwrapper import getdb, get_forcelive
 
 group_preferences = [ 'start', 'style', 'forum', 'size' ]
 
-new_group_subject = "Say hello to your pset partners in {class_number}!"
+new_group_subject = "Say hello to your pset partners in {class_numbers}!"
 
 new_group_email = """
-Greetings!  You have been matched with a pset group in <b>{class_number}</b>.<br>
+Greetings!  You have been matched with a pset group in <b>{class_numbers}</b>.<br>
 To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
@@ -19,7 +19,7 @@ You can use the "email group" button on pset partners to do this.
 """
 
 unmatched_only = """
-We were not able to match you with a pset group in <b>{class_number}</b> because there were not enough students in the match pool.
+We were not able to match you with a pset group in <b>{class_numbers}</b> because there were not enough students in the match pool.
 We encourage you to visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
@@ -28,7 +28,7 @@ and either join a public group, or click the "match me asap" button and we will 
 """
 
 unmatched_requirement = """
-We were not able to match you with a pset group in <b>{class_number}</b> because we were unable to satisfy one of the preferences
+We were not able to match you with a pset group in <b>{class_numbers}</b> because we were unable to satisfy one of the preferences
 you marked as "required".  If you are still want to join a pset group for this class we encourage you to visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
@@ -81,7 +81,7 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
     c = db.classes.lucky({'id': class_id})
     assert c, "Class id %s not found" % class_id
 
-    g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'] }
+    g = { 'class_id': class_id, 'year': c['year'], 'term': c['term'], 'class_number': c['class_number'], 'class_numbers': c['class_numbers'] }
     g['visibility'] = 2  # unlisted by default
     g['creator'] = ''    # system created
     g['editors'] = []    # everyone can edit
@@ -115,9 +115,9 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
     cnum = g['class_number']
     message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cnum, g['group_name'])
     db.messages.insert_many([{'type': 'newgroup', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb':''} for s in students], resort=False)
-    subject = new_group_subject.format(class_number=g['class_number'])
+    subject = new_group_subject.format(class_numbers=' / '.join(g['class_number']))
     url = student_url(g['class_number'])
-    body = new_group_email.format(class_number=g['class_number'],url=url)
+    body = new_group_email.format(class_numbers=' / '.join(g['class_numbers']),url=url)
     send_email([email_address(s) for s in students], subject, body + signature)
     return g
  
