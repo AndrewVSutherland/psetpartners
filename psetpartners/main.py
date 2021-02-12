@@ -510,16 +510,6 @@ def save_class():
         flash_error(msg)
         return redirect(url_for(".instructor"))
 
-    # if we are adding a new kerb that does not match an existing instructor, try to get the name via the people api
-    if data.get("add_kerb"):
-        from .dbwrapper import getdb
-        db = getdb()
-        if not db.instructors.lookup(data['add_kerb']) and 'people' in Configuration().options:
-            from .people import get_kerb_data
-            c = Configuration().options['people']
-            r = get_kerb_data(data['add_kerb'], c['id'], c['secret'])
-            if r and r.get("full_name"):
-                data["add_name"] = r["full_name"]
     current_user.acknowledge()
     try:
         flash_notify(current_user.update_class(class_id, data))
