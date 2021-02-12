@@ -83,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <tr>
           <td class="caption" style="width:150px;">Add instructor</td>
           <td class="value">
-            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a kerberos id" maxlength="{{maxlength['kerb']}}" oninput="checkChanges({{i}});"/>
+            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="checkChanges({{i}});"/>
           </td>
           <td class="alertinfo" id="kerb-alert-{{i}}" style="display:none;">invalid Kerberos identifier</td>
         </tr>
@@ -266,7 +266,11 @@ function checkChanges(i) {
   if ( ! validateClassName($('#name-'+i).val().trim())) { $('#name-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
 }
 
-function validateKerb(kerb) { return kerb.length === 0 || (kerbRE.test(kerb) && kerb.length >= 3); }
+function validateKerb(kerb) {
+  kerbs = kerb.replace(/\s/g, '');
+  if ( kerbs === "" ) return true;
+  return kerbs.split(',').every(x => kerbRE.test(x));
+}
 function validateClassName(name) { return ( name.length >= 4 && classnameRE.test(name) ); }
 
 function resetClass(i) {
