@@ -653,9 +653,17 @@ ul.about p {
   text-align: justify;
   text-justify: inter-word;
 }
-ul.classlist li::before, ul.group-desc li::before, ul.group-members li::before, ul.faq li::before, ul.about li::before {
+
+ul.classlist li.selected::before, ul.group-desc li::before, ul.group-members li::before, ul.faq li::before, ul.about li::before {
   content: "●";
   padding-right: 3px;
+  vertical-align: 6%;
+  color: #70172e; /*var(--mit-maroon);*/
+}
+
+ul.classlist li::before {
+  content: "";
+  padding-right: 17px;
   vertical-align: 6%;
   color: #70172e; /*var(--mit-maroon);*/
 }
