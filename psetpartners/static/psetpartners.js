@@ -115,18 +115,37 @@ function disableDrag() {
 }
 
 // must be called by any code using the checkboxgrid class "cbg"
-function makeCheckboxGrid(name,rows,cols) {
+// caller must have created checkboxes with ids cb-name-i-j and spans with ids name-i-j for i=0..rows-1, j=0..cols-1 with cols > 0
+function makeCheckboxGrid(name, rows, cols) {
   disableDrag();
-  $('span.cbg').on('mousedown mouseup mouseover', function a (e) {
+  $('span.cbg').on('mousedown mouseup mouseover touchstart touchmove touchend', function a (e) {
+    const r = e.target.getBoundingClientRect();
     if ( typeof a.active === 'undefined' ) a.active = false;
-    if ( e.type == 'mouseup' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
-    if ( e.buttons&1 ) {
+    if ( e.type == 'mouseup' || e.type == 'touchend' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
+    if ( (e.buttons&1) || e.type == 'touchstart' || e.type == 'touchmove' ) {
       const s = ('' + e.target.id).split('-'); 
-      const row = s[1], col = s[2], prefix = s[0];
-      if ( e.type == 'mousedown' || (e.type == 'mouseover' && !a.active) ) {
-         a.active = true;
-         const c = document.getElementById("cb-" + e.target.id);
-         a.mode = c.checked; a.row = row; a.col = col; a.prefix = prefix;
+      var row = s[1], col = s[2];
+      if ( e.type == 'touchstart' || e.type == 'touchmove' ) { row = parseInt(row); col = parseInt(col); }
+      const prefix = s[0];
+      if ( e.type == 'mousedown' || e.type == 'touchstart' || (e.type == 'touchmove' && !a.active) || (e.type == 'mouseover' && !a.active) ) {
+        a.active = true;
+        const c = document.getElementById("cb-" + e.target.id);
+        a.mode = c.checked; a.row = row; a.col = col; a.prefix = prefix;
+        if ( e.type == 'touchstart' || e.type == 'touchmove' ) {
+          const drow = (row === 0 ? 1 : row-1), dcol = (col === 0 ? 1 : col-1);
+          const d = document.getElementById(prefix+"-"+drow+"-"+dcol);
+          const r1 = e.target.getBoundingClientRect(), r2 = d.getBoundingClientRect();
+          a.x = r1.x; a.y = r1.y;
+          a.width = Math.abs(r1.x-r2.x);
+          a.height = Math.abs(r1.y-r2.y);
+        }
+      }
+      if ( e.type == 'touchmove' ) {
+        const x = e.touches[0].pageX, y = e.touches[0].pageY;
+        row = a.row + (y > a.y ? Math.floor((y-a.y)/a.height) : -Math.ceil((a.y-y)/a.height));
+        col = a.col + (x > a.x ? Math.floor((x-a.x)/a.width) : -Math.ceil((a.x-x)/a.width));
+        if ( row < 0 ) row = 0; if ( row >= rows ) row = rows-1;
+        if ( col < 0 ) col = 0; if ( col >= cols ) col = cols-1;
       }
       const srow = Math.min(a.row,row), erow = Math.max(a.row,row);
       const scol = Math.min(a.col,col), ecol = Math.max(a.col,col); 
