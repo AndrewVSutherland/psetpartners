@@ -107,7 +107,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </td>
   </table>
   <br>
-  <table class="cbg" id="hours" style="margin-left:100px; margin-top:-10px; margin-bottom:-5px;" onclick="$('#hours-compatible').focus()">
+  <table class="cbg" id="hours" style="margin-left:100px; margin-top:-10px; margin-bottom:-5px;">
     <tr class="cbg">
       {% for i in range(24) %}
         <td class="cbg cbgt">{{i}}</td>
@@ -126,7 +126,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     </tr>
     {% endfor %}
   </table>
-  <div style="text-align:center"><span class="formcaption" id="hours-compatible" tabindex="11"></span></div>
+  <div style="text-align:center; margin-top:3px;"><span class="formcaption" id="hours-caption" tabindex="11"></span></div>
 </div>
   <div class="htoggler">
     <label class="htoggler-nav htoggler-active" id="pref-header" tabindex="0">Preferences</label>
@@ -988,7 +988,7 @@ function hoursOffset() {
 
 function showHoursCompatible() {
   let c = togglerCaption();  if ( c == 'General' ) c = 'all';
-  $('#hours-compatible').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours (' + c + ' students)');
+  $('#hours-caption').text('Average overlap: ' + (currentOverlap/currentCounts.students).toFixed(2) + ' hours (' + c + ' students)');
 }
 
 function computeHoursCompatible() {
@@ -996,7 +996,7 @@ function computeHoursCompatible() {
   currentOverlap = 0;
   let cur = togglerCaption();
   currentCounts = allCounts[cur === 'General' ? '' : cur];
-  if ( !currentCounts ) { $('#hours-compatible').html('&nbsp;'); return; } // if ajax response is slow, we might not have counts
+  if ( !currentCounts ) { $('#hours-caption').html('&nbsp;'); return; } // if ajax response is slow, we might not have counts
   const hours = currentCounts.hours;
   for ( let i = 0 ; i < 7 ; i++ ) for ( let j = 0 ; j < 24 ; j++ ) {
     const n = (24*i+j+168-offset)%168;

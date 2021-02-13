@@ -83,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <tr>
           <td class="caption" style="width:150px;">Add instructor</td>
           <td class="value">
-            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="checkChanges({{i}});"/>
+            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="this.value = this.value.toLowerCase(); checkChanges({{i}});"/>
           </td>
           <td class="alertinfo" id="kerb-alert-{{i}}" style="display:none;">invalid Kerberos identifier</td>
         </tr>

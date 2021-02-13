@@ -119,7 +119,6 @@ function disableDrag() {
 function makeCheckboxGrid(name, rows, cols) {
   disableDrag();
   $('span.cbg').on('mousedown mouseup mouseover touchstart touchmove touchend', function a (e) {
-    const r = e.target.getBoundingClientRect();
     if ( typeof a.active === 'undefined' ) a.active = false;
     if ( e.type == 'mouseup' || e.type == 'touchend' || (!(e.buttons&1) && e.type == 'mouseover') ) { a.active = false; return false; }
     if ( (e.buttons&1) || e.type == 'touchstart' || e.type == 'touchmove' ) {
@@ -128,6 +127,7 @@ function makeCheckboxGrid(name, rows, cols) {
       if ( e.type == 'touchstart' || e.type == 'touchmove' ) { row = parseInt(row); col = parseInt(col); }
       const prefix = s[0];
       if ( e.type == 'mousedown' || e.type == 'touchstart' || (e.type == 'touchmove' && !a.active) || (e.type == 'mouseover' && !a.active) ) {
+        $('#'+prefix+'-caption').focus();
         a.active = true;
         const c = document.getElementById("cb-" + e.target.id);
         a.mode = c.checked; a.row = row; a.col = col; a.prefix = prefix;
