@@ -8,6 +8,7 @@
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
+  --mit-light-pink: #fffaf8;
   --mit-gray: #babbbc;
   --mit-white: #fefefe;
   --shadow-color: var(--mit-maroon);
@@ -368,7 +369,7 @@ input.value:focus, select.value:focus, textarea.value:focus {
 
 input.value:hover, select.value:hover, textarea.value:hover {
   cursor: pointer;
-  background: var(--select-fill);
+  background: var(--mit-light-pink);
 }
 
 span.select {
@@ -424,7 +425,7 @@ button {
 
 button:focus {
   outline: none;
-  border: 2px solid var(--mit-maroon);
+  box-shadow: 0 0 0 1pt var(--mit-maroon);
 }
 
 button:disabled {
@@ -432,7 +433,7 @@ button:disabled {
 }
 
 button:hover:enabled {
-  border: 2px solid var(--mit-maroon);
+  box-shadow: 0 0 0 1.5pt var(--mit-maroon);
   cursor: pointer;
 }
 
@@ -444,11 +445,6 @@ button.confirm {
   background: var(--select-fill);
   color: var(--mit-maroon);           
   border: var(--input-border-width) solid var(--input-border-color);
-}
-
-button.confirm:focus {
-  outline: none;
-  border: 1.5px solid var(--mit-maroon);
 }
 
 button.confirm:disabled {
@@ -735,7 +731,8 @@ ul.group-members li::before {
 }
 
 .htoggler-inactive:focus, .profile-toggler-toggle:focus {
-  border: 1.75px solid var(--input-border-color);
+  box-shadow: 0 0 0 1pt var(--mit-maroon);
+/*  border: 1.75px solid var(--input-border-color);*/
 }
 
 .htoggler-active {
@@ -746,7 +743,7 @@ ul.group-members li::before {
 }
 
 .htoggler-inactive:hover, .profile-toggler-toggle:hover {
-  border: 2px solid var(--mit-maroon);
+  box-shadow: 0 0 0 1.5pt var(--mit-maroon);
   cursor: pointer;
 }
 
@@ -798,8 +795,13 @@ input[type="range"] {
   border-radius: 1px;
 }
 
+input[type="range"]:hover {
+  box-shadow: 0 0 0 0.5pt var(--mit-maroon);
+}
+
 input[type="range"]:focus {
-  outline: 1px solid var(--mit-maroon);
+  box-shadow: 0 0 0 0.5pt var(--mit-maroon);
+  outline: none;
 }
 
 ::-webkit-slider-runnable-track {
@@ -881,18 +883,19 @@ input:-webkit-autofill:active  {
 :root {
   --cbg-cell-height: 16px;
   --cbg-cell-width: 32px;
-  --cbg-cell-horizontal-spacing: 1px;
+  --cbg-cell-horizontal-spacing: 1.5px;
   --cbg-cell-vertical-spacing: 0px;
   --cbg-font-size: 11px; /* only relevant for captions, which are up to the html to include */
   --cbg-border-radius: 3px;
   --cbg-checked-color: var(--mit-maroon);
   --cbg-unchecked-color: var(--light-gray);
-  --cbg-hover-checked-color: var(--select-fill);
-  --cbg-hover-unchecked-color: var(--select-fill);
+  --cbg-hover-checked-color: #808080;
+  --cbg-hover-unchecked-color: var(--mit-pink);
 }
 
 table.cbg {
  border-collapse: collapse;
+ touch-action: none;
 }
 
 label.cbg {
@@ -951,7 +954,9 @@ span.cbg::after {
 }
 
 label.cbg input:hover ~ span.cbg {
-  background-color: var(--cbg-hover-unchecked-color);
+  background-color: var(--cbg-unchecked-color);
+  filter: brightness(85%);
+/*  box-shadow: 0 0 0 1pt var(--cbg-hover-unchecked-color);*/
 }
 
 label.cbg input:checked ~ span.cbg {
@@ -959,7 +964,9 @@ label.cbg input:checked ~ span.cbg {
 }
 
 label.cbg input:checked ~ span.cbg:hover {
-  background-color: var(--cbg-hover-checked-color);
+  background-color: var(--cbg-checked-color);
+  filter: brightness(120%);
+/*  box-shadow: 0 0 0 1pt var(--cbg-hover-checked-color);*/
 }
 /* END styling for cbg selector (intended to be used in grid of checkboxes) */
 
