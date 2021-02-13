@@ -1279,12 +1279,13 @@ class Instructor(UserMixin):
         if c is None:
             app.logger.warning("User %s attempted to activate non-existent class %s" % (self.kerb, class_id))
             raise ValueError("Class not found in database.")
-        if not c['class_number'] in self.classes:
-            app.logger.warning("User %s attempted to activate a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
-            raise ValueError("Class not found in your list of classes for this term.")
-        if c['owner_kerb'] != self.kerb:
-            app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
-            raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
+        if not self.is_admin:
+            if not c['class_number'] in self.classes:
+                app.logger.warning("User %s attempted to activate a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
+                raise ValueError("Class not found in your list of classes for this term.")
+            if c['owner_kerb'] != self.kerb:
+                app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
+                raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
         msg = "<b>%s</b> is now active on pset partners!" %(' / '.join(c['class_numbers']))
         self._db.classes.update({'id': class_id}, {'active': True})
         self._reload()
