@@ -198,7 +198,7 @@ function toggleClass(i) {
   classIndex = i;
   ajaxToggle('ct', classes[i].class_number);
   if ( classRows[i].length === 0 ) {
-    $('#student-table-preamble').html(`No students on pset partners currrently have <b>${classes[i].class_numbers.join(' / ')}</b> listed in their profile.  Be sure to <b>let your students know</b> that your class is now available on pset partners.  We also suggest posting a link to <a href="{{url_for('.index')}}">psetpartners.mit.edu</a> on your course homepage.`);
+    $('#student-table-preamble').html(`No students currrently have <b>${classes[i].class_numbers.join(' / ')}</b> listed in their pset partners profile.  Be sure to <b>let students know</b> your class is available on pset partners.  We suggest posting a link to <a href="{{url_for('.index')}}">psetpartners.mit.edu</a> on your course homepage or syllabus and also making in-class announcements.`);
     $('#student-table-preamble').show();
     $('#student-table-header').hide();
     $('#student-table').hide();
