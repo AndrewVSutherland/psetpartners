@@ -25,6 +25,7 @@
   font-family: Verdona, Geneva, sans-serif;
 }
 
+
 /* Disable selection except for text input */
 :not(input):not(textarea),
 :not(input):not(textarea)::after,
@@ -361,7 +362,8 @@ input.value, select.value, textarea.value {
 
 input.value:focus, select.value:focus, textarea.value:focus {
   cursor: default;
-  outline: 1px solid var(--mit-maroon);
+  background: var(--mit-pink);
+  outline: none;
 }
 
 input.value:hover, select.value:hover, textarea.value:hover {
@@ -655,16 +657,20 @@ ul.about p {
 }
 
 ul.classlist li.selected::before, ul.group-desc li::before, ul.group-members li::before, ul.faq li::before, ul.about li::before {
-  content: "●";
+  content: "\2022";
+  opacity: 1;
+  font-size: 20px;
   padding-right: 3px;
-  vertical-align: 6%;
+  vertical-align: -10%;
   color: #70172e; /*var(--mit-maroon);*/
 }
 
 ul.classlist li::before {
-  content: "";
-  padding-right: 17px;
-  vertical-align: 6%;
+  content: "\2022";
+  opacity: 0;
+  font-size: 20px;
+  padding-right: 3px;
+  vertical-align: -10%;
   color: #70172e; /*var(--mit-maroon);*/
 }
 

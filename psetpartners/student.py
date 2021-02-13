@@ -1,6 +1,8 @@
 import datetime
 from . import app
 from .app import debug_mode, livesite, send_email
+from .config import Configuration
+from .people import get_kerb_data
 from .dbwrapper import getdb, students_in_classes, students_in_class, students_groups_in_class, students_in_group, count_rows
 from flask import url_for
 from flask_login import UserMixin, AnonymousUserMixin
@@ -1277,12 +1279,13 @@ class Instructor(UserMixin):
         if c is None:
             app.logger.warning("User %s attempted to activate non-existent class %s" % (self.kerb, class_id))
             raise ValueError("Class not found in database.")
-        if not c['class_number'] in self.classes:
-            app.logger.warning("User %s attempted to activate a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
-            raise ValueError("Class not found in your list of classes for this term.")
-        if c['owner_kerb'] != self.kerb:
-            app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
-            raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
+        if not self.is_admin:
+            if not c['class_number'] in self.classes:
+                app.logger.warning("User %s attempted to activate a class %s (%s) not in their class list" % (self.kerb, c['class_number'], class_id))
+                raise ValueError("Class not found in your list of classes for this term.")
+            if c['owner_kerb'] != self.kerb:
+                app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
+                raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
         msg = "<b>%s</b> is now active on pset partners!" %(' / '.join(c['class_numbers']))
         self._db.classes.update({'id': class_id}, {'active': True})
         self._reload()
@@ -1308,18 +1311,24 @@ class Instructor(UserMixin):
                 app.logger.warning("User %s attempted to remove %s from class %s (%s) but this kerb is not present" % (self.kerb, kerb, c['class_number'], class_id))
                 raise ValueError("Error removing <b>%s</b> from <b>%s</b>, instructor not found." % (kerb, ' / '.join(c['class_numbers'])))
             c['instructor_kerbs'] = [k for k in c['instructor_kerbs'] if k != kerb]
-        if data.get('add_kerb') and data['add_kerb'] not in c['instructor_kerbs']:
-            kerb = data['add_kerb']
-            if data.get('add_name') and not self._db.instructors.lookup(kerb) and not self._db.students.lookup(kerb):
-                if ',' in data['add_name']:
-                    s = data['add_name'].split(',')
-                    preferred_name = s[1].strip() + ' ' + s[0].strip()
-                    full_name = data['add_name']
-                else:
-                    preferred_name = data['add_name']
-                    full_name = ""
-                self._db.instructors.insert_many([{'kerb':kerb, 'full_name': full_name, 'preferred_name': preferred_name}], resort=False)
-            c['instructor_kerbs'].append(kerb)
+        if data.get('add_kerb'):
+            for kerb in data['add_kerb'].replace(' ','').split(','):
+                if kerb not in c['instructor_kerbs']:
+                    if not self._db.instructors.lookup(kerb) and not self._db.students.lookup(kerb) and 'people' in Configuration().options:
+                        p = Configuration().options['people']
+                        name = ""
+                        r = get_kerb_data(data['add_kerb'], p['id'], p['secret'])
+                        if r and r.get("full_name"):
+                            name = r["full_name"]
+                        if ',' in name:
+                            s = name.split(',')
+                            preferred_name = s[1].strip() + ' ' + s[0].strip()
+                            full_name = name
+                        else:
+                            preferred_name = name
+                            full_name = ""
+                        self._db.instructors.insert_many([{'kerb':kerb, 'full_name': full_name, 'preferred_name': preferred_name}], resort=False)
+                    c['instructor_kerbs'].append(kerb)
         if data.get('class_name'):
             class_name = data['class_name']
             if not validate_class_name(data['class_name']):

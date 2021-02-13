@@ -57,7 +57,7 @@
 }
 
 .sp-focus {
-  outline: 1px solid var(--mit-maroon);
+  background-color: var(--mit-pink);
 }
 
 .sp-dropdown {
