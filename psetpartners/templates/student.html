@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
   makeSingleSelect('membership', groupMembershipOptions, {classNames: shortspClassNames});
   makeSingleSelect('editors', editorOptions, {classNames: shortspClassNames});
 
-  makeCheckboxGrid();
+  makeCheckboxGrid("hours", 7, 24);
   showTimezoneOffset();
   showSaveErrorMessage();
   setPartnerPanes();
