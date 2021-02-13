@@ -49,6 +49,10 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  -ms-text-size-adjust: none;
 }
 
 a {
@@ -86,8 +90,8 @@ a:focus {
 .header {
   height: calc(var(--header-height) - 8px);
   padding-top: 8px;
-  padding-left: calc(0.2*(100vw - var(--min-width)));
-  padding-right: calc(0.2*(100vw - var(--min-width)));
+  padding-left: max(10px,calc(0.2*(100vw - var(--min-width))));
+  padding-right: max(10px,calc(0.2*(100vw - var(--min-width))));
   box-shadow: 0 var(--shadow-width) var(--shadow-width) var(--shadow-color);
 }
 
@@ -101,6 +105,8 @@ a:focus {
 }
 
 .main-page {
+  padding-left:10px;
+  padding-right:10px;
   margin-left: auto;
   margin-right: auto;
   min-height: calc(100% - var(--header-height) - 0.1px);
@@ -162,7 +168,7 @@ div.footer > a {
 }
 #logout {
   cursor: pointer;
-  font-size: 14px;
+  font-size: 90%;
   font-weight: bold;
 }
 
@@ -623,14 +629,14 @@ ul.faq {
   padding: 0;
   list-style: none;
   font-weight: bold;
-  font-size: 110%;
+  font-size: 100%;
 }
 ul.faq li {
   margin: 5px 0 15px 0;
 }
 ul.faq p {
   font-weight: normal;
-  font-size: 16px;
+  font-size: 100%;
   margin: 12px 0 5px 19px;
   text-align: justify;
   text-justify: inter-word;
@@ -646,7 +652,7 @@ ul.about li {
 }
 ul.about p {
   font-weight: normal;
-  font-size: 16px;
+  font-size: 100%;
   margin: 12px 0 5px 19px;
   text-align: justify;
   text-justify: inter-word;
