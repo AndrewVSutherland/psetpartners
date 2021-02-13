@@ -6,20 +6,24 @@
   <h2>Frequently asked questions (updated 10 Feb 2021)</h2>
 
  <ul class="faq">
-    <li>What is this site and how does it work?
-      <p> Please read the short summary on our <a href="{{url_for(".about")}}">about page</a>.
+    <li>
+      What is this site and how does it work?
+      <p> Please read the short summary on our <a href="{{url_for('.about')}}">about page</a>.</p>
     </li>
-    <li>Who can use this site?
+    <li>
+      Who can use this site?
       <p>
         This site is open to all current MIT students and instructors via <a href="https://ist.mit.edu/touchstone">Touchstone authentication</a>.  Every MIT class listed with the registrar this term has been pre-registered with pset partners so that it can be activated by the responsible faculty member with a <a href="https://psetpartners.mit.edu">single click</a>.
       </p>
     </li>
-    <li>Why isn't my class listed on pset partners?
+    <li>
+      Why isn't my class listed on pset partners?
       <p>
         Because your course has not been activatied &mdash; please contact your instructor.  We are <a href="emailto:psetpartners@mit.edu">happy to help</a> if they run into any problems.
       </p>
     </li>
-    <li>Do I need to be registered for a class in order to join a pset group?
+    <li>
+      Do I need to be registered for a class in order to join a pset group?
       <p>
         No, we know that registrations are often in flux at the start of the term and we don't want to slow down the process of finding you pset partners.  But we <b>strongly discourage</b> joining pset groups or the match pool in classes you are not seriously planning to take.  We know that life happens and plans change, but it is not fair to your classmates to join a group you don't intend to work with.
       </p>
@@ -72,7 +76,8 @@
         The <a href="{{url_for('.acknowledgment')}}">administrators</a> of pset partners can access all the information you enter.  We promise never to use this information for any purpose other than debugging and optimizing the matching algorithm, and in particular, to <b>not share it with anyone else, either within or outside of MIT</b>.  If and when someone develops a practical <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption">homomorphic encryption</a> algorithm that we can easily use, we would be happy to offer an encryption option.  Our database and web server are housed at MIT and accessible to the small number of IT staff in the mathematics department who support us and without whom this website would not be possible (thank you!).  They have root privileges and can in principle access anything, but we trust them implicitly (they can already read all our email, for example).
       </p>
     </li>
-    <li>How does the matching algorithm work?
+    <li>
+      How does the matching algorithm work?
       <p>
         The algorithm is a work in progress, but here is an overview of our current approach, which proceeds in three phases.  The input to the algorithm is a list of students in a class who have asked to be put in a pset group by joining a match pool, along with their availability and preferences.  This may include preferences for group size, when to start working, collaboration style, et cetera, as well as affinities, such as a desire to be grouped with students in the same department, or a diversity of departments.  The output of the algorithm is a list of new pset groups along with a list of unmatched students.
       </p>
@@ -95,7 +100,8 @@
         The group ranking algorithm used in phase 3 is also used to generate <b>match me now</b> links that are presented to unmatched students whenever they view the "Partners" panel for the class (but the threshold is higher than the one used during pool matching).  This option may be disabled for students who leave groups too frequently -- changing groups when you need to is fine and even encouraged, but we don't want students to abuse the match me now option by using it too often, as it creates a certain amount of disruption in an existing group.
       </p>
     </li>
-    <li>Your matching algorithm seems pretty <i>ad hoc</i>, surely there are well-known solutions to this problem?
+    <li>
+      Your matching algorithm seems pretty <i>ad hoc</i>, surely there are well-known solutions to this problem?
       <p>
         That's what we thought!  We originally planned to use a generalization of the <a href="https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm">Gale-Shapley</a> algorithm, which solves the <a href="https://en.wikipedia.org/wiki/Stable_marriage_problem">stable marriage problem</a>.  This algorithm is widely used in many practical contexts, including content delivery networks, admissions, and healthcare.
       </p>

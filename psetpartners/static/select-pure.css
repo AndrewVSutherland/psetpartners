@@ -1,7 +1,7 @@
 :root {
   --short-min-height: 22px;
   --min-height: 32px;
-  --max-height: 200px;
+  --max-height: 220px;
   --row-height: 20px;
 }
 
@@ -57,7 +57,7 @@
 }
 
 .sp-focus {
-  outline: 1px solid var(--mit-maroon);
+  background-color: var(--mit-pink);
 }
 
 .sp-dropdown {
