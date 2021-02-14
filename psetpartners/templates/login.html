@@ -16,7 +16,7 @@
     <table>
       <tr>
         <td class="caption" style="width:110px" tabindex="1">User identifier:</td>
-        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" oninput="validateKerb(this.value)" maxlength="{{maxlength['kerb']}}" /></td>
+        <td class="value"><input class="value" name="kerb" style="width:120px; margin-right:6px;" spellcheck="false" oninput="this.value = this.value.trim().toLowerCase(); validateKerb(this.value)" maxlength="{{maxlength['kerb']}}" /></td>
         <td><button class="save" id="login" name="submit" type="submit" value="login" disabled>Login</button></td>
         <td><label class="alertinfo" id="badid" style="display:none;">invalid identifier</label></td>
       </tr>
@@ -31,13 +31,10 @@
 
 <script>
 function validateKerb(kerb) {
-  if ( kerbRE.test(kerb) && kerb.length >= 3 ) {
-    $('#login').prop('disabled',false);
-    $('#badid').hide();
-  } else {
-    $('#login').prop('disabled',true);
-    if ( kerbRE.test(kerb) ) $('#badid').hide(); else $('#badid').show();
-  }
+  $('#badid').hide();
+  $('#login').prop('disabled',true);
+  if ( kerb.length < kerbMinLength ) return;
+  if ( ! kerbRE.test(kerb) ) $('#badid').show(); else $('#login').prop('disabled',false);
 }
 </script>
 
