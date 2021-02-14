@@ -65,6 +65,7 @@ strengths             | jsonb       | dictionary of preference strength (values 
 timezone              |	text	    | ('MIT' means MIT's timezone, America/NewYork)
 toggles               | jsonb       | used to cache toggles on home page
 year                  | smallint    | 1=frosh, 2=soph, 3=junior, 4=senior/super-senior, 5=graduate student
+conduct               | boolean     | set when student acknowledges the code of conduct
 blocked_kerbs         | text[]      | list of kerbs of students this student will never be put in a group with (not currently used)
 			
 ## groups

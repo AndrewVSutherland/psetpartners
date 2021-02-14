@@ -13,35 +13,32 @@
     <li>
       Who can use this site?
       <p>
-        This site is open to all current MIT students and instructors via <a href="https://ist.mit.edu/touchstone">Touchstone authentication</a>.  Every MIT class listed with the registrar this term has been pre-registered with pset partners so that it can be activated by the responsible faculty member with a <a href="https://psetpartners.mit.edu">single click</a>.
+        This site is open to all current MIT students and instructors via <a href="https://ist.mit.edu/touchstone">Touchstone authentication</a>.  Every MIT class listed with the registrar this term has been pre-registered with pset partners so that it can be activated by the responsible faculty member with a single click.
+      </p>
+      <p>
+        You should be aware of our <a href="{{url_for('.conduct')}}">code of conduct</a>. In addition to <a href="https://handbook.mit.edu/">standard MIT policies</a>, at pset partners we expect all students to be <b>welcoming</b>, <b>understanding</b>, and to <b>reach out</b> to new pset partners.  If you cannot commit to taking these positive actions you should not use this site.
       </p>
     </li>
     <li>
-      Why isn't my class listed on pset partners?
+      Why don't I see my class on pset partners?
       <p>
-        If you are a student, this is because your class has not been activated &mdash; please <b>contact your instructor</b>.  If you are an instructor who is not the responsible faculty member &mdash; please <b>contact the responsible faculty member</b> and ask them to add you as an instructor.  If you are (or should be) the responsible faculty member listed with the registrar, please <a href="emailto:psetpartners@mit.edu"><b>contact us</b></a>.
-      </p>
-    </li>
-    <li>
-      Do you have a code of conduct?
-      <p>
-        Yes, you can <a href="{{url_for('.conduct')}}">read it here</a>. The short version is that we expect all students to be <b>welcoming</b>, <b>understanding</b>, and to <b>reach out</b> to new pset partners.  If you cannot commit to taking these positive actions you should not use this site.
+        If you are a student, this is because your class has not been activated &mdash; please <b>contact your instructor</b>.  If you are an instructor who is not the responsible faculty member &mdash; please <b>contact the responsible faculty member</b> and ask them to activate the class and add you as an instructor.  If you are the responsible faculty member, please <a href="emailto:psetpartners@mit.edu"><b>contact us</b></a>.
       </p>
     </li>
     <li>
       Do I need to be registered for a class in order to join a pset group?
       <p>
-        No, we know that registrations are often in flux at the start of the term and we don't want to slow down the process of finding you pset partners.  But we <b>strongly discourage</b> joining pset groups or the match pool in classes you are not seriously planning to take.  We know that life happens and plans change, but it is not fair to your classmates to join a group you do not intend to work with.
+        No, we know that registrations are often in flux at the start of the term and we don't want to slow down the process of finding you pset partners.  But we <b>strongly discourage</b> joining pset groups or the match pool in classes you are not seriously planning to take.  We know that life happens and plans change, but it is not fair to your classmates to join a group you do not intend to work with.  If your plans do change, be sure to explicitly remove yourself from any groups you have joined; <b>don't ghost your group</b> (this applies whether you are registered or not).
       </p>
     </li>
     <li>
-      I am a student who is also a TA or instructor, how do I change roles?
+      What if I am a student who is also a TA/instructor?
       <p>
-        Click on your kerberos id or the word student in the upper right corener of the page to switch roles.  Note that this will only work if you have been authorized as an instructor by the responsible faculty member for the course.
+        If you click on your login status in the upper right corner of the page where it says <b>Student</b>, it will change to <b>Instructor</b>, provided you have been authorized as an instructor for a class by the responsible faculty member.
       </p>
     </li>
     <li>
-      Why are the dorms and living groups currently grayed-out in the location drop down?
+      Why are the dorms and living groups currently grayed-out in the location drop-down?
       <p>
         Given the current situation with the pandemic, we don't think it makes sense to organize pset groups based on physical location.  The "in-person" communication option is disabled for the same reason.
       </p>
@@ -116,7 +113,7 @@
     <li>
       Your matching algorithm seems pretty <i>ad hoc</i>, surely there are well-known solutions to this problem?
       <p>
-        That's what we thought!  We originally planned to use a generalization of the <a href="https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm">Gale-Shapley</a> algorithm, which solves the <a href="https://en.wikipedia.org/wiki/Stable_marriage_problem">stable marriage problem</a>.  This algorithm is widely used in many practical contexts, including content delivery networks, admissions, and healthcare.
+        That's what we thought!  We originally planned to use a generalization of the <a href="https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm">Gale-Shapley</a> algorithm for the <a href="https://en.wikipedia.org/wiki/Stable_marriage_problem">stable marriage problem</a>.  This algorithm is widely used in many practical contexts, including content delivery networks, admissions, and healthcare.
       </p>
       <p>
         There are a number of generalization of the stable marriage problem that have been solved with efficient algorithms.  This includes the <a href="https://en.wikipedia.org/wiki/Stable_roommates_problem">stable roommates</a> problem, which partitions a set of students into pairs, and the <a href="https://link.springer.com/chapter/10.1007/3-540-45061-0_43">stable marriages with multiple partners</a> problem, which generalizes the stable marriage problem to marriages with multiple "gendered" partners (in this context "gender" simply means a partition of the input set into two blocks with only inter-block preferences allowed).

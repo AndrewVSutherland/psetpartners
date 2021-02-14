@@ -45,9 +45,9 @@ student_row_cols = [
 ]
 
 student_welcome = """<b>Welcome to pset partners!</b>
-To begin, enter your preferred name and any other personal details you care to share.<br>
-Then select your location, timezone, the math classes you are taking this term, and hours of availability (include partial hours).<br>
-You can explore your options for finding pset partners using the Preferences and Partners buttons."""
+To begin, enter your preferred name and any other personal details you care to share, then select your location, timezone, classes, and hours of availability.  Use the Preferences and Partners buttons to find pset partners."""
+
+code_of_conduct = """Please read and confirm your commitment to our <a href=\"{url}\">code of conduct</a> before proceeding."""
 
 instructor_welcome = "<b>Welcome to pset partners!</b>"
 
@@ -562,6 +562,7 @@ class Student(UserMixin):
             now = datetime.datetime.now()
             data['last_login'] =  now
             data['last_seen'] = now
+            data['conduct'] = False
             if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
                 send_message("", kerb, "welcome", student_welcome)
             log_event (kerb, 'new')
@@ -662,6 +663,18 @@ class Student(UserMixin):
         else:
             self._db.messages.update({'recipient_kerb': self.kerb, 'id': msgid},{'read':True}, resort=False)
         log_event (self.kerb, 'ok')
+        return "ok"
+
+    def confirm_conduct(self):
+        self.conduct = True
+        if self.new:
+            assert self._db.students.lookup(self.kerb) is None
+            rec = {col: getattr(self, col, None) for col in self._db.students.search_cols if col != "id"}
+            self._db.students.insert_many([rec], resort=False)
+            self.id = rec["id"]
+        else:
+            self._db.students.update({'id': self.id}, {'conduct': True}, resort=False)
+        log_event(self.kerb, 'conduct')
         return "ok"
 
     def save(self):
@@ -1012,7 +1025,7 @@ class Student(UserMixin):
         if not g:
             app.logger.warning("User %s attempted to leave non-existent group %s" % (self.kerb, group_id))
             raise ValueError("Group not found in database.")
-        if not g['class_id'] in self.classes:
+        if not g['class_number'] in self.classes:
             app.logger.warning("User %s attempted to leave group %s in class %s not in their class list" % (self.kerb, group_id, g['class_id']))
             raise ValueError("Group not found in any of your classes for this term.")
         if not g['class_number'] in self.groups:
@@ -1245,7 +1258,6 @@ class Instructor(UserMixin):
         if not self._db.messages.lucky({'recipient_kerb': kerb, 'type': 'welcome'}):
             send_message("", kerb, "welcome", instructor_welcome)
         self.dual_role = affiliation == "student" or is_student(kerb)
-        self.affiliation = affiliation
         # copy student pofile data if relevant (they might change their name/pronouns)
         if self.dual_role:
             sdata = self._db.students.lookup(kerb)
@@ -1324,7 +1336,7 @@ class Instructor(UserMixin):
         if self.kerb != c['owner_kerb'] and self.kerb not in c['instructor_kerbs']:
             app.logger.warning("User %s attempted to update class %s for which they are not an instructor" % (self.kerb, class_id))
             raise ValueError("You are not currently listed as an instructor for this class -- this is probably a bug, please contact psetpartners@mit.edu.")
-        if c['owner_kerb'] != self.kerb or self.affiliation != 'staff':
+        if c['owner_kerb'] != self.kerb and self.dual_role:
             app.logger.warning("User %s attempted to update class %s for which they are not an authorized editor" % (self.kerb, class_id))
             raise ValueError("We were unable to update class due to an authorization failure -- this is probably a bug, please contact psetpartners@mit.edu.")
         cs = ' / '.join(c['class_numbers'])
@@ -1388,7 +1400,7 @@ class Instructor(UserMixin):
                 name = self.kerb + ( "(%s)" % self.full_name if self.full_name else '' ),
                 class_number = ' / '.join(c['class_numbers']),
                 old_kerbs = ', '.join(instructor_kerbs),
-                new_kerbs = ', '.join(c['instructor_kerb'])
+                new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
         self._db.classes.update({'id': class_id}, c)
@@ -1408,7 +1420,7 @@ class Instructor(UserMixin):
                 if not r:
                     r = self._db.instructors.lookup(k)
                 c['instructor_names'].append((r['preferred_name'] if r.get('preferred_name') else r.get('full_name',"")) if r else "")
-            c['editor'] = self.kerb == c['owner_kerb'] or self.affiliation == 'staff'
+            c['editor'] = self.kerb == c['owner_kerb'] or not self.dual_role
             class_data[c['class_number']] = c
         return class_data
 

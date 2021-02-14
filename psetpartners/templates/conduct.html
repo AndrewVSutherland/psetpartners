@@ -6,22 +6,28 @@
   <h2>Code of conduct</h2>
 
 <p>
-  We expect all students to live up to MIT's expectations for student behavior as spelled out in the <a href="https://handbook.mit.edu">Mind and Hand Book</a>.
+  We expect students to live up to the MIT standards laid out in the <a href="https://handbook.mit.edu">Mind and Hand Book</a>.
 </p>
-<p> Most of these expectations can be characterized as things students should not do, but at pset partners we also have expectations about what students using this site <b>should do</b>.
+  Most of these standards involve things students should not do.  At pset partners we also have expectations about what students <b>should do</b>:
 </p>
 <ul class="faq" style="margin-left:10px;">
-  <li>First and foremost, we ask all students using pset partners to be welcoming.
-    <p>This means that when you receive an email from pset partners announcing the formation of a new group, you should <b>reach out</b> to your new partners via email; you should also reach out to any new students who are added to your group.  We can think of nothing more demoralizing than joining a new pset group only to be greeted with silence from your supposed "partners"; no student should have to experience this.</p>
+  <li>First and foremost, we expect students using pset partners to be welcoming.
+    <p>When you receive an email from pset partners announcing the formation of a new group, you should <b>reach out</b> to your new partners via email; you should also reach out to any new students who are added to your group.  We can think of nothing more demoralizing than joining a new pset group only to be greeted with silence from your supposed "partners"; no student should ever have to experience this.</p>
   </li>
   <li>We also ask students using pset partners to be understanding.
-    <p>There are myriad reasons why a student who fully intended to be an active member of your pset group may find themselves unable to do so, or find that the group just isn't working for them.  In these circumstances it is better for everyone if that student simply leaves the group, and no one should take offense when this happens.  One of the main goals of pset partners is to make it easy to form new groups and to expand existing groups.  We expect pset groups may be fluid, and that's fine; it allows everyone to meet more people.</p>
+    <p>There are myriad reasons why a student who fully intended to be an active member of your pset group may find themselves unable to, or may decide that the group just isn't working for them.  In these circumstances it is better for everyone if that student leaves the group by clicking the <b>leave</b> button on pset partners, which will send a notification to everyon.  But <b>don't ghost your group</b>.</p>
+    <p>No one should take offense when this happens.  One of the main goals of pset partners is to make it easy to form new groups and to expand existing groups.  We expect that pset groups may be fluid, and that's fine; it allows everyone to meet more people.</p>
   </li>
 </ul>
 <p>
-  Using pset partners is always a two-step process.  The first step is to form a pset group; the second step is to connect with them.  The second step is entirely on you, and it requires effort.  If you cannot commit to making this effort you should not use this site.
+  Using pset partners is a two-step process.  The first step is finding a pset group; the second step is connecting with them.  The second step <b>requires effort</b> by you and your partners.  If you cannot commit to making this effort you should not use this site.
 </p>
+{% if confirm %}
+<button type="button" class="confirm" tabindex="1" type="button" onclick="location.href='{{url_for('.confirm_conduct')}}'">count me in</button>
+<button type="button" class="cancel" tabindex="2" onclick="location.href='{{url_for('.logout')}}'">no thanks</button>
+{% else %}
 <a href="{{url_for('.index')}}">Return to main page</a>
+{% endif %}
 </div>
 
 {% endblock %}

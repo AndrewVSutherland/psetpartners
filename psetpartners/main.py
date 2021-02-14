@@ -72,7 +72,7 @@ def load_user(kerb):
         return AnonymousUser()
     full_name = session.get('displayname')
     try:
-        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name)
+        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name, affiliation=session.get("affiliation"))
         return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
@@ -95,7 +95,7 @@ def ctx_proc_userdata():
     }
     return userdata
 
-KERB_RE = re.compile(r"^[a-z0-9][a-z0-9][a-z0-9]+$")
+KERB_RE = re.compile(r"^[a-z][a-z0-9_]+$")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -127,7 +127,7 @@ def login():
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         kerb = request.form.get("kerb", "").lower()
         if not KERB_RE.match(kerb):
-            flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
+            flash_error("Invalid user identifier <b>%s</b>." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         if kerb == "staff":
             affiliation = "staff"
@@ -174,7 +174,7 @@ def switch_role():
     if not current_user.dual_role:
         return redirect(url_for('.index'))
     if current_user.is_student:
-        user = Instructor(current_user.kerb, current_user.full_name)
+        user = Instructor(current_user.kerb, current_user.full_name, affiliation='student')
         session['affiliation'] = "staff"
         login_user(user, remember=False)
     elif current_user.is_instructor:
@@ -350,6 +350,16 @@ def acknoledge():
     msgid = request.args.get('msgid')
     return current_user.acknowledge(msgid)
 
+@app.route("/_confirm_conduct")
+@login_required
+def confirm_conduct():
+    try:
+        current_user.confirm_conduct()
+    except ValueError as err:
+        app.logger.error("Error processing code of conduct confirmation from %s" % (current_user.kerb))
+        flash_error("Error processing response: %s" % err)
+    return redirect(url_for(".student"))
+
 @app.route("/_toggle")
 @login_required
 def update_toggle():
@@ -404,7 +414,6 @@ def accept_invite(token):
 def approve_request(request_id):
     try:
         msg = current_user.approve_request(request_id)
-        print(msg)
         flash_notify(msg)
     except ValueError as err:
         app.logger.error("Error processing approve response from %s to request id %s" % (current_user.kerb, request_id))
@@ -445,6 +454,8 @@ def student(class_number=''):
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
+    if not current_user.conduct:
+        return render_template("conduct.html", title="conduct", confirm=True)
     current_user.seen()
     current_user.flash_pending()
     if class_number:

@@ -218,6 +218,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
                     strengths[p] = randint(1,5)
         s['preferences'] = prefs
         s['strengths'] = strengths
+        s['conduct'] = True
         S.append(s)
     db.test_students.insert_many(S, resort=False)
     big = {x for x in big_classes if db.test_classes.lucky({'class_number':x, 'active':True},projection="id")}

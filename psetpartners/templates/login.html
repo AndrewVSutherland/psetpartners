@@ -8,9 +8,9 @@
   <h2>Welcome to the sandbox!</h2>
 
   <p>This is the pset partners test site.  You can login as an existing student using a user identifier of the form <b>s</b><i>n</i>, where <i>n</i> is a four digit number from 0001 to {{sandbox['students']}} (e.g. <b>s0123</b>), as an instructor using a user identifier of the form <b>p</b><i>n</i> where <i>n</i> is a three digit number form 001 to {{sandbox['instructors']}} (e.g. <b>p007</b>), or as a new student using any other user identifier you like.</p>
-  <p>On the live site your user identifier will automatically be set to your kerberos identifier following Touchstone authentication.  Only registered MIT students and staff are able to access the live site, but anyone can play in the sandbox.  Note that information in the sandbox database is accessible to everyone (just like a real sandbox), so please do not enter any private information.</p>
+  <p>On the live site your user identifier will automatically be set to your kerberos id following Touchstone authentication.  Only registered MIT students and staff can access the live site, but anyone can play in the sandbox.  Note that information in the sandbox database is accessible to everyone (just like a real sandbox), so <b>do not enter any private information</b>.</p>
   <p>The sandbox database is randomly refreshed at unpredictable intervals, so don't get too attached to any of the information you enter!</p>
-  <p>The sandbox was refreshed on {{ sandbox['date'] }} at {{ sandbox['time'] }}  with a new population of {{ sandbox['students'] }} students and {{ sandbox['instructors'] }} instructors.</p>
+  <p>The sandbox was last refreshed on {{ sandbox['date'] }} at {{ sandbox['time'] }}  with a new population of {{ sandbox['students'] }} students and {{ sandbox['instructors'] }} instructors.</p>
 
   <form name="login" action="{{ url_for('.login', next=next) }}" method="POST">
     <table>
