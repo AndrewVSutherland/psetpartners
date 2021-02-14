@@ -83,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <tr>
           <td class="caption" style="width:150px;">Add instructor</td>
           <td class="value">
-            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="this.value = this.value.toLowerCase(); checkChanges({{i}});"/>
+            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="this.value = this.value.trim().toLowerCase(); checkChanges({{i}});"/>
           </td>
           <td class="alertinfo" id="kerb-alert-{{i}}" style="display:none;">invalid Kerberos identifier</td>
         </tr>
@@ -134,7 +134,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% endif %}
 
 <script>
-/* global kerbRE, classnameRE */ // options.js
+/* global kerbMinLength, kerbRE, classnameRE */ // options.js
 /* global makeSingleSelect, updateSingleSelect */ // in psetpartners.js
 
 // jshint ignore:start
@@ -261,13 +261,14 @@ function ajaxToggle(name, value) {
 function checkChanges(i) {
   $('#submit-'+i).prop('disabled', $('#form-'+i).serialize() === $('#form-'+i).data('initial'));
   $('#kerb-alert-'+i).hide(); $('#name-alert-'+i).hide();
-  $('#add-kerb-'+i).val($('#add-kerb-'+i).val().trim());
-  if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
-  if ( ! validateClassName($('#name-'+i).val().trim())) { $('#name-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
+  if ( ! validateClassName($('#name-'+i).val().trim()) ) { $('#name-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
+  const k = $('#add-kerb-'+i).val();
+  if ( k.length > 0 && k.length < kerbMinLength ) { $('#submit-'+i).prop('disabled',true); }
+  else if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
 }
 
 function validateKerb(kerb) {
-  kerbs = kerb.replace(/\s/g, '');
+  const kerbs = kerb.replace(/\s/g, '');
   if ( kerbs === "" ) return true;
   return kerbs.split(',').every(x => kerbRE.test(x));
 }

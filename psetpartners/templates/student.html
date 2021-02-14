@@ -99,7 +99,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <span class="select" id="select-classes" tabindex="10"></span>
         <input type="hidden" name="classes" id="classes" value="{{user.classes}}" onchange="changeClasses(this.value)"/>
       </td>
-      <td class="forminfo"><label id="classes_info"></label>only classes activated by instructor are listed,<br>contact your instructor if your class is missing</td>
+      <td class="forminfo"><label id="classes_info"></label>only classes activated by instructor are listed,<br>contact the instructor if your class is missing</td>
     </tr>
     <tr>
       <td class="caption" colspan="3" style="padding-top:15px;">
@@ -566,8 +566,7 @@ function setPartnerPanes() {
       <li><b>${cnts.visibility['1']||0}</b> are <b>private</b> groups that require <b>permission</b> before the system will add compatible members;</li>
       <li><b>${cnts.visibility['0']||0}</b> are <b>private</b> groups with membership by <b>invitation</b> only.</li>
     </ul>
-    Private groups are visible only to instructors and their members.  All group members may invite new members (up to the size limit).<br>
-    If a class you are looking for is not listed on pset partners you can contact the instructor to ask them to activate it.
+    Private groups are visible only to instructors and their members.  All group members may invite new members (up to the size limit).
       <br><br>`;
   if ( studentClasses.length ) {
     msg += 'Click on a class number to see your pset partnering options for that class.';

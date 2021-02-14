@@ -235,6 +235,7 @@ const studentPlaceholders = {
 
 const profileOptions = [ 'expand', 'collapse' ];
 
-const kerbRE = new RegExp('^[a-z0-9_][a-z0-9_][a-z0-9_]+$');
+const kerbMinLength = 2 // New kerbs have length at least 3 but a few length 2 kerbs are still active
+const kerbRE = new RegExp('^[a-z][a-z0-9_]+$');
 const classnameRE = new RegExp("^[a-zA-Z0-9 ,.;:&?!/@#'()\-]+$");
 

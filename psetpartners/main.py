@@ -149,7 +149,7 @@ def login():
         affiliation = "student"
         user = Student(kerb, displayname)
     elif affiliation == "staff":
-        user = Instructor(kerb, displayname)
+        user = Instructor(kerb, displayname, affiliation)
     else:
         app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
         return render_template("denied.html"), 404
@@ -189,8 +189,8 @@ def switch_role():
 @login_required
 def loginas(kerb):
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
-        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
-        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+        logout_user()
+        return redirect(url_for(".index"))
     logout_user()
     session['affiliation'] = ''
     session['displayname'] = ''

@@ -182,6 +182,10 @@ def acknowledgment():
 def contact():
     return render_template("contact.html", title="contact")
 
+@app.route("/conduct")
+def conduct():
+    return render_template("conduct.html", title="conduct")
+
 @app.route("/faq")
 def faq():
     return render_template("faq.html", title="FAQ")
