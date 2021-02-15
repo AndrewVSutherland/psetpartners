@@ -23,7 +23,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% set active=classes|selectattr("active","true")|list %}
 {% set inactive = classes|selectattr("active","false")|list %}
-{% set owned = classes|selectattr("owner_kerb", "equalto", user.kerb)|list %}
+{% set editor = classes|selectattr("editor","true")|list %}
 
 {% if classes|length == 0 %}
 <p>You have reached this page because Touchstone has identified you as a non-student (affiliate, staff, or faculty) but you are not currently registered as an instructor on pset partners for a class that is offerred during the <b>{{current_term_pretty}}</b> term</p>
@@ -46,7 +46,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% endif %}
 
 {% if active %}
-{% if owned|length == 0 and active|length == 1 %}
+{% if editor|length == 0 and active|length == 1 %}
 <p align="justify">According to our records, you are teaching <b>{{ ' / '.join(classes[0]['class_numbers']) + " " + classes[0]['class_name']}}</b>.</p>
 {% else %}
 <p>According to our records, you are currently teaching the following classes using pset partners (click a class to select it):</p>
@@ -55,7 +55,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% set c = active[i] %}
 <li id="li-{{i}}">
   <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}</label>
-  {% if c['owner_kerb'] == user.kerb %}
+  {% if c['editor'] %}
     <label class="paction edit-{{i}}" onclick="$('.edit-{{i}}').toggle();">edit</label>
     <button type="button" class="cancel edit-{{i}}" tabindex="-1" style="display:none;" onclick="resetClass('{{i}}'); $('.edit-{{i}}').toggle();">nevermind</button>
     <button type="button" class="confirm edit-{{i}}" id="submit-{{i}}" tabindex="-1" style="display:none;" disabled="disabled"; onclick="updateClass(this,{{i}});">update</button>
@@ -83,7 +83,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
         <tr>
           <td class="caption" style="width:150px;">Add instructor</td>
           <td class="value">
-            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="this.value = this.value.toLowerCase(); checkChanges({{i}});"/>
+            <input class="value required" spellcheck="false" name="add_kerb" id="add-kerb-{{i}}" tabindex="2" value="" placeholder="enter a Kerberos id or list of Kerberos ids" oninput="this.value = this.value.trim().toLowerCase(); checkChanges({{i}});"/>
           </td>
           <td class="alertinfo" id="kerb-alert-{{i}}" style="display:none;">invalid Kerberos identifier</td>
         </tr>
@@ -134,7 +134,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% endif %}
 
 <script>
-/* global kerbRE, classnameRE */ // options.js
+/* global kerbMinLength, kerbRE, classnameRE */ // options.js
 /* global makeSingleSelect, updateSingleSelect */ // in psetpartners.js
 
 // jshint ignore:start
@@ -261,13 +261,14 @@ function ajaxToggle(name, value) {
 function checkChanges(i) {
   $('#submit-'+i).prop('disabled', $('#form-'+i).serialize() === $('#form-'+i).data('initial'));
   $('#kerb-alert-'+i).hide(); $('#name-alert-'+i).hide();
-  $('#add-kerb-'+i).val($('#add-kerb-'+i).val().trim());
-  if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
-  if ( ! validateClassName($('#name-'+i).val().trim())) { $('#name-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
+  if ( ! validateClassName($('#name-'+i).val().trim()) ) { $('#name-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
+  const k = $('#add-kerb-'+i).val();
+  if ( k.length > 0 && k.length < kerbMinLength ) { $('#submit-'+i).prop('disabled',true); }
+  else if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
 }
 
 function validateKerb(kerb) {
-  kerbs = kerb.replace(/\s/g, '');
+  const kerbs = kerb.replace(/\s/g, '');
   if ( kerbs === "" ) return true;
   return kerbs.split(',').every(x => kerbRE.test(x));
 }
@@ -297,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const c = classes[i].class_number,  t = toggles['st-'+c] || '+name';
     classSort[i] = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
     classRows[i] = classes[i].students.map(formatRow);
-    if ( classes[i].owner_kerb === current_user ) {
+    if ( classes[i].editor ) {
       if ( classes[i].instructor_kerbs.length > 1 ) {
         classKerbOptions[i] = [{label:'', value:''}];
         for (let j = 0 ; j < classes[i].instructor_kerbs.length ; j++ ) {

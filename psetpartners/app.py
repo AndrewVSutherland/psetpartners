@@ -16,6 +16,7 @@ from flask import (
     make_response,
     url_for,
     current_app,
+    session
 )
 from .utils import (
     current_upcoming,
@@ -143,7 +144,7 @@ def timestamp():
 
 @app.errorhandler(404)
 def not_found_404(error):
-    app.logger.info("%s 404 error for URL %s %s" % (timestamp(), request.url, error.description))
+    app.logger.info("%s 404 error for URL %s by user %s: %s" % (timestamp(), request.url, session.get("kerb","[unknown]"), error.description))
     messages = (
         error.description if isinstance(error.description, (list, tuple)) else (error.description,)
     )
@@ -151,7 +152,7 @@ def not_found_404(error):
 
 @app.errorhandler(500)
 def not_found_500(error):
-    app.logger.error("%s 500 error on URL %s %s" % (timestamp(), request.url, error.args))
+    app.logger.error("%s 500 error on URL %s by user %s: %s" % (timestamp(), request.url, session.get("kerb","[unknown]"), error.args))
     return render_template("500.html"), 500
 
 @app.errorhandler(503)
@@ -181,6 +182,10 @@ def acknowledgment():
 @app.route("/contact")
 def contact():
     return render_template("contact.html", title="contact")
+
+@app.route("/conduct")
+def conduct():
+    return render_template("conduct.html", title="conduct")
 
 @app.route("/faq")
 def faq():

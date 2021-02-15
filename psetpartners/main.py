@@ -72,7 +72,7 @@ def load_user(kerb):
         return AnonymousUser()
     full_name = session.get('displayname')
     try:
-        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name)
+        s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name, affiliation=session.get("affiliation"))
         return s
     except:
         app.logger.warning("load_user failed on kerb=%s" % kerb)
@@ -95,7 +95,7 @@ def ctx_proc_userdata():
     }
     return userdata
 
-KERB_RE = re.compile(r"^[a-z0-9][a-z0-9][a-z0-9]+$")
+KERB_RE = re.compile(r"^[a-z][a-z0-9_]+$")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -127,7 +127,7 @@ def login():
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         kerb = request.form.get("kerb", "").lower()
         if not KERB_RE.match(kerb):
-            flash_error("Invalid user identifier <b>%s</b> (must be alpha-numeric and at least three letters long)." % kerb)
+            flash_error("Invalid user identifier <b>%s</b>." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         if kerb == "staff":
             affiliation = "staff"
@@ -149,7 +149,7 @@ def login():
         affiliation = "student"
         user = Student(kerb, displayname)
     elif affiliation == "staff":
-        user = Instructor(kerb, displayname)
+        user = Instructor(kerb, displayname, affiliation)
     else:
         app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
         return render_template("denied.html"), 404
@@ -174,7 +174,7 @@ def switch_role():
     if not current_user.dual_role:
         return redirect(url_for('.index'))
     if current_user.is_student:
-        user = Instructor(current_user.kerb, current_user.full_name)
+        user = Instructor(current_user.kerb, current_user.full_name, affiliation='student')
         session['affiliation'] = "staff"
         login_user(user, remember=False)
     elif current_user.is_instructor:
@@ -189,8 +189,8 @@ def switch_role():
 @login_required
 def loginas(kerb):
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
-        app.logger.critical("Unauthorized loginas/%s attempted by %s." % (kerb, current_user.kerb))
-        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+        logout_user()
+        return redirect(url_for(".index"))
     logout_user()
     session['affiliation'] = ''
     session['displayname'] = ''
@@ -290,11 +290,11 @@ def index():
 
 @app.route("/test404")
 def test404():
-    return render_template("404.html", message="Thie is a test 404 message."), 404
+    return render_template("404.html", message="This is a test 404 message."), 404
 
 @app.route("/test404s")
 def test404s():
-    return render_template("404.html", messages=["Thie is a test 404 message.", "This is another test 404 message."]), 404
+    return render_template("404.html", messages=["This is a test 404 message.", "This is another test 404 message."]), 404
 
 @app.route("/test500")
 def test500():
@@ -350,6 +350,16 @@ def acknoledge():
     msgid = request.args.get('msgid')
     return current_user.acknowledge(msgid)
 
+@app.route("/_confirm_conduct")
+@login_required
+def confirm_conduct():
+    try:
+        current_user.confirm_conduct()
+    except ValueError as err:
+        app.logger.error("Error processing code of conduct confirmation from %s" % (current_user.kerb))
+        flash_error("Error processing response: %s" % err)
+    return redirect(url_for(".student"))
+
 @app.route("/_toggle")
 @login_required
 def update_toggle():
@@ -404,7 +414,6 @@ def accept_invite(token):
 def approve_request(request_id):
     try:
         msg = current_user.approve_request(request_id)
-        print(msg)
         flash_notify(msg)
     except ValueError as err:
         app.logger.error("Error processing approve response from %s to request id %s" % (current_user.kerb, request_id))
@@ -445,6 +454,8 @@ def student(class_number=''):
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
+    if not current_user.conduct:
+        return render_template("conduct.html", title="conduct", confirm=True)
     current_user.seen()
     current_user.flash_pending()
     if class_number:
@@ -750,7 +761,6 @@ def survey():
     if not survey:
         return render_template("thankyou.html", message="No surveys are currently active, but thanks for checking!")
     survey['response'] = db.survey_responses.lucky({'survey_id': survey['id'], 'kerb':current_user.kerb}, projection="response")
-    print(survey)
     log_event(current_user.kerb,"survey")
     return render_template(
         "survey.html",
@@ -770,7 +780,6 @@ def save_survey():
     r['survey_id'] = r['response'].pop('survey_id')
     r['kerb'] = current_user.kerb
     r['timestamp'] = datetime.datetime.now()
-    print(r)
     db = getdb()
     db.survey_responses.upsert({'survey_id': r['survey_id'],'kerb': r['kerb']}, r)
     log_event(current_user.kerb,"surveyed")
