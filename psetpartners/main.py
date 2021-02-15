@@ -290,11 +290,11 @@ def index():
 
 @app.route("/test404")
 def test404():
-    return render_template("404.html", message="Thie is a test 404 message."), 404
+    return render_template("404.html", message="This is a test 404 message."), 404
 
 @app.route("/test404s")
 def test404s():
-    return render_template("404.html", messages=["Thie is a test 404 message.", "This is another test 404 message."]), 404
+    return render_template("404.html", messages=["This is a test 404 message.", "This is another test 404 message."]), 404
 
 @app.route("/test500")
 def test500():
@@ -761,7 +761,6 @@ def survey():
     if not survey:
         return render_template("thankyou.html", message="No surveys are currently active, but thanks for checking!")
     survey['response'] = db.survey_responses.lucky({'survey_id': survey['id'], 'kerb':current_user.kerb}, projection="response")
-    print(survey)
     log_event(current_user.kerb,"survey")
     return render_template(
         "survey.html",
@@ -781,7 +780,6 @@ def save_survey():
     r['survey_id'] = r['response'].pop('survey_id')
     r['kerb'] = current_user.kerb
     r['timestamp'] = datetime.datetime.now()
-    print(r)
     db = getdb()
     db.survey_responses.upsert({'survey_id': r['survey_id'],'kerb': r['kerb']}, r)
     log_event(current_user.kerb,"surveyed")

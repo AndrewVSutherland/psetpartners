@@ -59,7 +59,7 @@ function updateSingleSelect(id, notes) {
   available should be a list of { 'label': label, 'value': value } where none of the values contain commas
 */
 function makeMultiSelect(id, available, config, selectClass="sp-select") {
-  if ( available.find(e => e.value.includes(",")) ) throw "available values cannot contain commas";
+  if ( available.find(e => e.value.includes(",")) ) throw "available values for " + id + " cannot contain commas";
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw "No input element with id " + id;
   const se = document.getElementById('select-'+id);
