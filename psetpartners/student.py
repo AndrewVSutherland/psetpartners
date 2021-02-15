@@ -851,7 +851,7 @@ class Student(UserMixin):
         if gid is not None:
             if gid != g['id']:
                 raise ValueError("You are currently a member of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % cs)
-        if g['size'] >= g['max']:
+        if g.get('max',None) and g['size'] >= g['max']:
             raise ValueError("This groups is currently full (but if the group increases its size limit you can try again).")
         if not g['class_number'] in self.classes:
             self.classes.append(g['class_number'])
