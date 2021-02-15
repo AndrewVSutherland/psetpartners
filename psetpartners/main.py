@@ -398,20 +398,28 @@ def accept_invite(token):
         invite = read_timed_token(token, 'invite')
     except ValueError:
         flash_error("This invitation link has expired.  Please ask the sender to create a new invitation for you.")
-        return redirect(url_for(".student"))
+        return redirect(url_for(".index"))
     except BadSignature:
         flash_error("Invalid or corrupted invitation link.")
-        return redirect(url_for(".student"))
+        return redirect(url_for(".index"))
+    if not current_user.is_student:
+        app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], "User is not a student"))
+        flash_error("Unable to process invitation: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         current_user.accept_invite(invite)
     except ValueError as err:
-        app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
+        app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], err))
         flash_error("Unable to process invitation: %s" % err)
     return redirect(url_for(".student"))
 
 @app.route("/approve/<int:request_id>")
 @login_required
 def approve_request(request_id):
+    if not current_user.is_student:
+        app.logger.error("Error processing approve response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        flash_error("Error processing response: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         msg = current_user.approve_request(request_id)
         flash_notify(msg)
@@ -423,6 +431,10 @@ def approve_request(request_id):
 @app.route("/deny/<int:request_id>")
 @login_required
 def deny_request(request_id):
+    if not current_user.is_student:
+        app.logger.error("Error processing deny response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        flash_error("Error processing response: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         flash_notify(current_user.deny_request(request_id))
     except ValueError as err:
