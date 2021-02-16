@@ -209,7 +209,7 @@ WHERE {g}.{group_id} = %s
 def class_counts(department='', year=current_year(), term=current_term()):
     from .utils import MAX_STATUS
 
-    cs, g = ("classlist", "group") if livesite() or get_forcelive() else ("test_classlist", "test_groups")
+    cs, g = ("classlist", "groups") if livesite() or get_forcelive() else ("test_classlist", "test_groups")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['class_number', 'status', 'count', 'year', 'term']
     department += '.%' if department else '%'
