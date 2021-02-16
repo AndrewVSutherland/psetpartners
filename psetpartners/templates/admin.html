@@ -11,17 +11,19 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% else %}
 
-<h3 style="text-align:center;">{{counts.keys()|length-1}} classes with {{counts[''].students}} students in {{counts[''].groups}} groups for {{current_term_pretty}}</h3>
+<h3 id="class-table-header" style="text-align:center;">{{counts[''].classes}} classes with {{counts[''].students}} students in {{counts[''].groups}} groups for {{current_term_pretty}}</h3>
 
 <table class="mtab" id="class-table">
   <thead><tr>
-    <th id="class" class="sortable">class</th>
+    <th id="dept" class="sortable nodeptonly">department</th>
+    <th id="classes" class="sortable nodeptonly">classes</th>
+    <th id="class" class="sortable deptonly">class</th>
     <th id="students" class="sortable">students</th>
     <th id="groups" class="sortable">groups</th>
-    <th id="members" class="sortable">members</th>
-    <th id="pool" class="sortable">in pool</th>
-    <th id="match" class="sortable">matching</th>
-    <th id="other" class="sortable">inactive</th>
+    <th id="members" class="sortable deptonly">members</th>
+    <th id="pool" class="sortable deptonly">in pool</th>
+    <th id="match" class="sortable deptonly">matching</th>
+    <th id="other" class="sortable deptonly">inactive</th>
   </tr></thead>
   <tbody id="class-rows"></tbody>
 </table>
@@ -31,50 +33,62 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 const isLive = {{ livesite|tojson|safe }};
 const counts = {{ counts|tojson|safe }};
 const toggles = {{ user.toggles|tojson|safe }};
+const current_term_pretty = "{{ current_term_pretty }}";
 const route = '{{ url_for(".admin")|safe }}';
 // jshint ignore:end
-/* global isLive, counts, toggles, route */
+/* global isLive, counts, toggles, current_term_pretty, route */
 
 let loaded = false;
+let dept = '';
 let classSort = {};
 let classRows = [];
 
 function formatRow(class_number) {
   const s = counts[class_number];
-  return {
-    class_number: class_number,
-    students: s.students,
-    groups: s.groups,
-    members: s.status[1]||0,
-    public: s.visibility[3]||0,
-    private: (s.visibility[0]||0) + (s.visibility[1]||0) + (s.visibility[2]||0),
-    automatic: s.visibility[2]||0,
-    permission: s.visibility[1]||0,
-    invitation: s.visibility[0]||0,
-    pool: s.status[2]||0,
-    match: (s.status[3]||0) + (s.status[5]||0),
-    other: s.status[0]||0,
-  };
+  if ( class_number.includes('.') ) {
+    return {
+      class_number: class_number,
+      students: s.status.reduce((s,v)=>s+v),
+      groups: s.groups,
+      members: s.status[1]||0,
+      pool: s.status[2]||0,
+      match: (s.status[3]||0) + (s.status[5]||0),
+      other: s.status[0]||0,
+    };
+  } else {
+    return {
+      class_number : class_number,
+      classes: s.classes,
+      students: s.students,
+      groups: s.groups,
+    };
+  }
 }
-
-/*    <td>${row.public}</td>
-    <td>${row.private}</td>
-    <td>${row.automatic}</td>
-    <td>${row.permission}</td>
-    <td>${row.invitation}</td>*/
 
 function renderRows() {
-  return classRows.map(row => row.class_number ? `<tr>
-    <td style="text-align:left;"><a href="${(row.class_number ? route + '/' + row.class_number : route)}">${row.class_number||'total'}</a></td>
-    <td style="text-align:right;">${row.students}</td>
-    <td style="text-align:right;">${row.groups}</td>
-    <td style="text-align:right;">${row.members}</td>
-    <td style="text-align:right;">${row.pool}</td>
-    <td style="text-align:right;">${row.match}</td>
-    <td style="text-align:right;">${row.other}</td>
-   </tr>` : '').join('\n');
+  if ( dept ) {
+    $('.deptonly').show();
+    $('.nodeptonly').hide();
+    return classRows.map(row => row.class_number.startsWith(dept+'.') ? `<tr>
+      <td style="text-align:left;"><a href="${(row.class_number ? route + '/' + row.class_number : route)}">${row.class_number||'total'}</a></td>
+      <td style="text-align:right;">${row.students}</td>
+      <td style="text-align:right;">${row.groups}</td>
+      <td style="text-align:right;">${row.members}</td>
+      <td style="text-align:right;">${row.pool}</td>
+      <td style="text-align:right;">${row.match}</td>
+      <td style="text-align:right;">${row.other}</td>
+     </tr>` : '').join('\n');
+  } else {
+    $('.deptonly').hide();
+    $('.nodeptonly').show();
+    return classRows.map(row => (row.class_number.length===0 || row.class_number.includes('.')) ? '' : `<tr>
+      <td style="text-align:left;"><label class="link" style onclick="dept=this.innerHTML; showClassTable();">${row.class_number}</label></td>
+      <td style="text-align:right;">${row.classes}</td>
+      <td style="text-align:right;">${row.students}</td>
+      <td style="text-align:right;">${row.groups}</td>
+     </tr>`).join('\n');
+  }
 }
-
 
 function headerClick (e) {
   classSort.curCol = e.target.id;
@@ -83,9 +97,16 @@ function headerClick (e) {
   showClassTable();
 }
 
+function classNumberCompare(a,b) {
+  const da = parseInt(a.split('.')[0]), db = parseInt(b.split('.')[0]);
+  if ( isNaN(da) ) return isNaN(db) ? (a < b ? -1 : (a > b ? 1 : 0)) : 1;
+  if ( isNaN(db) ) return -1;
+  return da < db ? -1 : (da > db ? 1 : (a < b ? -1 : (a > b ? 1 : 0)));
+}
+
 function colCompare(a,b,col,dir)
 {
-  if ( a[col] == b[col] ) return a.class_number < b.class_number ? -dir : dir;
+  if ( col === "class_number" || a[col] == b[col] ) return dir*classNumberCompare(a.class_number,b.class_number);
   return a[col] < b[col] ? -dir : dir;
 }
 
@@ -94,6 +115,8 @@ function showClassTable () {
   const col = classSort.curCol;
   classRows.sort(function(a,b) { return colCompare(a,b,col,dir); });
   classSort.prevCol = col;
+  $('#class-table-header').html((dept ? `Course ${dept} has `:'') +
+    `${counts[dept].classes} classes with ${counts[dept].students} students in ${counts[dept].groups} groups for ${current_term_pretty} <label class="link deptonly"  style="font-weight:normal; float:right;" onclick="dept=''; showClassTable();">index</label>`);
   $('#class-rows').html(renderRows());
   const q = $('#class-table th.active');  q.removeClass('asc'); q.removeClass('desc'); q.removeClass('active');
   $('#'+col).addClass('active');  $('#'+col).addClass(dir>0 ? 'asc' : 'desc');
@@ -112,7 +135,9 @@ function ajaxToggle(name, value) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
   const t = toggles.st || '-students';
+  console.log(t);
   classSort = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
   classRows = Object.keys(counts).map(formatRow);
   $('#class-table th').click(headerClick);

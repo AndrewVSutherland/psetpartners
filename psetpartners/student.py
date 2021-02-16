@@ -458,7 +458,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
     db = getdb();
     counts = {}
     if '' in classes:
-        counts[''] = student_counts(students_in_classes(year, term), opts)
+        counts[''] = student_counts(students_in_classes(year=year, term=term), opts)
         counts['']['classes'] = count_rows('classes', {'active':True, 'year': year, 'term': term})
         counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
         counts['']['groups'] = count_rows('groups', {'year': year, 'term': term})
@@ -467,14 +467,14 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
         counts['']['students_visibility'] = student_visibility_counts(db.groups.search({'year': year, 'term': term}, projection=["size", "visibility"]))
     for c in classes:
         if c:
-            cid = db.classes.lucky({'class_number': c, 'year': year, 'term': term}, projection="id")
-            counts[c] = student_counts(students_in_class(cid), opts)
-            counts[c]['groups'] = count_rows('groups',{'class_id': cid})
-            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': cid})
-            counts[c]['next_match_date'] = next_match_date(cid)
+            r = db.classes.lucky({'class_number': c, 'year': year, 'term': term},projection=["id","match_dates"])
+            counts[c] = student_counts(students_in_class(r['id']), opts)
+            counts[c]['groups'] = count_rows('groups',{'class_id': r['id']})
+            counts[c]['students_groups'] = count_rows('grouplist', {'class_id': r['id']})
+            counts[c]['next_match_date'] = next_match_date(r)
             counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
-            counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': cid}, projection=["size", "visibility"]))
-            counts[c]['class_id'] = cid
+            counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': r['id']}, projection=["size", "visibility"]))
+            counts[c]['class_id'] = r['id']
     return counts
 
 # The *_row functions determine how data is passed to the client, we avoid using dictionaries both to save space and to control
@@ -811,12 +811,12 @@ class Student(UserMixin):
                 r
             if oldr:
                 if r != oldr:
-                    self._db.classlist.update(oldr,r)
+                    self._db.classlist.update(oldr, r, resort=False)
                     log_event (self.kerb, 'edit', detail={'class_id': class_id})
             else:
                 self._db.classlist.insert_many([r])
                 n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
-                self._db.classes.update({'id': class_id}, {'size': n})
+                self._db.classes.update({'id': class_id}, {'size': n}, resort=False)
                 log_event (self.kerb, 'add', detail={'class_id': class_id})
             class_ids.add(class_id)
         for class_id in self._db.classlist.search ({'student_id': self.id, 'year': year, 'term': term}, projection="class_id"):
@@ -830,7 +830,7 @@ class Student(UserMixin):
                     continue
                 self._db.classlist.delete({'class_id': class_id, 'student_id': self.id})
                 n = len(list(self._db.classlist.search({'class_id': class_id},projection='id')))
-                self._db.classes.update({'id': class_id}, {'size': n})
+                self._db.classes.update({'id': class_id}, {'size': n}, resort=False)
                 log_event (self.kerb, 'drop', detail={'class_id': class_id})
         self._reload()
         return "Changes saved!"
@@ -851,7 +851,7 @@ class Student(UserMixin):
         if gid is not None:
             if gid != g['id']:
                 raise ValueError("You are currently a member of a different group in <b>%s</b>\n.  To accept this invitation you need to leave your current group first." % cs)
-        if g.get('max',None) and g['size'] >= g['max']:
+        if g.get('max') and g['size'] >= g['max']:
             raise ValueError("This groups is currently full (but if the group increases its size limit you can try again).")
         if not g['class_number'] in self.classes:
             self.classes.append(g['class_number'])
@@ -936,7 +936,7 @@ class Student(UserMixin):
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 3, 'status_timestamp': now}, resort=False)
         r = {'timestamp': now, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb}
         self._db.requests.insert_many([r])
-        self._db.groups.update({'id': group_id}, {'request_id': r['id']})
+        self._db.groups.update({'id': group_id}, {'request_id': r['id']}, resort=False)
         approve_link = url_for(".approve_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
         deny_link = url_for(".deny_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
         request_msg = permission_request .format(class_numbers=' / '.join(g['class_numbers']), group_name=g['group_name'], approve_link=approve_link, deny_link=deny_link)
@@ -964,10 +964,10 @@ class Student(UserMixin):
         s = self._db.students.lucky({'id': r['student_id']})
         assert s
         now = datetime.datetime.now()
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 1, 'status_timestamp': now})
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 1, 'status_timestamp': now}, resort=False)
         self._db.grouplist.insert_many([{'class_id': g['class_id'], 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'],
                                          'group_id': g['id'], 'student_id': r['student_id'], 'kerb': r['kerb']}])        
-        self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None})
+        self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None}, resort=False)
         cs = ' / '.join(g['class_numbers'])
         hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], cs)
         hello_msg2 = "<br>You can contact your new partner at %s." % email_address(s)
@@ -994,8 +994,8 @@ class Student(UserMixin):
         if g['request_id'] != r['id']:
             return "This request has already been handled by you or another group member, but thanks for responding!"
         now = datetime.datetime.now()
-        self._db.groups.update({'id': r['group_id'], 'request_id': r['id'], 'visibility': 1}, {'request_id': None, 'visibility': 0})
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 0, 'status_timestamp': now})
+        self._db.groups.update({'id': r['group_id'], 'request_id': r['id'], 'visibility': 1}, {'request_id': None, 'visibility': 0}, resort=False)
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': r['student_id']}, {'status': 0, 'status_timestamp': now}, resort=False)
         cs = ' / '.join(g['class_numbers'])
         notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], cs)
         self._notify_group(g['id'], "pset partner notification for %s" % cs, notify_msg, notify_msg)
@@ -1126,7 +1126,7 @@ class Student(UserMixin):
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
         self._db.grouplist.insert_many([r], resort=False)
         now = datetime.datetime.now()
-        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1, 'status_timestamp': now})
+        self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1, 'status_timestamp': now}, resort=False)
         self._reload()
         return "Created the group <b>%s</b>!" % g['group_name']
 
@@ -1321,7 +1321,7 @@ class Instructor(UserMixin):
                 app.logger.warning("User %s attempted to activate a class %s (%s) for which they are not the owner %s" % (self.kerb, c['class_number'], class_id, c['owner_kerb']))
                 raise ValueError("Error activating class, your kerberos id does not match that of the owner of this class -- this should never happen and most likely indicates a bug, please contact psetpartners@mit.edu for assistence.")
         msg = "<b>%s</b> is now active on pset partners!" %(' / '.join(c['class_numbers']))
-        self._db.classes.update({'id': class_id}, {'active': True})
+        self._db.classes.update({'id': class_id}, {'active': True}, resort=False)
         self._reload()
         return msg
 
@@ -1395,7 +1395,7 @@ class Instructor(UserMixin):
                         match_dates[i] = match_dates[i-1]+datetime.timedelta(days=7)
             c['match_dates'] = match_dates
         msg = "<b>%s</b> has been updated." % cs
-        if c['instructor_kerbs'] != instructor_kerbs and kerb != c['owner_kerb']:
+        if c['instructor_kerbs'] != instructor_kerbs and self.kerb != c['owner_kerb']:
             email_message = owner_notification.format(
                 name = self.kerb + ( "(%s)" % self.full_name if self.full_name else '' ),
                 class_number = ' / '.join(c['class_numbers']),
@@ -1403,7 +1403,7 @@ class Instructor(UserMixin):
                 new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
-        self._db.classes.update({'id': class_id}, c)
+        self._db.classes.update({'id': class_id}, c, resort=False)
         self._reload()
         return msg
 

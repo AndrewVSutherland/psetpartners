@@ -55,11 +55,15 @@ html, body {
   -ms-text-size-adjust: none;
 }
 
-a {
+a, a:visited, label.link {
   outline: none;
+  color: var(--mit-maroon);
+  font-family: sans-serif;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-a:hover {
+a:hover label.link:hover {
   background-color: var(--mit-pink);
   cursor: pointer;
 }
@@ -145,14 +149,10 @@ a:focus {
 
 #title a, #userinfo a {
   color: var(--mit-white);
-  text-decoration: none;
-  cursor: pointer;
 }
 
 div.footer > a {
   color: var(--mit-white);
-  text-decoration: none;
-  cursor: pointer;
 }
 
 #userinfo {
@@ -256,13 +256,6 @@ h3 {
   font-size: 110%;
   margin-top: 20px;
   margin-bottom: 10px;
-}
-
-a, a:visited {
-  color: var(--mit-maroon);
-  font-family: sans-serif;
-  text-decoration: none;
-  cursor: pointer;
 }
 
 table.input, table.output {

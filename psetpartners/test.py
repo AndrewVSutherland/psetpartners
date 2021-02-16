@@ -276,6 +276,9 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
                   'year': year, 'term': term, 'preferences': prefs, 'strengths': strengths, 'properties': props, 'status': 0, 'status_timestamp': now }
             S.append(c)
     db.test_classlist.insert_many(S, resort=False)
+    for class_id in db.test_classes.search({'active':True}):
+        n = len(list(db.test_classlist.search({'class_id': class_id},projection='id')))
+        db.test_classes.update({'id': class_id}, {'size': n}, resort=False)
     S = []
     names = set()
     for c in db.test_classes.search({'active': True, 'year': year, 'term': term}, projection=['id', 'class_number', 'class_numbers']):
