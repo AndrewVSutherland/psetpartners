@@ -126,7 +126,7 @@ WHERE EXISTS (SELECT FROM {cs} WHERE {cs}.{year} = %s AND {cs}.{term} = %s and {
 
 
 # returns data for students in classes for specified year and term (this is only used for computing counts, we don't need personal info)
-def count_students_in_classes(department='', year=current_year(), term=current_term(), projection=[]):
+def count_students_in_classes(department='', year=current_year(), term=current_term()):
     cs = "classlist" if livesite() or get_forcelive() else "test_classlist"
     department += '.%' if department else '%'
     cmd = SQLWrapper(
@@ -139,7 +139,7 @@ WHERE {cs}.{year} = %s AND {cs}.{term} = %s AND {cs}.{class_number} LIKE %s
     )
     return list(DBIterator(db._execute(cmd, [year, term, department]), ["count"]))[0]['count']
 
-def count_students_in_class(class_number, year=current_year(), term=current_term(), projection=[]):
+def count_students_in_class(class_number, year=current_year(), term=current_term()):
     cs = "classlist" if livesite() or get_forcelive() else "test_classlist"
     cmd = SQLWrapper(
         """
@@ -205,13 +205,12 @@ WHERE {g}.{group_id} = %s
     )
     return DBIterator(db._execute(cmd, [group_id]), cols, projection)
 
-# this will return multiple rows for students in more than one group (which should not happen), empty groups will not be returned
 def class_counts(department='', year=current_year(), term=current_term()):
     from .utils import MAX_STATUS
 
-    cs, g = ("classlist", "groups") if livesite() or get_forcelive() else ("test_classlist", "test_groups")
-    # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['class_number', 'status', 'count', 'year', 'term']
+    c, cs, g = ("classes", "classlist", "groups") if livesite() or get_forcelive() else ("test_classes", "test_classlist", "test_groups")
+
+    # get status counts for classes with students in them
     department += '.%' if department else '%'
     cmd = SQLWrapper(
         """
@@ -222,15 +221,28 @@ GROUP BY {cs}.{class_number}, {cs}.{status}
         """,
         {'cs':cs}
     )
-    S = DBIterator(db._execute(cmd, [year, term, department]), cols, projection=['class_number','status','count'])
+    S = DBIterator(db._execute(cmd, [year, term, department]), ['class_number', 'status', 'count'])
     res = {}
     for r in S:
         if r['class_number'] not in res:
-            res[r['class_number']] = {'status':[0 for i in range(MAX_STATUS+1)]}
+            res[r['class_number']] = {'groups': 0, 'status':[0 for i in range(MAX_STATUS+1)]}
         res[r['class_number']]['status'][r['status']] = r['count']
-        res[r['class_number']]['groups'] = 0
-    # note that the order of cols must match the order they appear in the SELECT below
-    cols = ['class_number', 'count', 'year', 'term']
+
+    # get zero counts for classes with no students (we want to include these!)
+    cmd = SQLWrapper(
+        """
+SELECT {c}.{class_number}
+FROM {c}
+    LEFT JOIN {cs} ON {c}.{id} = {cs}.{class_id}
+WHERE {c}.{year} = %s AND {c}.{term} = %s AND {c}.{class_number} LIKE %s AND {cs}.{class_id} IS NULL
+        """,
+        {'c':c, 'cs':cs}
+    )
+    S = DBIterator(db._execute(cmd, [year, term, department]), ['class_number'])
+    for r in S:
+        res[r['class_number']] =  {'groups': 0, 'status':[0 for i in range(MAX_STATUS+1)]}
+
+    # get group counts
     cmd = SQLWrapper(
         """
 SELECT {g}.{class_number}, COUNT({g}.{id}) AS {count}
@@ -240,7 +252,7 @@ GROUP BY {g}.{class_number}
         """,
         {'g':g}
     )
-    S = DBIterator(db._execute(cmd, [year, term, department]), cols, projection=['class_number','count'])
+    S = DBIterator(db._execute(cmd, [year, term, department]), ['class_number', 'count'])
     for r in S:
         res[r['class_number']]['groups'] = r['count']
     return res
