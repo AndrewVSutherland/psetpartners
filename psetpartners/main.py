@@ -220,7 +220,7 @@ def loginas(kerb):
 @app.route("/admin/<class_number>")
 @login_required
 def admin(class_number=''):
-    from .dbwrapper import getdb, students_groups_in_class, count_rows
+    from .dbwrapper import getdb, students_groups_in_class, count_rows, class_counts, count_students_in_classes
     from .student import student_row, student_row_cols, next_match_date
     from .utils import current_term, current_year
 
@@ -232,13 +232,26 @@ def admin(class_number=''):
     db = getdb()
     user = Instructor(session['kerb'], session['displayname'])
     if not class_number:
-        classes=[''] + list(db.classes.search({'active':True, 'year': current_year(), 'term': current_term()},projection='class_number'))
+        counts = class_counts('',current_year(),current_term())
+        groups = 0
+        depts = {}
+        for k in counts:
+            d = k.split('.')[0]
+            if d not in depts:
+                depts[d] = { 'classes': 0, 'students': 0, 'groups': 0 }
+            depts[d]['classes'] += 1
+            groups += counts[k]['groups']
+            depts[d]['groups'] += counts[k]['groups']
+        counts[''] = { 'classes': len(counts), 'students': count_students_in_classes(), 'groups': groups }
+        for d in depts:
+            depts[d]['students'] = count_students_in_classes(department=d)
+            counts[d] = depts[d]
         return render_template(
             "admin.html",
             options=template_options(),
             maxlength=maxlength,
             ctx=session.pop("ctx",""),
-            counts=get_counts(classes,opts=['status', 'visibility']),
+            counts=counts,
             user=user,
         )
     else:

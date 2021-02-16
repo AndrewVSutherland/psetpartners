@@ -54,7 +54,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% for i in range(active|length) %}
 {% set c = active[i] %}
 <li id="li-{{i}}">
-  <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}</label>
+  <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}) {% endif %}</label>
   {% if c['editor'] %}
     <label class="paction edit-{{i}}" onclick="$('.edit-{{i}}').toggle();">edit</label>
     <button type="button" class="cancel edit-{{i}}" tabindex="-1" style="display:none;" onclick="resetClass('{{i}}'); $('.edit-{{i}}').toggle();">nevermind</button>
