@@ -583,7 +583,7 @@ function setPartnerPanes() {
       const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
       const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
       $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
-      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(','), g.members.length < g.max));
+      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(','), !g.max || g.members.length < g.max));
       continue;
     }
     const cdata = classData[c];

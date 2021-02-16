@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 DEFAULT_TIMEZONE = 'America/New_York'
 DEFAULT_TIMEZONE_NAME = 'MIT'
 DEFAULT_TIMEZONE_PRETTY = 'MIT time'
+MAX_STATUS = 6
 
 MAX_SHORT_NAME_LEN = 40 # used for preferred name and group names
 MAX_LONG_NAME_LEN = 60 # used for class names

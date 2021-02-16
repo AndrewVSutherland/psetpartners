@@ -220,7 +220,7 @@ def loginas(kerb):
 @app.route("/admin/<class_number>")
 @login_required
 def admin(class_number=''):
-    from .dbwrapper import getdb, students_groups_in_class, count_rows
+    from .dbwrapper import getdb, students_groups_in_class, count_rows, class_counts, count_students_in_classes
     from .student import student_row, student_row_cols, next_match_date
     from .utils import current_term, current_year
 
@@ -232,13 +232,26 @@ def admin(class_number=''):
     db = getdb()
     user = Instructor(session['kerb'], session['displayname'])
     if not class_number:
-        classes=[''] + list(db.classes.search({'active':True, 'year': current_year(), 'term': current_term()},projection='class_number'))
+        counts = class_counts('',current_year(),current_term())
+        groups = 0
+        depts = {}
+        for k in counts:
+            d = k.split('.')[0]
+            if d not in depts:
+                depts[d] = { 'classes': 0, 'students': 0, 'groups': 0 }
+            depts[d]['classes'] += 1
+            groups += counts[k]['groups']
+            depts[d]['groups'] += counts[k]['groups']
+        counts[''] = { 'classes': len(counts), 'students': count_students_in_classes(), 'groups': groups }
+        for d in depts:
+            depts[d]['students'] = count_students_in_classes(department=d)
+            counts[d] = depts[d]
         return render_template(
             "admin.html",
             options=template_options(),
             maxlength=maxlength,
             ctx=session.pop("ctx",""),
-            counts=get_counts(classes,opts=['status', 'visibility']),
+            counts=counts,
             user=user,
         )
     else:
@@ -398,20 +411,28 @@ def accept_invite(token):
         invite = read_timed_token(token, 'invite')
     except ValueError:
         flash_error("This invitation link has expired.  Please ask the sender to create a new invitation for you.")
-        return redirect(url_for(".student"))
+        return redirect(url_for(".index"))
     except BadSignature:
         flash_error("Invalid or corrupted invitation link.")
-        return redirect(url_for(".student"))
+        return redirect(url_for(".index"))
+    if not current_user.is_student:
+        app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], "User is not a student"))
+        flash_error("Unable to process invitation: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         current_user.accept_invite(invite)
     except ValueError as err:
-        app.logger.error("Error processing invitation to %s from %s to join %s" % (current_user.kerb, invite['kerb'], invite['group_id']))
+        app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], err))
         flash_error("Unable to process invitation: %s" % err)
     return redirect(url_for(".student"))
 
 @app.route("/approve/<int:request_id>")
 @login_required
 def approve_request(request_id):
+    if not current_user.is_student:
+        app.logger.error("Error processing approve response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        flash_error("Error processing response: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         msg = current_user.approve_request(request_id)
         flash_notify(msg)
@@ -423,6 +444,10 @@ def approve_request(request_id):
 @app.route("/deny/<int:request_id>")
 @login_required
 def deny_request(request_id):
+    if not current_user.is_student:
+        app.logger.error("Error processing deny response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        flash_error("Error processing response: %s" % "you are not logged in as a student")
+        return redirect(url_for(".index"))
     try:
         flash_notify(current_user.deny_request(request_id))
     except ValueError as err:
