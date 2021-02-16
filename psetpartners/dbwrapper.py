@@ -228,17 +228,17 @@ GROUP BY {cs}.{class_number}, {cs}.{status}
             res[r['class_number']] = {'groups': 0, 'status':[0 for i in range(MAX_STATUS+1)]}
         res[r['class_number']]['status'][r['status']] = r['count']
 
-    # get zero counts for classes with no students (we want to include these!)
+    # get zero counts for active classes with no students (we want to include these!)
     cmd = SQLWrapper(
         """
 SELECT {c}.{class_number}
 FROM {c}
     LEFT JOIN {cs} ON {c}.{id} = {cs}.{class_id}
-WHERE {c}.{year} = %s AND {c}.{term} = %s AND {c}.{class_number} LIKE %s AND {cs}.{class_id} IS NULL
+WHERE {c}.{active} = %s AND {c}.{year} = %s AND {c}.{term} = %s AND {c}.{class_number} LIKE %s AND {cs}.{class_id} IS NULL
         """,
         {'c':c, 'cs':cs}
     )
-    S = DBIterator(db._execute(cmd, [year, term, department]), ['class_number'])
+    S = DBIterator(db._execute(cmd, [True, year, term, department]), ['class_number'])
     for r in S:
         res[r['class_number']] =  {'groups': 0, 'status':[0 for i in range(MAX_STATUS+1)]}
 
