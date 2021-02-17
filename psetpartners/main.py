@@ -48,6 +48,7 @@ from .utils import (
     short_weekdays,
     timezones,
     list_of_strings,
+    kerb_re
 )
 from .test import sandbox_data
 
@@ -95,8 +96,6 @@ def ctx_proc_userdata():
     }
     return userdata
 
-KERB_RE = re.compile(r"^[a-z][a-z0-9_]+$")
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     next = request.args.get('next')
@@ -126,7 +125,7 @@ def login():
         if request.method != "POST" or request.form.get("submit") != "login":
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         kerb = request.form.get("kerb", "").lower()
-        if not KERB_RE.match(kerb):
+        if not kerb_re.match(kerb):
             flash_error("Invalid user identifier <b>%s</b>." % kerb)
             return render_template("login.html", maxlength=maxlength, sandbox=sandbox_data(), next=next)
         if kerb == "staff":

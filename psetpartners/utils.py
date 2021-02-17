@@ -47,6 +47,7 @@ daytime_re_string = r"\d{1,4}|\d{1,2}:\d\d|"
 daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
 class_name_re = re.compile(r"[a-zA-Z0-9 ,.;:?!&/@#'()\-]+")
+kerb_re = re.compile(r"^[a-z][a-z0-9_]+$")
 
 def domain():
     return urlparse(request.url).netloc
