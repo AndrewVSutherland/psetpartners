@@ -268,9 +268,8 @@ function checkChanges(i) {
 }
 
 function validateKerb(kerb) {
-  const kerbs = kerb.replace(/\s/g, '');
-  if ( kerbs === "" ) return true;
-  return kerbs.split(',').every(x => kerbRE.test(x));
+  if ( kerb.trim() === "" ) return true;
+  return kerb.split(',').every(x => kerbRE.test(x.trim()));
 }
 function validateClassName(name) { return ( name.length >= 4 && classnameRE.test(name) ); }
 
