@@ -17,6 +17,7 @@ from .utils import (
     flash_notify,
     flash_error,
     validate_class_name,
+    kerb_re,
     )
 from .group import generate_group_name
 from .token import generate_timed_token
@@ -1351,7 +1352,11 @@ class Instructor(UserMixin):
                 raise ValueError("Error removing <b>%s</b> from <b>%s</b>, instructor not found." % (kerb, cs))
             c['instructor_kerbs'] = [k for k in c['instructor_kerbs'] if k != kerb]
         if data.get('add_kerb'):
-            for kerb in data['add_kerb'].replace(' ','').split(','):
+            for k in data['add_kerb'].split(','):
+                kerb = k.strip()
+                if not kerb_re.match(kerb):
+                    app.logger.warning("User %s attempted to add invalid kerb %s to class %s" % (self.kerb, kerb, class_id))
+                    raise ValueError("Error removing <b>%s</b> from <b>%s</b>, invalid Kerberos id." % (kerb, cs))                    
                 if kerb not in c['instructor_kerbs']:
                     if not self._db.instructors.lookup(kerb) and not self._db.students.lookup(kerb) and 'people' in Configuration().options:
                         p = Configuration().options['people']
