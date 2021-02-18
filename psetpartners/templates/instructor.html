@@ -103,6 +103,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
             <span class="select" id="select-match-date-{{i}}" tabindex="3"></span>
             <input type="hidden" name="match_delta" id="match-date-{{i}}" value="0" onchange="checkChanges({{i}});"/> <!-- value is offset from current match date -->
           </td>
+          <td class="alertinfo" id="match-date-alert-{{i}}" style="display:none;">Are you sure? This will close the match pool.</td>
         </tr>
       </table>
     </form>
@@ -265,6 +266,8 @@ function checkChanges(i) {
   const k = $('#add-kerb-'+i).val();
   if ( k.length > 0 && k.length < kerbMinLength ) { $('#submit-'+i).prop('disabled',true); }
   else if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
+  console.log($('#match-date-'+i).val()); 
+  if ( $('#match-date-'+i).val() === 'none' ) $('#match-date-alert-'+i).show(); else  $('#match-date-alert-'+i).hide();
 }
 
 function validateKerb(kerb) {
