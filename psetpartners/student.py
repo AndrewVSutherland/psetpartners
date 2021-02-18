@@ -459,7 +459,6 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
     db = getdb();
     counts = {}
     if '' in classes:
-        t = time.clock()
         counts[''] = student_counts(students_in_classes(year=year, term=term), opts)
         counts['']['classes'] = count_rows('classes', {'active':True, 'year': year, 'term': term})
         counts['']['students_classes'] = count_rows('classlist', {'year': year, 'term': term})
