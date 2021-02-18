@@ -1427,7 +1427,7 @@ class Instructor(UserMixin):
                 if not r:
                     r = self._db.instructors.lookup(k)
                 c['instructor_names'].append((r['preferred_name'] if r.get('preferred_name') else r.get('full_name',"")) if r else "")
-            c['editor'] = self.kerb == c['owner_kerb'] or not self.dual_role
+            c['editor'] = True # self.kerb == c['owner_kerb'] or is_instructor(self.kerb) or not self.dual_role
             class_data[c['class_number']] = c
         return class_data
 
@@ -1541,5 +1541,3 @@ class AnonymousUser(AnonymousUserMixin):
     @property
     def get_id(self):
         return None
-
-
