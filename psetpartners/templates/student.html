@@ -237,6 +237,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
   <input class="ctx" type="hidden" name="ctx-scrollTop" />
   <input class="ctx" type="hidden" name="ctx-submit" />
+  <input class="ctx" type="hidden" name="screen-width" />
+  <input class="ctx" type="hidden" name="screen-height" />
 
   <div style="display:inline-block;">
   <table class="submit">
@@ -1041,6 +1043,8 @@ function submitStudentForm(value, e) {
   e.style.color='black'; e.style.cursor='wait';
   $('input[name="ctx-scrollTop"]').val($(window).scrollTop());
   $('input[name="ctx-submit"]').val(value);
+  $('input[name="screen-width"]').val($(window).width());
+  $('input[name="screen-height"]').val($(window).height());
   // clear the names of inputs we don't need to send back
   if ( value === "cancel" ) {
     $('input:not(.ctx)').attr('name','');
