@@ -1,4 +1,5 @@
 import re, json
+import httpagentparser
 from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
@@ -75,8 +76,9 @@ def load_user(kerb):
     try:
         s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name, affiliation=session.get("affiliation"))
         return s
-    except:
-        app.logger.warning("load_user failed on kerb=%s" % kerb)
+    except Exception as err:
+        msg = "load_user failed for {0}: {1}{2!r}".format(kerb, type(err).__name__, err.args)
+        log_event (current_user.kerb, 'load', status=-1, detail={'msg': msg})
         return None
 
 login_manager.login_view = "login"
@@ -157,8 +159,13 @@ def login():
     session["displayname"] = displayname
     user.login()
     login_user(user, remember=False)
-    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s,full_name=%s)" %
-        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor,current_user.full_name))
+    agent = httpagentparser.detect(request.headers.get("User-Agent"))
+    source = (agent['os'].get('name',"")+" ") if 'os' in agent else ""
+    source += (agent['browser'].get('name') + " " + agent['browser'].get('version')) if 'browser' in agent else "?"
+    s = ', student' if current_user.is_student else ''
+    i = ', instructor' if current_user.is_instructor else ''
+    site = "live site" if livesite() else "sandbox"
+    app.logger.info("user %s logged in to %s from %s (affiliation=%s%s%s,full_name=%s)" % (kerb, site, source, affiliation, s, i, current_user.full_name))
     if next:
         return redirect(next)
     if current_user.is_admin:
@@ -534,6 +541,10 @@ def activate(class_id):
 @login_required
 def save_class():
     raw_data = request.form
+    details = httpagentparser.detect(request.headers.get("User-Agent"))
+    details['operation'] = 'save_class'
+    details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))
+    log_event (current_user.kerb, 'submit', details)
     data = { col: val.strip() for col,val in raw_data.items() }
     try:
         class_id = int(data.pop("class_id"))
@@ -576,6 +587,10 @@ def save_student():
     if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
+    details = httpagentparser.detect(request.headers.get("User-Agent"))
+    details['operation'] = submit[0]
+    details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))
+    log_event (current_user.kerb, 'submit', details)
     if submit[0] == "save":
         # update the full_name supplied by Touchstone (in case this changes)
         if session.get("displayname",""):
