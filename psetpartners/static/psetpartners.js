@@ -9,6 +9,15 @@
 
 function isAlphaNumeric(code) { return ( (code > 47 && code < 58) || (code > 64 || code < 91) || (code > 96 && code < 123) ); }
 
+function addDays(d, days) { const result = new Date(d); result.setDate(result.getDate()+days); return result; }
+
+// Functions to safely convert dates to/from YYYY-MM-DD format -- python and javascript don't play well with dates, be careful!
+function fullDateToString(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fullDateFromString(s) {
+  const t = s.split('-'), m = new Date();
+  m.setHours(0,0,0,0); m.setFullYear(parseInt(t[0])); m.setMonth(parseInt(t[1])-1); m.setDate(parseInt(t[2]));
+  return m;
+}
 function makeSingleSelect(id, available, config) {
   const e = document.getElementById(id);
   if ( ! e || e.tagName != "INPUT"  ) throw 'No input element with id ' + id;

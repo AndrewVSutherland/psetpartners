@@ -19,7 +19,6 @@ from flask import (
     session
 )
 from .utils import (
-    current_upcoming,
     current_term_pretty,
     domain,
     )
@@ -129,7 +128,6 @@ def ctx_proc_userdata():
     data["LINK_EXT"] = lambda a, b: '<a href="%s" target="_blank">%s</a>' % (b, a)
     data["DEBUG"] = debug_mode()
     data["domain"] = domain()
-    data["current_upcoming"] = current_upcoming()
     data["current_term_pretty"] = current_term_pretty()
     data["livesite"] = livesite()
     data["under_construction"] = under_construction()

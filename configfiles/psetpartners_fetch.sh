@@ -6,6 +6,7 @@ for branch in master test; do
     pushd /home/psetpartners/psetpartners-git-$branch
     git fetch
     git checkout origin/$branch -f
+    git submodule init
     git submodule update
     popd
   fi

@@ -101,9 +101,10 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
           <td class="caption" style="width:150px;">Next match date</td>
           <td class="value">
             <span class="select" id="select-match-date-{{i}}" tabindex="3"></span>
-            <input type="hidden" name="match_delta" id="match-date-{{i}}" value="0" onchange="checkChanges({{i}});"/> <!-- value is offset from current match date -->
+            <input type="hidden" name="match_date" id="match-date-{{i}}" value="{{c['full_match_date']}}" onchange="checkChanges({{i}});"/> <!-- value is offset from current match date -->
           </td>
           <td class="alertinfo" id="match-date-alert-{{i}}" style="display:none;">Are you sure? This will disable the match pool.</td>
+          <td class="warninfo" id="match-date-warn-{{i}}" style="display:none;">students already in the pool will be notified.</td>
         </tr>
       </table>
       <input class="ctx" type="hidden" name="screen-width" />
@@ -138,7 +139,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <script>
 /* global kerbMinLength, kerbRE, classnameRE */ // options.js
-/* global makeSingleSelect, updateSingleSelect */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, addDays, fullDateToString, fullDateFromString */ // in psetpartners.js
 
 // jshint ignore:start
 const isLive = {{ livesite|tojson|safe }};
@@ -268,8 +269,14 @@ function checkChanges(i) {
   const k = $('#add-kerb-'+i).val();
   if ( k.length > 0 && k.length < kerbMinLength ) { $('#submit-'+i).prop('disabled',true); }
   else if ( ! validateKerb($('#add-kerb-'+i).val())) { $('#kerb-alert-'+i).show(); $('#submit-'+i).prop('disabled',true); }
-  console.log($('#match-date-'+i).val()); 
-  if ( $('#match-date-'+i).val() === 'none' ) $('#match-date-alert-'+i).show(); else  $('#match-date-alert-'+i).hide();
+  $('#match-date-alert-'+i).hide();
+  $('#match-date-warn-'+i).hide();
+  if ( $('#match-date-'+i).val() === 'none' ) $('#match-date-alert-'+i).show();
+  console.log($('#match-date-'+i).val() + ' vs ' + classes[i].full_match_date);
+  if ( $('#match-date-'+i).val() !== classes[i].full_match_date && classes[i].pool_size ) {
+    $('#match-date-warn-'+i).html(classes[i].pool_size + ' students in match pool will be notified by email');
+    $('#match-date-warn-'+i).show();
+  }
 }
 
 function validateKerb(kerb) {
@@ -281,7 +288,7 @@ function validateClassName(name) { return ( name.length >= 4 && classnameRE.test
 function resetClass(i) {
   $('#name-'+i).val(classes[i].class_name);
   $('#add-kerb-'+i).val('');
-  $('#match-date-'+i).val(classes[i].next_match_date ? '0' : 'none'); updateSingleSelect('match-date-'+i);
+  $('#match-date-'+i).val(classes[i].full_match_date||'none'); updateSingleSelect('match-date-'+i);
   checkChanges(i);
 }
 
@@ -296,7 +303,6 @@ function updateClass(e,i) {
   $('input[name="screen-height"]').val($(window).height());
   document.getElementById('form-'+i).submit();
 }
-
 
 document.addEventListener('DOMContentLoaded', function() {
   const tomorrow = new Date();  tomorrow.setHours(0,0,0,0);  tomorrow.setDate(tomorrow.getDate()+1); // tomorrow is the earliest date allowed
@@ -315,30 +321,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         makeSingleSelect('remove-kerb-'+i, classKerbOptions[i], { placeholder: 'select an instructor to remove' });
       }
-      if ( classRows[i].every(x => x.status != 2) ) {
+      classes[i].pool_size = classRows[i].reduce((total,x) => (x.status == 2 ? total+1 : total), 0);
+      if ( classes[i].pool_size === 0 ) {
         classDateOptions[i] = [{label: 'none', value: 'none'}];
       } else {
         classDateOptions[i] = [];
       }
-      if ( classes[i].next_match_date ) {
-        var s = classes[i].next_match_date;
-        if ( s.length <= 6 ) s += ', ' + new Date().getFullYear();  // Fix Firefox problem!
-        const m = new Date(s); m.setHours(0,0,0,0);
-        console.log(m);
-        if ( m.getFullYear() < tomorrow.getFullYear() ) m.setFullYear(tomorrow.getFullYear());
-        if ( m < tomorrow ) m.setDate(tomorrow.getDate());
-        for ( let delta = Math.floor((tomorrow-m) / (24*3600*1000)) ; delta <= 14 ; delta++ ) {
-          const d = new Date(); d.setDate(m.getDate()+delta);
-          classDateOptions[i].push({ 'label': d.toDateString(), 'value': ''+delta});
+      console.log(classes[i].full_match_date);
+      if ( classes[i].full_match_date ) {
+        const m = fullDateFromString(classes[i].full_match_date);
+        classes[i].full_match_date = fullDateToString(m); // just to be sure strings match
+        if ( m < tomorrow ) classDateOptions[i].push({ 'label': m.toDateString(), 'value':fullDateToString(m) });
+        for ( let j = 0 ; j <= 14 ; j++ ) {
+          const d = addDays(tomorrow,j);
+          classDateOptions[i].push({ 'label': d.toDateString(), 'value': fullDateToString(d) });
         }
+        const d = addDays(tomorrow,14);
+        if ( m > d ) classDateOptions[i].push({ 'label': m.toDateString(), 'value': fullDateToString(m) });
+        $('#match-date-'+i).val(classes[i].full_match_date);
       } else {
-        for ( let delta = 0 ; delta <= 14 ; delta++ ) {
-          const d = new Date(); d.setDate(tomorrow.getDate()+delta);
-          classDateOptions[i].push({ 'label': d.toDateString(), 'value': ''+delta});
+        for ( let j = 0 ; j <= 14 ; j++ ) {
+          const d = addDays(tomorrow,j);
+          classDateOptions[i].push({ 'label': d.toDateString(), 'value': fullDateToString(d) });
         }
         $('#match-date-'+i).val('none');
       }
-      makeSingleSelect('match-date-'+i, classDateOptions[i], { placholder: 'select a date' });
+      makeSingleSelect('match-date-'+i, classDateOptions[i], { placeholder: 'select a date' });
       $('#form-'+i).data('initial',$('#form-'+i).serialize());
     }
   }

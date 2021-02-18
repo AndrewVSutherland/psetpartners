@@ -4,7 +4,7 @@ import pytz
 import re, ast
 from collections.abc import Iterable
 from datetime import time as maketime
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from markupsafe import Markup, escape
 from flask import flash, render_template, request
 from dateutil.parser import parse as parse_time
@@ -37,6 +37,7 @@ maxlength = {
 }
 
 term_options = ["IAP", "spring", "summer", "fall"]
+term_ends = [(1,25), (6,1), (8,20), (12,20)] # (month,day) pairs making end of term
 
 short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 posint_re_string = r"[1-9][0-9]*"
@@ -58,20 +59,21 @@ def current_year():
 def current_term():
     """ Returns the current/upcoming term"""
     today = (datetime.now().month, datetime.now().day)
-    if today <= (1,25):
-        return 0
-    if today <= (6,1):
-        return 1
-    if today <= (8,15):
-        return 2
-    if today <= (12,20):
-        return 3
+    for i in range(len(term_ends)):
+        if today <= term_ends[i]:
+            return i
+    return 0
+
+def current_term_end_date():
+    today = (datetime.now().month, datetime.now().day)
+    if today > term_ends[-1]:
+        return date(datetime.now().year+1, term_ends[0][0], term_ends[0][1])
+    else:
+        t = current_term()
+        return date(datetime.now().year, term_ends[t][0], term_ends[t][1])
 
 def current_term_pretty():
     return term_options[current_term()] + " " + str(current_year())
-
-def current_upcoming():
-    return "current" if datetime.now().month in [2,3,4,5,9,10,11,12] else "upcoming"
 
 def localize_time(t, newtz=None):
     """
