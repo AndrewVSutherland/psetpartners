@@ -274,7 +274,7 @@ function copyToClipboard(msg) { return Clipboard.copy(msg); }
   return document.execCommand('copy');*/
 
 jQuery.extend(jQuery.expr[':'], {
-    focusable: function(el, index, selector){
-    return $(el).is('a, button, :input, [tabindex]');
-    }
+  focusable: function(el, index, selector){
+  return $(el).is('a, button, :input, [tabindex]');
+  }
 });

@@ -75,8 +75,9 @@ def load_user(kerb):
     try:
         s = Student(kerb, full_name) if session.get("affiliation") == "student" else Instructor(kerb, full_name, affiliation=session.get("affiliation"))
         return s
-    except:
-        app.logger.warning("load_user failed on kerb=%s" % kerb)
+    except Exception as err:
+        msg = "load_user failed for {0}: {1}{2!r}".format(kerb, type(err).__name__, err.args)
+        log_event (current_user.kerb, 'load', status=-1, detail={'msg': msg})
         return None
 
 login_manager.login_view = "login"
@@ -157,8 +158,14 @@ def login():
     session["displayname"] = displayname
     user.login()
     login_user(user, remember=False)
-    app.logger.info("user %s logged in to %s (affiliation=%s,is_student=%s,is_instructor=%s,full_name=%s)" %
-        (kerb,"live site" if livesite() else "sandbox",affiliation,current_user.is_student,current_user.is_instructor,current_user.full_name))
+    device = SoftwareDetector(request.headers.get("User-Agent")).parse()
+    source = device.os_name() + ' ' + device.client_name() + ' '+device.client_version() + '(' + device.client_type() +')'
+    app.logger.info("user %s logged in to %s from %s (affiliation=%s%s%s,full_name=%s)" % (
+        kerb,"live site" if livesite() else "sandbox",source,affiliation,
+        ' student' if current_user.is_student else '',
+        ' instructor' if current_user.is_instructor else '',
+        current_user.full_name
+    ))
     if next:
         return redirect(next)
     if current_user.is_admin:
@@ -534,6 +541,10 @@ def activate(class_id):
 @login_required
 def save_class():
     raw_data = request.form
+    w = raw_data.get("screen-width","?")
+    h = raw_data.get("screen-height","?")
+    client_details={'operation': 'save_class', 'ua': request.headers.get("User-Agent"), 'resolution':"%sx%s"%(w,h)}
+    log_event (current_user.kerb, 'submit', client_details)
     data = { col: val.strip() for col,val in raw_data.items() }
     try:
         class_id = int(data.pop("class_id"))
@@ -576,6 +587,9 @@ def save_student():
     if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
+    w = raw_data.get("screen-width","?")
+    h = raw_data.get("screen-height","?")
+    log_event (current_user.kerb, 'submit', {'operation':submit[0], 'ua': request.headers.get("User-Agent"), 'resolution':"%sx%s"%(w,h)})
     if submit[0] == "save":
         # update the full_name supplied by Touchstone (in case this changes)
         if session.get("displayname",""):
