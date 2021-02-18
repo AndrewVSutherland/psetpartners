@@ -12,6 +12,7 @@ from .utils import (
     DEFAULT_TIMEZONE,
     current_year,
     current_term,
+    current_term_end_date,
     hours_from_default,
     flash_announce,
     flash_notify,
@@ -65,6 +66,12 @@ Old kerbs: {old_kerbs}<br>
 New kerbs: {new_kerbs}<br>
 <br>
 You are receiving this email because you are listed as the responsible faculty member for this course.  If this information is incorrect, please let us know.
+"""
+
+match_date_change_notification = """
+The next match date for {class_number} has been changed to {match_date} on pset partners.<br>
+<br>
+You are receiving this email because you are currently in the match pool for this class.
 """
 
 contact = "psetpartners@mit.edu"
@@ -349,8 +356,8 @@ def next_match_date(class_id):
         today = datetime.datetime.now().date()
         match_dates = [d for d in match_dates if d >= today]
         if match_dates:
-            return match_dates[0].strftime("%b %-d")
-    return ""
+            return match_dates[0].strftime("%b %-d"), match_dates[0].strftime("%Y-%m-%d")
+    return "", ""
 
 # TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
 # Then this function could simply return the preferred value if it is <= 8 and None otherwise
@@ -472,7 +479,7 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c] = student_counts(students_in_class(r['id']), opts)
             counts[c]['groups'] = count_rows('groups',{'class_id': r['id']})
             counts[c]['students_groups'] = count_rows('grouplist', {'class_id': r['id']})
-            counts[c]['next_match_date'] = next_match_date(r)
+            counts[c]['next_match_date'], counts[c]['full_match_date'] = next_match_date(r)
             counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
             counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': r['id']}, projection=["size", "visibility"]))
             counts[c]['class_id'] = r['id']
@@ -1185,7 +1192,7 @@ class Student(UserMixin):
             r['id'] = r['class_id'] # just so we don't get confused
             c = self._db.classes.lucky({'id': r['class_id']})
             r['class_numbers'] = c['class_numbers']
-            r['next_match_date'] = next_match_date(c)
+            r['next_match_date'], r['full_match_date'] = next_match_date(c)
             # timeout expired request status
             if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=1) < now:
                 r['status'] = 0
@@ -1379,26 +1386,33 @@ class Instructor(UserMixin):
                 app.logger.warning("User %s attempted change the name of class %s to an invalid name %s" % (self.kerb, class_id, class_name))
                 raise ValueError('The class name "%s" is invalid.' % class_name)
             c['class_name'] = class_name
-        if data.get('match_delta'):
-            if data['match_delta'].lower() == "none":
+        match_date = None
+        if data.get('match_date'):
+            today = datetime.datetime.now().date()
+            match_dates = [d for d in c['match_dates'] if d < today] # always keep earlier dates
+            if data['match_date'].strip().lower() == "none":
                 if self._db.classlist.lucky({'class_id': class_id, 'status': 2}):
                     app.logger.warning("User %s attempted to set null match date for class %s with students in the pool" % (self.kerb, class_id))
                     raise ValueError("Unable to clear next match date for %s, there are students in the pool to be matched." % cs)
-                match_dates = []
             else:
-                delta = int(data['match_delta'])
-                today = datetime.datetime.now().date()
-                match_dates = [d for d in c['match_dates'] if d >= today]
-                if match_dates == []:
-                    if delta < 0:
-                        app.logger.warning("User %s attempted to set match date <= today for class %s" % (self.kerb, class_id))
-                        raise ValueError("Unable to set next match date for %s, invalid date." % cs)
-                    match_dates = [today + datetime.timedelta(days=delta)]
-                else:
-                    match_dates[0] = match_dates[0]+datetime.timedelta(days=delta)
-                    for i in range(1,len(match_dates)):
-                        match_dates[i] = match_dates[i-1]+datetime.timedelta(days=7)
+                try:
+                    match_date = datetime.datetime.strptime(data['match_date'].strip(),"%Y-%m-%d").date()
+                except ValueError:
+                    app.logger.warning("User %s attempted to set invalid match date %s for class %s" % (self.kerb, data['match_date'], class_id))
+                    raise ValueError("Unable to set match date %s for %s, please try again." % (data['match_date'], cs))
+                if match_date <= today:
+                    app.logger.warning("User %s attempted to set match date %s < today for class %s" % (self.kerb, data['match_date'], class_id))
+                    raise ValueError("Unable to set next match date %s for %s, date cannot be in the past." % (data['match_date'],cs))
+                match_dates.append(match_date)
+                one_week = datetime.timedelta(days=7)
+                d = match_date + one_week
+                e = current_term_end_date()
+                while d < e:
+                    match_dates.append(d)
+                    d += one_week
             c['match_dates'] = match_dates
+        self._db.classes.update({'id': class_id}, c, resort=False)
+        self._reload()
         msg = "<b>%s</b> has been updated." % cs
         if c['instructor_kerbs'] != instructor_kerbs and self.kerb != c['owner_kerb']:
             email_message = owner_notification.format(
@@ -1408,8 +1422,12 @@ class Instructor(UserMixin):
                 new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
-        self._db.classes.update({'id': class_id}, c, resort=False)
-        self._reload()
+        for r in self._db.classlist.search({'class_id': class_id, 'status': 2}):
+            email_message = match_date_change_notification.format(
+                class_number = ' / '.join(c['class_numbers']),
+                match_date = match_date.strftime("%b %-d, %Y"),
+            )
+            send_email(email_address(r['kerb']), "pset partner notification for %s" % cs, email_message + signature)
         return msg
 
     def _class_data(self, year=current_year(), term=current_term()):
@@ -1418,7 +1436,7 @@ class Instructor(UserMixin):
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['groups'] = count_rows('groups', {'class_id': c['id']})
-            c['next_match_date'] = next_match_date(c)
+            c['next_match_date'], c['full_match_date'] = next_match_date(c)
             c['instructor_names'] = []
             for k in c['instructor_kerbs']:
                 r = self._db.students.lookup(k)

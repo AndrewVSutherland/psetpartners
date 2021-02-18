@@ -162,8 +162,8 @@ def login():
     agent = httpagentparser.detect(request.headers.get("User-Agent"))
     source = (agent['os'].get('name',"")+" ") if 'os' in agent else ""
     source += (agent['browser'].get('name') + " " + agent['browser'].get('version')) if 'browser' in agent else "?"
-    s = ', student' if current_user.is_student else ''
-    i = ', instructor' if current_user.is_instructor else ''
+    s = ',student' if current_user.is_student else ''
+    i = ',instructor' if current_user.is_instructor else ''
     site = "live site" if livesite() else "sandbox"
     app.logger.info("user %s logged in to %s from %s (affiliation=%s%s%s,full_name=%s)" % (kerb, site, source, affiliation, s, i, current_user.full_name))
     if next:
