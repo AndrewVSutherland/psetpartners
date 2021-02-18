@@ -1408,8 +1408,6 @@ class Instructor(UserMixin):
                 new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
-        else:
-            app.logger.info("Not sending email on instructor update by %s to class %s owned by %s" %(self.kerb, c['class_number'], c['owner_kerb']))
         self._db.classes.update({'id': class_id}, c, resort=False)
         self._reload()
         return msg
