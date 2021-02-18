@@ -317,7 +317,10 @@ document.addEventListener('DOMContentLoaded', function() {
         classDateOptions[i] = [];
       }
       if ( classes[i].next_match_date ) {
-        const m = new Date(classes[i].next_match_date); m.setHours(0,0,0,0);
+        var s = classes[i].next_match_date;
+        if ( s.length <= 6 ) s += ', ' + new Date().getFullYear();  // Fix Firefox problem!
+        const m = new Date(s); m.setHours(0,0,0,0);
+        console.log(m);
         if ( m.getFullYear() < tomorrow.getFullYear() ) m.setFullYear(tomorrow.getFullYear());
         if ( m < tomorrow ) m.setDate(tomorrow.getDate());
         for ( let delta = Math.floor((tomorrow-m) / (24*3600*1000)) ; delta <= 14 ; delta++ ) {
