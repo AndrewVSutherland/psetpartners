@@ -17,6 +17,7 @@
   --lighter-gray: #eaebec;
   --lightest-gray: #f1f2f3;
   --alert-color: #e32f54;
+  --warn-color: black;
   --info-color: black;
   --select-fill: var(--mit-pink);
   --button-fill: #a31f34;
@@ -466,6 +467,15 @@ label.confirm::before {
   font-weight: bold!important;
   font-style: italic;
   color: var(--alert-color)!important;
+  vertical-align: middle;
+}
+
+.warninfo {
+  padding-left: 6px;
+  font-size: 75%;
+  font-weight: bold!important;
+  font-style: italic;
+  color: var(--warn-color)!important;
   vertical-align: middle;
 }
 
