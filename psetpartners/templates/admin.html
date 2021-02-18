@@ -42,11 +42,13 @@ let loaded = false;
 let dept = '';
 let classSort = {};
 let classRows = [];
+let selectedRows = [];
 
 function formatRow(class_number) {
   const s = counts[class_number];
   if ( class_number.includes('.') ) {
     return {
+      classes : 1,
       class_number: class_number,
       students: s.status.reduce((s,v)=>s+v),
       groups: s.groups,
@@ -107,7 +109,7 @@ function classNumberCompare(a,b) {
 function colCompare(a,b,col,dir)
 {
   if ( col === "class_number" || a[col] == b[col] ) return dir*classNumberCompare(a.class_number,b.class_number);
-  return a[col] < b[col] ? -dir : dir;
+  return a[col] < b[col] ? -dir : (a[col] > b[col] ? dir : 0);
 }
 
 function showClassTable () {
@@ -137,7 +139,6 @@ function ajaxToggle(name, value) {
 document.addEventListener('DOMContentLoaded', function() {
 
   const t = toggles.st || '-students';
-  console.log(t);
   classSort = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
   classRows = Object.keys(counts).map(formatRow);
   $('#class-table th').click(headerClick);

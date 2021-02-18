@@ -15,7 +15,13 @@ To learn more about your group and its members please visit<br><br>
 &nbsp;&nbsp;{url}<br><br>
 
 We encourage you to reach out to your new group today.<br>
-You can use the "email group" button on pset partners to do this.
+You can use the "email group" button on pset partners to do this.<br><br>
+
+It looks like there are {hours} each week that are compatible with all of your schedules, we suggest you consider meeting at<br><br>
+
+&nbsp;&nbsp;{time}<br><br>
+
+to agree on a venue and time for collaboration.
 """
 
 unmatched_only = """
