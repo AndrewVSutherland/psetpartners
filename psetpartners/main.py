@@ -696,7 +696,6 @@ def save_student():
             flash_error(msg)
     else:
         flash_error("Unrecognized submit command: " + submit[0]);
-    print(time.clock()-t)
     return redirect(url_for(".student"))
 
 def save_changes(raw_data):
