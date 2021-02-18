@@ -1,5 +1,4 @@
 import re, json
-from device_detector import SoftwareDetector
 from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
