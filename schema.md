@@ -1,6 +1,6 @@
 # Schema
 
-This file provides documentation on the underlying schema; try to keep it up to date if you make changes.
+This file provides documentation on the underlying schema; try to keep it up to date if you make changes. 
 
 ## departments
 
