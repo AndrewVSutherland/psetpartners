@@ -1,4 +1,5 @@
 import re, json
+import httpagentparser
 from urllib.parse import urlparse, urljoin
 from flask import (
     make_response,
@@ -158,14 +159,13 @@ def login():
     session["displayname"] = displayname
     user.login()
     login_user(user, remember=False)
-    device = SoftwareDetector(request.headers.get("User-Agent")).parse()
-    source = device.os_name() + ' ' + device.client_name() + ' '+device.client_version() + '(' + device.client_type() +')'
-    app.logger.info("user %s logged in to %s from %s (affiliation=%s%s%s,full_name=%s)" % (
-        kerb,"live site" if livesite() else "sandbox",source,affiliation,
-        ' student' if current_user.is_student else '',
-        ' instructor' if current_user.is_instructor else '',
-        current_user.full_name
-    ))
+    agent = httpagentparser.detect(request.headers.get("User-Agent"))
+    source = (agent['os'].get('name',"")+" ") if 'os' in agent else ""
+    source += (agent['browser'].get('name') + " " + agent['browser'].get('version')) if 'browser' in agent else "?"
+    s = ', student' if current_user.is_student else ''
+    i = ', instructor' if current_user.is_instructor else ''
+    site = "live site" if livesite() else "sandbox"
+    app.logger.info("user %s logged in to %s from %s (affiliation=%s%s%s,full_name=%s)" % (kerb, site, source, affiliation, s, i, current_user.full_name))
     if next:
         return redirect(next)
     if current_user.is_admin:
@@ -541,10 +541,10 @@ def activate(class_id):
 @login_required
 def save_class():
     raw_data = request.form
-    w = raw_data.get("screen-width","?")
-    h = raw_data.get("screen-height","?")
-    client_details={'operation': 'save_class', 'ua': request.headers.get("User-Agent"), 'resolution':"%sx%s"%(w,h)}
-    log_event (current_user.kerb, 'submit', client_details)
+    details = httpagentparser.detect(request.headers.get("User-Agent"))
+    details['operation'] = 'save_class'
+    details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))
+    log_event (current_user.kerb, 'submit', details)
     data = { col: val.strip() for col,val in raw_data.items() }
     try:
         class_id = int(data.pop("class_id"))
@@ -587,9 +587,10 @@ def save_student():
     if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
         return redirect(url_for(".student"))
-    w = raw_data.get("screen-width","?")
-    h = raw_data.get("screen-height","?")
-    log_event (current_user.kerb, 'submit', {'operation':submit[0], 'ua': request.headers.get("User-Agent"), 'resolution':"%sx%s"%(w,h)})
+    details = httpagentparser.detect(request.headers.get("User-Agent"))
+    details['operation'] = submit[0]
+    details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))
+    log_event (current_user.kerb, 'submit', details)
     if submit[0] == "save":
         # update the full_name supplied by Touchstone (in case this changes)
         if session.get("displayname",""):
@@ -695,6 +696,7 @@ def save_student():
             flash_error(msg)
     else:
         flash_error("Unrecognized submit command: " + submit[0]);
+    print(time.clock()-t)
     return redirect(url_for(".student"))
 
 def save_changes(raw_data):
