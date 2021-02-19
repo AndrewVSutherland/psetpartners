@@ -306,7 +306,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
                 creator = ''
             visibility = randint(0,3)
             g = {'class_id': c['id'], 'year': year, 'term': term, 'class_number': c['class_number'], 'class_numbers': c['class_numbers'],
-                 'group_name': name, 'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'creator': creator, 'editors': eds, 'max': maxsize }
+                 'group_name': name, 'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'created': now, 'creator': creator, 'editors': eds, 'max': maxsize }
             creators.add(creator)
             S.append(g)
         print("Created %s groups in %s, total names used = %s" % (n//(groupsize+1),c['class_number'], len(names)))
