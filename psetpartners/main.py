@@ -267,7 +267,7 @@ def admin(class_number=''):
         for c in classes:
             c['students'] = sorted([student_row(s) for s in students_groups_in_class(c['id'], student_row_cols)])
             c['groups'] = count_rows('groups', {'class_id': c['id']})
-            c['next_match_date'] = next_match_date(c)
+            c['next_match_date'], c['full_match_date'] = next_match_date(c)
             c.pop('match_dates')
             c['instructor_names'] = []
             for k in c['instructor_kerbs']:

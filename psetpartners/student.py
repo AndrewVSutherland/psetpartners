@@ -1127,8 +1127,9 @@ class Student(UserMixin):
         strengths = {} # Groups don't have preference strengths right now
         limit = max_size_from_prefs(prefs)
         name = generate_group_name(class_id)
+        now = datetime.datetime.now()
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'class_numbers': c['class_numbers'], 'group_name': name,
-             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'creator': self.kerb, 'editors': editors,
+             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'created': now, 'creator': self.kerb, 'editors': editors,
              'size': 1, 'max': limit }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
