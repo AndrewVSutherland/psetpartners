@@ -337,9 +337,7 @@ def pretty_name(s):
 def email_address(s):
     return s + '@mit.edu' if isinstance(s,str) else (s['email'] if s.get('email') else s['kerb'] + '@mit.edu')
 
-def next_match_date(class_id):
-    import datetime
-
+def next_match_date(class_id, request_match=False):
     if isinstance(class_id,dict):
         if 'match_dates' in class_id:
             match_dates = class_id['match_dates']
@@ -353,10 +351,15 @@ def next_match_date(class_id):
         db = getdb()
         match_dates = db.classes.lucky({'id': class_id}, projection='match_dates')
     if match_dates:
-        today = datetime.datetime.now().date()
+        now = datetime.datetime.now()
+        today = now.date()
         match_dates = [d for d in match_dates if d >= today]
         if match_dates:
-            return match_dates[0].strftime("%b %-d"), match_dates[0].strftime("%Y-%m-%d")
+            # don't offer match withing 2 hours of midnight (MIT time) on match date
+            if request_match and match_dates[0] == today and now.hour >= 22:
+                return "",""
+            else:
+                return match_dates[0].strftime("%b %-d"), match_dates[0].strftime("%Y-%m-%d")
     return "", ""
 
 # TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
@@ -1072,7 +1075,7 @@ class Student(UserMixin):
         if self.class_data[c]['status'] == 5:
             app.logger.warning("User %s attempted to join the pool for class %s but is currently being matched" % (self.kerb, c))
             raise ValueError("Unable to join pool, you are currently in the process of being matched in <b>%s</b>." % cs)
-        d = next_match_date(class_id)
+        d,_ = next_match_date(class_id)
         msg = "You are now in the match pool for <b>%s</b> and will be matched on <b>%s</b>." %(cs, d)
         now = datetime.datetime.now()
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 2, 'status_timestamp': now}, resort=False)
@@ -1097,7 +1100,7 @@ class Student(UserMixin):
         if self.class_data[c]['status'] != 2:
             app.logger.warning("User %s attempted to leave the pool for class %s but is not in the match pool for that class" % (self.kerb, class_id))
             raise ValueError("You are and not in the match pool for %s." % ' / '.join(self.class_data[c]['class_numbers']))
-        d = next_match_date(class_id)
+        d,_ = next_match_date(class_id)
         msg = "You have been removed from the match pool for <b>%s</b> on <b>%s</b>." %(cs, d)
         now = datetime.datetime.now()
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status': 0, 'status_timestamp': now}, resort=False)
@@ -1127,8 +1130,9 @@ class Student(UserMixin):
         strengths = {} # Groups don't have preference strengths right now
         limit = max_size_from_prefs(prefs)
         name = generate_group_name(class_id)
+        now = datetime.datetime.now()
         g = {'class_id': class_id, 'year': current_year(), 'term': current_term(), 'class_number': c['class_number'], 'class_numbers': c['class_numbers'], 'group_name': name,
-             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'creator': self.kerb, 'editors': editors,
+             'visibility': visibility, 'preferences': prefs, 'strengths': strengths, 'created': now, 'creator': self.kerb, 'editors': editors,
              'size': 1, 'max': limit }
         self._db.groups.insert_many([g], resort=False)
         r = {'class_id': class_id, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb, 'class_number': g['class_number'], 'year': g['year'], 'term': g['term'] }
@@ -1192,7 +1196,7 @@ class Student(UserMixin):
             r['id'] = r['class_id'] # just so we don't get confused
             c = self._db.classes.lucky({'id': r['class_id']})
             r['class_numbers'] = c['class_numbers']
-            r['next_match_date'], r['full_match_date'] = next_match_date(c)
+            r['next_match_date'], r['full_match_date'] = next_match_date(c, request_match=True)
             # timeout expired request status
             if r['status'] == 3 and r['status_timestamp'] + datetime.timedelta(days=1) < now:
                 r['status'] = 0
