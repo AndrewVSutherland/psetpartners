@@ -482,7 +482,6 @@ def get_counts(classes, opts, year=current_year(), term=current_term()):
             counts[c] = student_counts(students_in_class(r['id']), opts)
             counts[c]['groups'] = count_rows('groups',{'class_id': r['id']})
             counts[c]['students_groups'] = count_rows('grouplist', {'class_id': r['id']})
-            counts[c]['next_match_date'], counts[c]['full_match_date'] = next_match_date(r)
             counts[c]['visibility'], counts[c]['capacity'] = group_visibility_counts(c, year=year, term=term)
             counts[c]['students_visibility'] = student_visibility_counts(db.groups.search({'class_id': r['id']}, projection=["size", "visibility"]))
             counts[c]['class_id'] = r['id']
