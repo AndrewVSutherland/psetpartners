@@ -2,6 +2,7 @@ import datetime
 from psycodict import DelayCommit
 from .app import send_email, livesite
 from .utils import current_term, current_year, hours_from_default
+from .student import email_address, signature
 from .dbwrapper import getdb, get_forcelive
 
 FIRST_MEETING_OFFSET = 36 # first meeting is at least this many hours after the email is sent
@@ -36,23 +37,18 @@ We encourage you to reach out to your new group today.<br>
 You can use the "email group" button on pset partners to do this.<br><br>
 """
 
-unmatched_only = """
-We were not able to match you with a pset group in <b>{class_numbers}</b> because there were not enough students in the match pool.
+unmatched_subject = "Notification from pset partners regarding {class_numbers}"
+
+unmatched_email = """
+We were unable to place you in a pset group in <b>{class_numbers}</b>.
+
+We are very sorry this happened!  It most likely occured because there were no students in the match pool whose schedule overlapped with yours, or possibly you had a required preference that could not be met.
+
 We encourage you to visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-and either join a public group, or click the "match me asap" button and we will try to put you into an existing group.
-"""
-
-unmatched_requirement = """
-We were not able to match you with a pset group in <b>{class_numbers}</b> because we were unable to satisfy one of the preferences
-you marked as "required".  If you still want to join a pset group for this class we encourage you to visit<br><br>
-
-&nbsp;&nbsp;{url}<br><br>
-
-and either join a public group or weaken the strength of your required preferences in this class to "strongly preferred"
-and click the "match me asap" button.
+and either join a public group, or click the "match me asap" button if available and we will try to put you into an existing group.
 """
 
 def normalized_hours(s):
@@ -151,15 +147,15 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
         log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
         print("created group %s with members %s" % (g['group_name'], kerbs))
 
-    cnum = g['class_number']
-    message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cnum, g['group_name'])
+    cs = ' / '.join(g['class_numbers'])
+    message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name'])
     db.messages.insert_many([{'type': 'newgroup', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb':''} for s in students], resort=False)
-    subject = new_group_subject.format(class_numbers=' / '.join(g['class_number']))
+    subject = new_group_subject.format(class_numbers=cs)
     url = student_url(g['class_number'])
     if hours:
-        body = new_group_email.format(class_numbers=' / '.join(g['class_numbers']),url=url,hours=hours,meet_time=meet_time.strftime("%-I%p on %b %-d"))
+        body = new_group_email.format(class_numbers=cs,url=url,hours=hours,meet_time=meet_time.strftime("%-I%p on %b %-d"))
     else:
-        body = new_group_short_email.format(class_numbers=' / '.join(g['class_numbers']),url=url)
+        body = new_group_short_email.format(class_numbers=cs,url=url)
     send_email([email_address(s) for s in students], subject, body + signature)
     return g
  
@@ -188,8 +184,8 @@ def process_matches (matches, match_run=-1):
             print("Created group %s (%d) in %s (%d) with %s members: %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
             m += 1
         for kerb in matches[class_id]['unmatched']:
-            class_number = db.classes.lucky({'id': class_id}, projection="class_number")
-            assert class_number, "Class id %s not found" % class_id
+            c = db.classes.lucky({'id': class_id})
+            assert c, "Class id %s not found" % class_id
             assert db.students.lookup(kerb), "Student %s not found" % kerb
             S = [t for t in rank_groups(class_id, kerb) if t[1] == 2]
             db.classlist.update({'class_id': class_id, 'kerb': kerb}, {'status': 0}, resort=False)
@@ -199,10 +195,13 @@ def process_matches (matches, match_run=-1):
                 s = Student(kerb)
                 assert not s.new
                 s.join(group_id)
-                print("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, class_number, class_id))
+                print("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, c['class_number'], class_id))
                 n += 1
             else:
                 print("Unable to match %s in %s (id=%d)" % (kerb, class_number, class_id))
-
+                cs = ' / '.join(c['class_numbers'])
+                subject = unmatched_subject.format(class_numbers=cs)
+                body = unmatched_email.format(class_numbers=cs, url=student_url(c['class_number']))
+                send_email(email_address(kerb), subject, body + signature)
                 o += 1
     print("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))
