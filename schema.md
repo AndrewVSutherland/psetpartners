@@ -16,13 +16,14 @@ course_number         | text        | Course number, e.g. 18
 Column                | Type        |  Notes
 ----------------------|-------------|-------
 id                    | bigint      | unique identifier automatically assigned by postgres
-active                | boolean     | true once owner opts in, not visible to students until then
+active                | boolean     | true once owner activates, not visible to students until then
 class_name            | text        | Class name, e.g. Algebra I
 class_number          | text        | Class number, e.g. 18.701 (master subject)
 class_numbers         | text[]      | Class numbers (includes master subject and all cross-listed subjects)
 year                  | smallint    | Calendar year
 term                  | smallint    | Encoding of semester 0=IAP, 1=spring, 2=summer, 3=fall
-owner_kerb            | text[]      | responsible faculty (only one who can edit instructor kerbs)
+owner_kerb            | text[]      | responsible faculty member (only one who can activate the course)
+owner_name            | text        | full name of responsible faculty member
 instructor_kerbs[]    | text[]      | list of instructor kerbs who can view pset groups for the class
 homepage              | text        | course homepage (not currently used)
 match_dates           | date[] 	    | dates to match students in pool (sorted).  Least date >= today will be advertised as the pool date
@@ -83,6 +84,7 @@ visibility            | smallint    | 0=invitation, 1=permission, 2=automatic, 3
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
 creator               | text        | kerb of the student who created the group, empty string for system created groups
+created               | timestamp   | timesttamp set when group is created (used to determine when to follow up for system created groups)
 editors               | text[]      | list of kerbs of students authorized to modify the group (empty list means everyone)
 size                  | smallint    | number of rows in grouplist with group_id=id (read/write ratio is high, so worth maintaining)
 max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
