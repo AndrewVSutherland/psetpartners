@@ -2,7 +2,6 @@ import datetime
 from psycodict import DelayCommit
 from .app import send_email, livesite
 from .utils import current_term, current_year, hours_from_default
-from .student import email_address, signature
 from .dbwrapper import getdb, get_forcelive
 
 FIRST_MEETING_OFFSET = 36 # first meeting is at least this many hours after the email is sent
@@ -165,7 +164,7 @@ def process_matches (matches, match_run=-1):
     groups = list of lists of kerbs, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
     only means there was only one member of the pool, requirement means a required preference could not be satisifed
     """
-    from .student import Student
+    from .student import Student, email_address, signature
     from .match import rank_groups
 
     db = getdb()
