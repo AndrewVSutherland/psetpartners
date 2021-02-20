@@ -113,11 +113,13 @@ const forumShort = ["", "text", "video", "in-person"];
 const sizeOptions = [
   { label: '', value: '' },
   { label: '2 students', value: '2', },
-  { label: '3-4 students', value: '3', },
+  { label: '3 students', value: '3', },
+  { label: '3-4 students', value: '3.5', },
+  { label: '4 students', value: '4', },
   { label: '5-8 students', value: '5', },
-  { label: 'more than 8 students', value: '9', },
+  { label: '9 or more students', value: '9', },
 ];
-const sizeShort = ["", "2", "3-4", "5-8", "9+"];
+const sizeShort = ["", "2", "3", "3-4", "4", "5-8", "9+"];
 
 const department_affinityOptions = [
   { label: '', value: '' },

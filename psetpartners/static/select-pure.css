@@ -1,5 +1,5 @@
 :root {
-  --short-min-height: 22px;
+  --short-min-height: 20px;
   --min-height: 32px;
   --max-height: 220px;
   --row-height: 20px;
@@ -11,7 +11,7 @@
   font-size: 90%;
 }
 
-.sp-placeholder::after, .sp-short-placeholder::after {
+.sp-placeholder::after, .sp-short-placeholder::after, .sp-veryshort-placeholder::after {
   content: "▽";
   font-weight: normal;
   position: absolute;
@@ -21,11 +21,11 @@
   font-style: normal;
   font-size: 70%;
 }
-.sp-short-placeholder::after {
+.sp-short-placeholder::after, .sp-veryshort-placeholder::after {
  top: 5px;
 }
 
-.sp-select, .sp-short-select {
+.sp-select, .sp-short-select, .sp-veryshort-select {
   align-items: center;
   background-color: var(--mit-white);
   border-radius: 4px;
@@ -46,19 +46,23 @@
 }
 
 @-moz-document url-prefix() {
-  .sp-select, .sp-short-select {
+  .sp-select, .sp-short-select, .sp-veryshort-select {
     width: calc(var(--value-width) + 6px);
   }
 }
 
-.sp-short-select {
+.sp-short-select, .sp-veryshort-select {
   width: calc(var(--short-value-width) + 6.5px);
   min-height: var(--short-min-height);
   font-size: 95%;
-  padding: 2px 5px 1.5px 3px;
+  padding: 2.5px 5px 1.5px 3px;
 }
 
-.sp-select:hover, .sp-short-select:hover {
+.sp-veryshort-select {
+  width: calc(var(--veryshort-value-width) + 6.5px);
+}
+
+.sp-select:hover, .sp-short-select:hover, .sp-vershort-select:hover {
   background-color: var(--mit-light-pink);
 }
 

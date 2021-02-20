@@ -1,8 +1,8 @@
 import datetime
 from psycodict import DelayCommit
 from .app import send_email, livesite
-from .utils import current_term, current_year, hours_from_default
-from .dbwrapper import getdb, get_forcelive
+from .utils import current_term, current_year, hours_from_default, null_logger
+from .dbwrapper import getdb, get_forcelive, db_islive
 
 FIRST_MEETING_OFFSET = 36 # first meeting is at least this many hours after the email is sent
 
@@ -16,38 +16,68 @@ To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-We encourage you to reach out to your new group today.<br>
+We encourage you to reach out to your new partners today.<br>
 You can use the "email group" button on pset partners to do this.<br><br>
 
-It looks like there are {hours} each week when your schedules overlap.  We suggest a brief initial meeting at<br><br>
+It looks like there are {hours} hours each week when your schedules overlap.<br>
+We suggest a brief initial meeting at<br><br>
 
 &nbsp;&nbsp;{meet_time} (MIT Time)<br><br>
 
-to introduce yourselves to each other and discuss how you want to work together.
+to introduce yourselves and decide how you want to proceed.
 """
 
-new_group_short_email = """
+new_group_problem_email = """
 Greetings!  You have been matched with a pset group in <b>{class_numbers}</b>.<br>
 To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-We encourage you to reach out to your new group today.<br>
+We encourage you to reach out to your new partners today.<br>
 You can use the "email group" button on pset partners to do this.<br><br>
+
+There appears to be a scheduling conflict with your group that we were unable to avoid.  We suggest discussing this issue to see if you can still find a time that works for everyone (or perhaps agree to work asynchronously). 
+if that isn't possible one or more of you may want to leave this group and try entering the match pool again next week.
 """
 
-unmatched_subject = "Notification from pset partners regarding {class_numbers}"
+disbanded_group_subject = "Important pset partner notification for {class_numbers}"
 
-unmatched_email = """
+disbanded_group_email = """
+We are writing to let you know that the group <b>{group_name}</b> in <b>{class_numbers}</b> has been disbanded.<br><br>
+
+If you were placed in this group in a recent matching this means you are being reassigned to a new group and should receive a separate email about your new group soon.<br><br>
+
+As always, you can view your current status and pset partner options for this class at<br><br>
+
+&nbsp;&nbsp;{url}<br><br>
+
+Please feel free to contact us if you have any questions or concerns.
+"""
+
+unmatched_subject = "pset partner match notification for {class_numbers}"
+
+unmatched_only_email = """
 We were unable to place you in a pset group in <b>{class_numbers}</b>.
 
-We are very sorry this happened!  It most likely occured because there were no students in the match pool whose schedule overlapped with yours, or possibly you had a required preference that could not be met.
+We are very sorry this happened!  It most likely occured because there were no students in the match pool whose schedule overlapped yours.
 
 We encourage you to visit<br><br>
 
 &nbsp;&nbsp;{url}<br><br>
 
-and either join a public group, or click the "match me asap" button if available and we will try to put you into an existing group.
+and either join a public group if one is available, or join the match pool for next week.
+"""
+
+unmatched_other_email = """
+We were unable to place you in a pset group in <b>{class_numbers}</b>.
+
+We are very sorry this happened!  It most likely occured because there were no students in the match pool whose schedule overlapped yours or you had a requirement that could not be satisifed.
+
+We encourage you to visit<br><br>
+
+&nbsp;&nbsp;{url}<br><br>
+
+and either join a public group if one is available, or join the match pool for next week.
 """
 
 def normalized_hours(s):
@@ -63,12 +93,12 @@ def student_url(class_number):
     url = "https://psetpartners.mit.edu/student" if (livesite() or get_forcelive()) else "https://psetpartners-test.mit.edu/student"
     return url if not class_number else url + "/" + class_number
 
-def generate_group_name(class_id=None, year=current_year(), term=current_term(), class_names=set(), avoid_names=set()):
+def generate_group_name(class_id=None, year=current_year(), term=current_term(), class_names=set(), avoid_names=set(), forcelive=False):
     from random import randint
     def rand(x):
         return x[randint(0,len(x)-1)]
 
-    db = getdb()
+    db = getdb(forcelive)
     S = set(class_names)
     if class_id is not None:
         S.update({ g for g in db.groups.search({'class_id': class_id}, projection='group_name') })
@@ -96,10 +126,41 @@ def generate_group_name(class_id=None, year=current_year(), term=current_term(),
     print("error in generate_group_name, L=%s, N=%s, class_names=%s, len(avoid_names)=%s:" % (L,N,class_names,len(avoid_names)))
     raise NotImplementedError("Unable to generate group name!")
 
-def create_group (class_id, kerbs, match_run=0, group_name=''):
+def disband_group (group_id, rematch=False, forcelive=False, email_test=False, vlog=null_logger()):
+    from .student import email_address, signature, log_event
+
+    db = getdb(forcelive)
+    with DelayCommit(db):
+        g = db.groups.lucky({'id': group_id}, projection=3)
+        if not g:
+            raise ValueError("Group %s not found" % group_id)
+        members = list(db.grouplist.search({'group_id':group_id}))
+        for r in members:
+            db.classlist.update({'class_id': r['class_id'], 'student_id': r['student_id']}, {'status': 5 if rematch else 0}, resort=False)
+        kerbs = [r['kerb'] for r in members]
+        db.groups.delete({'id': group_id}, resort=False)
+        db.grouplist.delete({'group_id': group_id}, resort=False)
+        log_event ('admin', 'disband', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
+        vlog.info("Disbanded group %s (%d) in %s (%d) with %d members %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
+
+    cs = ' / '.join(g['class_numbers'])
+    url = student_url(g['class_number'])
+    message = "The <b>%s</b> pset group <b>%s</b> has been disbanded." % (cs, g['group_name'])
+    db.messages.insert_many([{'type': 'disband', 'content': message, 'recipient_kerb': k, 'sender_kerb':''} for k in kerbs], resort=False)
+    subject = disbanded_group_subject.format(class_numbers=cs, group_name=g['group_name'])
+    body = disbanded_group_email.format(class_numbers=cs, group_name=g['group_name'], url=url)
+    if db_islive(db) or email_test:
+        vlog.info("emailing [%s] to %s" % (subject, [email_address(k) for k in kerbs]))
+        send_email([email_address(k) for k in kerbs], subject, body + signature)
+    else:    
+        vlog.info("not emailing [%s] to %s" % (subject, [email_address(k) for k in kerbs]))
+    return g
+
+
+def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, email_test=False, vlog=null_logger()):
     from .student import max_size_from_prefs, email_address, signature, log_event
 
-    db = getdb()
+    db = getdb(forcelive)
     c = db.classes.lucky({'id': class_id})
     assert c, "Class id %s not found" % class_id
 
@@ -117,7 +178,7 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
     hours = len(available)
     if hours:
         now = datetime.datetime.now()
-        current_hour = 24*now.weekday() + now.hour()
+        current_hour = 24*now.weekday() + now.hour
         next_hour = (current_hour + FIRST_MEETING_OFFSET) % 168
         meet_hour = min([i for i in available if i >= next_hour]) if available[-1] > next_hour else available[0]
         meet_time = now + datetime.timedelta(hours=(meet_hour-current_hour)%168)
@@ -128,12 +189,18 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
         if len(v) == 1:
             g['preferences'][p] = list(v)[0]
     g['size'] = len(kerbs)
+    # for automatic groups with no size preference, set a size preference based on the current size
+    # this is important to prevent highly compatible groups from excessive growth via "match me now"
+    if not 'size' in g['preferences'] and g['visibility'] == 2 and match_run:
+        if g['size'] <= 4:
+            g['preferences']['size'] = "3.5"
+        elif g['size'] <= 8:
+            g['preferences']['size'] = "5"
     g['max'] = max_size_from_prefs(g['preferences'])
     g['match_run'] = match_run
 
     with DelayCommit(db):
-        g['group_name'] = group_name if group_name else generate_group_name(class_id, c['year'], c['term'])
-        print("creating group %s with members %s" % (g['group_name'], kerbs))
+        g['group_name'] = group_name if group_name else generate_group_name(class_id, c['year'], c['term'], forcelive=forcelive)
         # sanity check
         assert all([db.classlist.lucky({'class_id': class_id, 'student_id': s['id']},projection='status')==5 for s in students])
         db.groups.insert_many([g], resort=False)
@@ -144,7 +211,7 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
         for s in students:
             db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now}, resort=False)
         log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
-        print("created group %s with members %s" % (g['group_name'], kerbs))
+        vlog.info("Created group %s (%d) in %s (%d) with %d members %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
 
     cs = ' / '.join(g['class_numbers'])
     message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name'])
@@ -154,11 +221,15 @@ def create_group (class_id, kerbs, match_run=0, group_name=''):
     if hours:
         body = new_group_email.format(class_numbers=cs,url=url,hours=hours,meet_time=meet_time.strftime("%-I%p on %b %-d"))
     else:
-        body = new_group_short_email.format(class_numbers=cs,url=url)
-    send_email([email_address(s) for s in students], subject, body + signature)
+        body = new_group_problem_email.format(class_numbers=cs,url=url)
+    if db_islive(db) or email_test:
+        vlog.info("emailing [%s] to %s" % (subject, [email_address(s) for s in students]))
+        send_email([email_address(s) for s in students], subject, body + signature)
+    else:    
+        vlog.info("not emailing [%s] to %s" % (subject, [email_address(s) for s in students]))
     return g
  
-def process_matches (matches, match_run=-1):
+def process_matches (matches, match_run=-1, forcelive=False, email_test=False, vlog=null_logger):
     """
     Takes a dictionary returned by all_matches, keys are class_id's, values are objects with attributes
     groups = list of lists of kerbs, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
@@ -167,22 +238,25 @@ def process_matches (matches, match_run=-1):
     from .student import Student, email_address, signature
     from .match import rank_groups
 
-    db = getdb()
+    db = getdb(forcelive)
+    vlog.info("processing matches for %s database"%("live" if db_islive(db) else "test"))
     if match_run < 0:
         r = db.globals.lookup('match_run')
-        match_run = r['value']+1 if r else 0
+        match_run = r['value']+1 if r else 1
     db.globals.update({'key':'match_run'},{'timestamp': datetime.datetime.now(), 'value': match_run}, resort=False)
+    vlog.info("match_run = %o", match_run)
 
     m = n = o = 0
     for class_id in matches:
         class_number = db.classes.lucky({'id': class_id}, projection="class_number")
         assert class_number
-        print("Processing results for %s (%d)" % (class_number, class_id))
+        vlog.info("Processing results for %s (%d)" % (class_number, class_id))
         for kerbs in matches[class_id]['groups']:
-            g = create_group(class_id, kerbs, match_run=match_run)
-            print("Created group %s (%d) in %s (%d) with %s members: %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
+            create_group(class_id, kerbs, match_run=match_run, forcelive=forcelive, email_test=email_test, vlog=vlog)
             m += 1
-        for kerb in matches[class_id]['unmatched']:
+        onlykerbs = { kerb for kerb in matches[class_id]['unmatched_only'] }
+        unmatched = matches[class_id]['unmatched_only'] + matches[class_id]['unmatched_other']
+        for kerb in unmatched:
             c = db.classes.lucky({'id': class_id})
             assert c, "Class id %s not found" % class_id
             assert db.students.lookup(kerb), "Student %s not found" % kerb
@@ -194,13 +268,20 @@ def process_matches (matches, match_run=-1):
                 s = Student(kerb)
                 assert not s.new
                 s.join(group_id)
-                print("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, c['class_number'], class_id))
+                vlog.info("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, c['class_number'], class_id))
                 n += 1
             else:
                 print("Unable to match %s in %s (id=%d)" % (kerb, class_number, class_id))
                 cs = ' / '.join(c['class_numbers'])
                 subject = unmatched_subject.format(class_numbers=cs)
-                body = unmatched_email.format(class_numbers=cs, url=student_url(c['class_number']))
-                send_email(email_address(kerb), subject, body + signature)
+                if kerb in onlykerbs:
+                    body = unmatched_only_email.format(class_numbers=cs, url=student_url(c['class_number']))
+                else:
+                    body = unmatched_other_email.format(class_numbers=cs, url=student_url(c['class_number']))
+                if db_islive(db) or email_test:
+                    vlog.info("emailing [%s] to %s" %(subject, kerb))
+                    send_email(email_address(kerb), subject, body + signature)
+                else:
+                    vlog.info("not emailing [%s] to %s" %(subject, kerb))
                 o += 1
-    print("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))
+    vlog.info("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))

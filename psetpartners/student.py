@@ -159,7 +159,7 @@ location_options = [
     #("tower4", "Graduate Tower at Site 4"),
     #("sidneypacific", "Sidney-Pacific"),
     #("tang", "Tang Hall"),
-    #("warehouse", "The Warehous"),
+    #("warehouse", "The Warehouse"),
     #("westgate", "Westgate"),    
     ]
 
@@ -189,10 +189,13 @@ forum_options = [
 
 size_options = [
     ("2", "2 students"),
-    ("3", "3-4 students"),
+    ("3", "3 students"),
+    ("3.5", "3 or 4 students"),
+    ("4", "4 students"),
     ("5", "5-8 students"),
-    ("9", "more than 8 students"),
+    ("9", "9 or more students"),
     ]
+size_limits = { None: None, "": None, "2": 2, "3": 3, "3.5": 4, "4": 4, "5": 8, "9": None }
 
 commitment_options = [
     ("1", "I'm still shopping and/or not registered"),
@@ -362,15 +365,8 @@ def next_match_date(class_id, request_match=False):
                 return match_dates[0].strftime("%b %-d"), match_dates[0].strftime("%Y-%m-%d")
     return "", ""
 
-# TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
-# Then this function could simply return the preferred value if it is <= 8 and None otherwise
 def max_size_from_prefs(prefs):
-    if not 'size' in prefs:
-        return None
-    bigger = [int(o[0]) for o in size_options if int(o[0]) > int(prefs['size'])]
-    if not bigger:
-        return None
-    return bigger[0]-1
+    return size_limits[prefs.get('size')]
 
 def get_pref_option(prefs, input, k):
     val = input.get(k,'').strip()
@@ -1179,12 +1175,12 @@ class Student(UserMixin):
         if not S:
             return
         if announce_message:
-            # only message group memebers other than self
+            # only message group members other than self
             messages = [{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S if s['kerb'] != self.kerb ]
             if messages:
                 self._db.messages.insert_many(messages, resort=False)
         if email_message:
-            # email all group memebers, including self if applicable (this won't apply if self just left)
+            # email all group members, including self if applicable (this won't apply if self just left)
             send_email([email_address(s) for s in S], subject, email_message + signature)
 
     def _class_data(self, year=current_year(), term=current_term()):
