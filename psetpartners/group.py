@@ -189,6 +189,13 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, 
         if len(v) == 1:
             g['preferences'][p] = list(v)[0]
     g['size'] = len(kerbs)
+    # for automatic groups with no size preference, set a size preference based on the current size
+    # this is important to prevent highly compatible groups from excessive growth via "match me now"
+    if not 'size' in g['preferences'] and g['visibility'] == 2 and match_run:
+        if g['size'] <= 4:
+            g['preferences']['size'] = "3.5"
+        elif g['size'] <= 8:
+            g['preferences']['size'] = "5"
     g['max'] = max_size_from_prefs(g['preferences'])
     g['match_run'] = match_run
 
@@ -235,7 +242,7 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
     vlog.info("processing matches for %s database"%("live" if db_islive(db) else "test"))
     if match_run < 0:
         r = db.globals.lookup('match_run')
-        match_run = r['value']+1 if r else 0
+        match_run = r['value']+1 if r else 1
     db.globals.update({'key':'match_run'},{'timestamp': datetime.datetime.now(), 'value': match_run}, resort=False)
     vlog.info("match_run = %o", match_run)
 
