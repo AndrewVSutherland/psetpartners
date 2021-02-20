@@ -215,16 +215,16 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <div id="confirm-options" style="display:none;">
         <table class="short-input"><tbody><tr>
           <td class="short-caption">Start:</td>
-          <td class="short-value"><span class="short-select" id="select-start"></span><input type="hidden" name="start" id="start" /></td>
+          <td class="short-value"><span class="veryshort-select" id="select-start"></span><input type="hidden" name="start" id="start" /></td>
           <td class="short-caption">Style:</td>
-          <td class="short-value"><span class="short-select" id="select-style"></span><input type="hidden" name="style" id="style" /></td>
+          <td class="short-value"><span class="veryshort-select" id="select-style"></span><input type="hidden" name="style" id="style" /></td>
           <td class="short-caption">Forum:</td>
-          <td class="short-value"><span class="short-select" id="select-forum"></span><input type="hidden" name="forum" id="forum" /></td>
-          <td class="short-caption">Size:</td>
-          <td class="short-value"><span class="short-select" id="select-size"></span><input type="hidden" name="size" id="size" /></td>
+          <td class="short-value"><span class="veryshort-select" id="select-forum"></span><input type="hidden" name="forum" id="forum" /></td>
+          <td class="short-caption">Target size:</td>
+          <td class="short-value"><span class="veryshort-select" id="select-size"></span><input type="hidden" name="size" id="size" /></td>
           <td class="short-caption editors">Editors:</td>
-          <td class="short-value editors"><span class="short-select" id="select-editors"></span><input type="hidden" name="editors" id="editors" /></td>
-          <td class="short-caption membership">Members:</td>
+          <td class="short-value editors"><span class="veryshort-select" id="select-editors"></span><input type="hidden" name="editors" id="editors" /></td>
+          <td class="short-caption membership">Membership:</td>
           <td class="short-value membership"><span class="short-select" id="select-membership"></span><input type="hidden" name="membership" id="membership" /></td>
         </tr></tbody></table>
     </div>
@@ -1130,10 +1130,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   const shortspClassNames = {'select': 'sp-short-select', 'placeholder': 'sp-short-placeholder' };
-  makeSingleSelect('start', shortOptions.start, {classNames: shortspClassNames, placeholder: 'select'});
-  makeSingleSelect('style', shortOptions.style, {classNames: shortspClassNames, placeholder: 'select'});
-  makeSingleSelect('forum', shortOptions.forum, {classNames: shortspClassNames, placeholder: 'select'});
-  makeSingleSelect('size', shortOptions.size, {classNames: shortspClassNames, placeholder: 'select'});
+  const veryshortspClassNames = {'select': 'sp-veryshort-select', 'placeholder': 'sp-veryshort-placeholder' };
+  makeSingleSelect('start', shortOptions.start, {classNames: veryshortspClassNames, placeholder: 'select'});
+  makeSingleSelect('style', shortOptions.style, {classNames: veryshortspClassNames, placeholder: 'select'});
+  makeSingleSelect('forum', shortOptions.forum, {classNames: veryshortspClassNames, placeholder: 'select'});
+  makeSingleSelect('size', shortOptions.size, {classNames: veryshortspClassNames, placeholder: 'select'});
   makeSingleSelect('membership', groupMembershipOptions, {classNames: shortspClassNames});
   makeSingleSelect('editors', editorOptions, {classNames: shortspClassNames});
 

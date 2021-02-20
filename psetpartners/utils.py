@@ -1,6 +1,6 @@
 # This file is made up of selected bits copied from researchseminars.org's codebase.  It should be factored out at some point.
 
-import pytz, datetime
+import pytz, datetime, logging
 import re, ast
 from collections.abc import Iterable
 from markupsafe import Markup, escape
@@ -46,6 +46,14 @@ daytime_re = re.compile(daytime_re_string)
 dash_re = re.compile(r'[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]')
 class_name_re = re.compile(r"[a-zA-Z0-9 ,.;:?!&/@#'()\-]+")
 kerb_re = re.compile(r"^[a-z][a-z0-9_]+$")
+
+# null_logger used as default for verbose logginng
+def null_logger():
+    logger = logging.getLogger("null")
+    if not logger.handlers:
+        logger.addHandler(logging.NullHandler())
+        logger.propagate = False
+    return logger
 
 def domain():
     return urlparse(request.url).netloc

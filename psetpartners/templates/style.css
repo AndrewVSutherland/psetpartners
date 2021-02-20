@@ -4,7 +4,8 @@
   --min-width: 1024px;
   --caption-width: 270px;
   --value-width: 420px;
-  --short-value-width: 90px;
+  --short-value-width:92px;
+  --veryshort-value-width: 76px;
   --mit-maroon: #a31f34;
   --mit-maroon-light: #ba264c;
   --mit-pink: #fdf5f3;
@@ -283,8 +284,9 @@ table.short-input {
 
 td.short-caption {
   margin: 0;
+  font-size: 95%;
   padding-right: 1.5px;
-  padding-left: 7.5px;
+  padding-left: 5.5px;
 }
 td.short-caption:first-of-type {
   padding-left: 0px;

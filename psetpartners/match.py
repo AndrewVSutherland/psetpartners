@@ -1,5 +1,6 @@
-from .dbwrapper import getdb
-from .utils import hours_from_default, current_year, current_term
+import datetime
+from .dbwrapper import getdb, db_islive
+from .utils import hours_from_default, current_year, current_term, null_logger
 from collections import defaultdict
 from math import sqrt, floor, ceil
 from functools import lru_cache
@@ -15,7 +16,8 @@ class MatchError(ValueError):
     pass
 
 def initial_assign(to_match, sizes):
-    # In practice, 3-4 is by far the most common requested size.  In order to have room for expansion, we aim for 3.
+    # In practice, 3-4 is by far the most common requested size (and most set no preference at all)
+    # We aim for a mix of 3's and 4's (3 gives room to grow, 4 reduces impact of non-responsive partners)
     # We first try to fulfill any other size requests: 9 then 5 then 2.
     # Note that this function will destroy the sizes dictionary.
     groups = {}
@@ -32,37 +34,43 @@ def initial_assign(to_match, sizes):
                 fill[:fill_amount] = []
             G = make_group(G)
             if len(G) != n:
+                print(n)
+                print(len(G))
+                print(G)
                 raise RuntimeError
             source[:n] = []
         for S in G.students:
             groups[S.id] = G
-    for m in [9,5,2]:
-        # 9-5-2 (aka Sergeant Major) is one of my favorite card games
+    for m in [9,5,4,3,2]:
         while sizes[m]:
             add(sizes[m], m, sizes[0])
     remainder = sizes[3] + sizes[0]
     if len(remainder) == 5:
-        # Unless there's a strong preference for 3 or bad time overlap, we keep this case in a group of 5.
+        # Unless there's a preference for 3 or bad time overlap, we make a group of 5
         G = make_group(remainder)
-        strong = [i for i in sizes[3] if to_match[i].preferences["size"][1] > 3]
-        if 0 < len(strong) <= 3 or G.schedule_overlap() < 4:
+        want3 = [i for i in sizes[3] if to_match[i].preferences["size"][1] >= 1]
+        if 0 < len(want3) < 3 or G.schedule_overlap() < 4:
             for i in remainder:
-                if i not in strong:
-                    strong.append(i)
-                    if len(strong) == 3:
+                if i not in want3:
+                    want3.append(i)
+                    if len(want3) == 3:
                         break
-            other = [i for i in remainder if i not in strong]
-            add(strong)
-            add(other)
+        if len(want3) > 3:
+            want3 = want3[:3]
+        if len(want3) == 3:
+            add(want3)
+            add([ i for i in remainder if i not in want3])
         else:
             add(remainder)
     elif len(remainder) == 4:
         G = make_group(remainder)
         if G.schedule_overlap() < 4:
             add(remainder, 2)
-            add(remainder, 2)
+            add(remainder)
         else:
             add(remainder)
+    elif len(remainder) == 3:
+        add(remainder)
     elif len(remainder) == 2:
         add(remainder)
     elif len(remainder) == 1:
@@ -77,10 +85,19 @@ def initial_assign(to_match, sizes):
                         break
                 break
     else:
-        while len(remainder) % 3:
-            add(remainder, 4)
-        while remainder:
-            add(remainder, 3)
+        assert len(remainder) > 5
+        while len(remainder):
+            if len(remainder)%7 in [2,3,5,6]:
+                add(remainder,3)
+            if len(remainder)%7 in [1,4]:
+                if len(remainder) == 4 and make_group(remainder).schedule_overlap() < 4:
+                    add(remainder,2)
+                    add(remainder,2)
+                else:
+                    add(remainder,4)
+            if len(remainder)%7 == 0:
+                add(remainder,4)
+                add(remainder,3)
     return groups
 
 def evaluate_swaps(groups):
@@ -174,23 +191,36 @@ def refine_groups(to_match, groups):
             run_swaps(to_match, groups, improvements)
         return unsatisfied
 
-def match_all(preview=False, verbose=True):
-    db = getdb()
+def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger()):
+    """
+    Returns a dictionary with three attributes: 'groups', 'unmatched_only', 'unmatched_other'
+    """
+    db = getdb(forcelive)
+    vlog.info("matching %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
     year = current_year()
     term = current_term()
+    query = {'active':True, 'year': year, 'term': term }
+    if not rematch:
+        today = datetime.datetime.now().date()
+        assert datetime.datetime.now().hour >= 22
+        query['match_dates'] = {'$contains': today}
     results = {}
-    for clsrec in db.classes.search({"year": year, "term": term}, ["id", "class_name", "class_number"]):
-        n = len(list(db.classlist.search({'class_id': clsrec['id'], 'status': 2 if preview else 5},projection='id')))
+    # TODO make classes search only return classes with students of status 2 or 5 (requires exists join, add to dbwrapper)
+    for c in db.classes.search(query, ["id", "class_name", "class_number"]):
+        if not preview and not rematch:
+            db.classlist.update({'class_id': c['id'], 'status': 2}, {'status': 5},resort=False)
+        n = len(list(db.classlist.search({'class_id': c['id'], 'status': 2 if preview else 5},projection='id')))
         if n:
-            if verbose:
-                print("\nMatching %d students in pool for %s %s" % (n, clsrec['class_number'], clsrec['class_name']))
-            groups, unmatched = matches(clsrec, preview, verbose)
-            results[clsrec['id']] = {'groups': groups, 'unmatched': unmatched}
+            vlog.info("Matching %d students in pool for %s %s" % (n, c['class_number'], c['class_name']))
+            groups, only, other = matches(c, preview, vlog)
+            results[c['id']] = {'groups': groups, 'unmatched_only': only, 'unmatched_other': other}
     return results
 
-def matches(clsrec, preview=False, verbose=True):
+def matches(clsrec, preview=False, vlog=null_logger()):
     """
     Creates groups for all classes in a given year and term.
+    Returns three lists: a list of groups, a list of unmatched kerbs of one students in a pool,
+    and a list of other unmatched students
     """
     db = getdb()
     student_data = {rec["id"]: {key: rec.get(key) for key in student_properties} for rec in db.students.search(projection=3)}
@@ -212,13 +242,12 @@ def matches(clsrec, preview=False, verbose=True):
     # Should fix this to use existing groups
     groups = {}
     if N == 0:
-        return [], []
+        return [], [], []
     elif N == 1:
+        vlog.info("%s assignments complete" % (clsrec["class_number"]))
         S = next(iter(to_match.values()))
-        if verbose:
-            print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
-            print("Only student %s unmatched" % S.kerb)
-        return [], [S.kerb]
+        vlog.warning("Only student %s unmatched in %s" % (S.kerb, clsrec["class_number"]))
+        return [], [S.kerb], []
     elif N in [2, 3]:
         # Only one way to group
         G = Group(list(to_match.values()))
@@ -228,30 +257,30 @@ def matches(clsrec, preview=False, verbose=True):
         unmatched = refine_groups(to_match, groups)
     else:
         # We first need to determine which size groups to create
-        for limit in [9, 5, 3, 2]:
+        for limit in [9, 5, 4, 3, 2]:
             for threshold in range(2,6):
-                sizes = defaultdict(list) # keys 2, 3 (3 or 4), 5 (5-8), 9 (9+), 0 (flexible)
-                size_lookup = {}
+                sizes = defaultdict(list) # keys 2, 3, 3.5 (3 or 4), 4, 5 (5-8), 9 (9+), 0 (flexible)
                 for i, student in to_match.items():
                     best, priority = student.preferences.get("size", (0, 0))
-                    best = int(best)
+                    best = 0 if best == "3.5" else int(best)    # 3.5 = 3 or 4 is our default, so treat as flexible
                     if priority < threshold or limit == 2:
                         # If we can't succeed using groups of only 2 and 3, we make everyone flexible.
                         best = 0
                     elif best > limit:
                         best = limit
                     sizes[best].append(i)
-                    size_lookup[i] = best
                 flex = 0
                 if len(sizes[2]) % 2:
                     # odd number of people wanting pairs
                     flex += 1
                 if len(sizes[3]) in [1,2,5]:
                     flex += 3 - (len(sizes[3]) % 3)
+                if len(sizes[4]) in [1,2,3,7]:
+                    flex += 4 - (len(sizes[4]) % 4)
                 if len(sizes[5]) in [1,2,3,4,9]:
                     flex += 5 - (len(sizes[5]) % 5)
                 if 0 < len(sizes[9]) < 9:
-                    flex += 9 - (len(sizes[9]) % 5)
+                    flex += 9 - (len(sizes[9]) % 9)
                 if flex <= len(sizes[0]):
                     # Have enough flexible students
                     break
@@ -269,14 +298,13 @@ def matches(clsrec, preview=False, verbose=True):
         run_swaps(to_match, groups, improvements)
         unmatched = refine_groups(to_match, groups)
     # Print warnings for groups with low compatibility and for non-satisfied requirements
-    if verbose:
-        print("%s %s assignments complete" % (clsrec["class_number"], clsrec["class_name"]))
-        for grp in set(groups.values()):
-            print(grp)
-        if unmatched:
-            print("Unmatched: %s" % unmatched)
+    vlog.info("%s assignments complete" % clsrec["class_number"])
+    for grp in set(groups.values()):
+        grp.print_warnings(vlog)
+    if unmatched:
+        vlog.warning("Unmatched students %s in %s" % (unmatched, clsrec["class_number"]))
     gset = set(groups.values())
-    return [[S.kerb for S in group.students] for group in gset], unmatched
+    return [[S.kerb for S in group.students] for group in gset], [], unmatched
 
 # TODO: Our lives would be simpler if the size pref values where 2,4,8,16 rather than 2,3,5,9 (with the same meaning)
 def size_pref_from_size(size):
@@ -555,11 +583,11 @@ class Group(object):
         self.students = [S for S in self.students if S.id != thisid] + [other]
         return self
 
-    def print_warnings(self):
+    def print_warnings(self, vlog):
         for S in self.students:
             for quality in affinities + styles + ["blocked_kerbs"]:
                 if S.score(quality, self) < 0:
-                    print("Group breaks %s's %s requirement" % (S.kerb, quality))
+                    vlog.warning("Group breaks %s's %s requirement" % (S.kerb, quality))
         overlap = self.schedule_overlap()
         if overlap < 4:
-            print("Small time overlap: %s hours" % overlap)
+            vlog.warning("Small time overlap: %s hours" % overlap)

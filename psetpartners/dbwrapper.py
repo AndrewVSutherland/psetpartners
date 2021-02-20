@@ -40,6 +40,9 @@ def getdb(forcelive=False):
             _db = PsetPartnersTestDB(db)
     return _db
 
+def db_islive(xdb=None):
+    return (xdb if xdb else _db) == db
+
 # list of tablenames X we want to redirect to test_X
 test_redirects = [
     'instructors',
