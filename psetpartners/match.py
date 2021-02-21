@@ -461,8 +461,14 @@ class Student(object):
                 satisfied = (len(G) == 2)
                 d = 0 if satisfied else max(len(G)/2,2/len(G))
             elif pref == '3':
+                satisfied = (len(G) == 3)
+                d = 0 if satisfied else max(len(G)/3,3/len(G))
+            elif pref == '3.5':
                 satisfied = (3 <= len(G) <= 4)
                 d = 0 if satisfied else max(len(G)/4,3/len(G))
+            elif pref == '4':
+                satisfied = (len(G) == 4)
+                d = 0 if satisfied else max(len(G)/4,4/len(G))
             elif pref == '5':
                 satisfied = (5 <= len(G) <= 8)
                 d = 0 if satisfied else max(len(G)/8,5/len(G))
@@ -470,7 +476,7 @@ class Student(object):
                 satisfied = (9 <= len(G))
                 d = 0 if satisfied else 9/len(G)
             else:
-                assert False, "Invalid size preference %s, should be a string in ['2','3','4','9'] or none" % pref
+                assert False, "Invalid size preference %s, should be a string in ['2','3','3.5','4','9'] or none" % pref
             if satisfied:
                 return 3**s
             elif s == 5:
