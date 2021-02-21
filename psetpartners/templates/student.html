@@ -769,7 +769,7 @@ function confirmLeave(e, gid) {
   const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
   let msg = `You are about to leave the group <b>${g.group_name}</b>. `;
-  if ( g.members.length > 1 ) msg += `All members of the group <b>will be notified</b>. `;
+  if ( g.members.length > 1 ) msg += `Group members will be informed of your departure (they may be sad to see you go, but they will <a href="{{url_for(".conduct")}}" target="_blank" class="link">understand</a>). `;
   if ( g.visibility < 3 && g.members.length > 1 ) msg += ' You will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += ' As you are the only member of this group, it will be disbanded after you leave.';
   let val = "leave " + gid;

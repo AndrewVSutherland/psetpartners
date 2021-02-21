@@ -57,7 +57,7 @@ html, body {
   -ms-text-size-adjust: none;
 }
 
-a, a:visited, label.link {
+a, a:visited, a.link, a.link:visited, label.link {
   outline: none;
   color: var(--mit-maroon);
   font-family: sans-serif;
@@ -65,12 +65,12 @@ a, a:visited, label.link {
   cursor: pointer;
 }
 
-a:hover label.link:hover {
+a:hover, a.link:hover, label.link:hover {
   background-color: var(--mit-pink);
   cursor: pointer;
 }
 
-a:focus {
+a:focus, a.link:focus {
   border-bottom: 1.5px solid currentColor;
 }
 
