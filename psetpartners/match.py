@@ -476,7 +476,7 @@ class Student(object):
                 satisfied = (9 <= len(G))
                 d = 0 if satisfied else 9/len(G)
             else:
-                assert False, "Invalid size preference %s, should be a string in ['2','3','3.5','4','9'] or none" % pref
+                assert False, "Invalid size preference %s, should be a string in ['2','3','3.5','4','5','9'] or none" % pref
             if satisfied:
                 return 3**s
             elif s == 5:
