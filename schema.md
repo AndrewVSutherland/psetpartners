@@ -79,7 +79,9 @@ class_number	      | text        | class number (copied from class)
 class_numbers         | text        | class numbers (copied from class)
 year                  | smallint    | year of class (e.g. 2020)
 term                  | smallint    | term of class (e.g. 3 = Fall)
-group_name            | text	    | custom name, editable by anyone in group
+group_name            | text	    | system generated alliterative name (cannot be changed)
+description           | text        | free text editable by all editors
+link                  | text        | optional URL the group uses (e.g. Zoom link, Slack stream, ...)
 visibility            | smallint    | 0=invitation, 1=permission, 2=automatic, 3=public
 preferences	      | jsonb       | optional group preferences; if unspecified, system constructs something from member preferences
 strengths             | jsonb       | preference strengths
