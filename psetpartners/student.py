@@ -977,8 +977,8 @@ class Student(UserMixin):
         self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None}, resort=False)
         cs = ' / '.join(g['class_numbers'])
         hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], cs)
-        hello_msg2 = "<br>You can contact your new partner at %s." % email_address(s)
-        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
+        hello_msg2 = "<br><br>You can contact your new partner at %s." % email_address(s)
+        self._notify_group(g['id'], "Say hello to your new pset partner in %s!" % cs, hello_msg1+hello_msg2, hello_msg1) # updates group size
         self.send_message('', 'approved', hello_msg1)
         send_message('', r['kerb'], 'approved', "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name']))
         self.update_toggle('ct', g['class_number'])
@@ -1021,9 +1021,10 @@ class Student(UserMixin):
         r['group_id'], r['student_id'], r['kerb'] = g['id'], self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         # note that size of group will be updated by _notify_group
+        cs = ' / '.join(g['class_numbers'])
         hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (self.pretty_name, g['group_name'], ' / '.join(g['class_numbers']))
-        hello_msg2 = "<br>You can contact your new partner at %s." % self.email_address
-        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
+        hello_msg2 = "<br><br>You can contact your new partner at %s." % self.email_address
+        self._notify_group(g['id'], "Say hello to your new pset partner in %s!" % cs, hello_msg1+hello_msg2, hello_msg1) # updates group size
         self._reload()
         return "Welcome to <b>%s</b>!" % g['group_name']
 
