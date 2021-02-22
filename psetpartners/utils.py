@@ -27,6 +27,7 @@ maxlength = {
     'description': MAX_TEXT_LEN,
     'group_name' : MAX_SHORT_NAME_LEN,
     'homepage': MAX_URL_LEN,
+    'link': MAX_URL_LEN,
     'kerb': MAX_ID_LEN,
     'instructor_kerbs': 16,
     'preferred_name' : MAX_SHORT_NAME_LEN,
@@ -57,6 +58,15 @@ def null_logger():
 
 def domain():
     return urlparse(request.url).netloc
+
+def valid_url(x):
+    if not (x.startswith("http://") or x.startswith("https://")):
+        return False
+    try:
+        result = urlparse(x)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
 
 def current_year():
     return datetime.datetime.now().year # calendar year, not academic year
