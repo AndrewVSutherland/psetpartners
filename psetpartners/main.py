@@ -571,7 +571,7 @@ def save_class():
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
 PROP_RE = re.compile(r"([a-z_]+)-([1-9]\d*)$")
 
-group_options = ['start', 'style', 'forum', 'size', 'editors', 'membership']
+group_options = ['start', 'style', 'forum', 'size', 'editors', 'membership', 'description', 'link']
 
 @app.route("/save/student", methods=["POST"])
 @login_required
