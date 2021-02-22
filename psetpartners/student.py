@@ -19,6 +19,7 @@ from .utils import (
     flash_error,
     validate_class_name,
     kerb_re,
+    valid_url,
     )
 from .group import generate_group_name
 from .token import generate_timed_token
@@ -976,8 +977,8 @@ class Student(UserMixin):
         self._db.groups.update({'id': r['group_id'], 'request_id': r['id']}, {'request_id': None}, resort=False)
         cs = ' / '.join(g['class_numbers'])
         hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (pretty_name(s), g['group_name'], cs)
-        hello_msg2 = "<br>You can contact your new partner at %s." % email_address(s)
-        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
+        hello_msg2 = "<br><br>You can contact your new partner at %s." % email_address(s)
+        self._notify_group(g['id'], "Say hello to your new pset partner in %s!" % cs, hello_msg1+hello_msg2, hello_msg1) # updates group size
         self.send_message('', 'approved', hello_msg1)
         send_message('', r['kerb'], 'approved', "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name']))
         self.update_toggle('ct', g['class_number'])
@@ -1020,9 +1021,10 @@ class Student(UserMixin):
         r['group_id'], r['student_id'], r['kerb'] = g['id'], self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)
         # note that size of group will be updated by _notify_group
+        cs = ' / '.join(g['class_numbers'])
         hello_msg1 = "%s joined your pset group <b>%s</b> in <b>%s</b>!" % (self.pretty_name, g['group_name'], ' / '.join(g['class_numbers']))
-        hello_msg2 = "<br>You can contact your new partner at %s." % self.email_address
-        self._notify_group(g['id'], "Say hello to your new pset partner!", hello_msg1+hello_msg2, hello_msg1) # updates group size
+        hello_msg2 = "<br><br>You can contact your new partner at %s." % self.email_address
+        self._notify_group(g['id'], "Say hello to your new pset partner in %s!" % cs, hello_msg1+hello_msg2, hello_msg1) # updates group size
         self._reload()
         return "Welcome to <b>%s</b>!" % g['group_name']
 
@@ -1158,9 +1160,13 @@ class Student(UserMixin):
         editors = g['editors']
         if len(editors) and options.get('editors','').strip() != '1':
             editors = []
+        description = options.get('description','').strip()
+        link = options.get('link','').strip()
+        if link and not valid_url(link):
+            raise ValueError("Invalid URL")
         limit = max_size_from_prefs(prefs)
-        if any([g['visibility'] != visibility, g['editors'] != editors, g['preferences'] != prefs]):
-            self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': limit}, resort=False)
+        if any([g['visibility'] != visibility, g['editors'] != editors, g['preferences'] != prefs, g['description'] != description, g['link'] != link]):
+            self._db.groups.update({'id': group_id}, {'preferences': prefs, 'visibility': visibility, 'editors': editors, 'max': limit, 'description': description, 'link': link}, resort=False)
             notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], cs)
             self._notify_group(group_id, "pset partner notification for %s" % cs, notify_msg, notify_msg)
             self._reload()
@@ -1219,9 +1225,9 @@ class Student(UserMixin):
     def _group_data(self, year=current_year(), term=current_term()):
         group_data = {}
         groups = self._db.grouplist.search({'student_id': self.id, 'year': year, 'term': term}, projection='group_id')
+        cols = ['id', 'group_name', 'class_number', 'class_numbers', 'visibility', 'preferences', 'strengths', 'editors', 'max', 'description', 'link']
         for gid in groups:
-            g = self._db.groups.lucky({'id': gid},
-                projection=['id', 'group_name', 'class_number', 'class_numbers', 'visibility', 'preferences', 'strengths', 'editors', 'max'])
+            g = self._db.groups.lucky({'id': gid}, projection=cols)
             g['group_id'] = g['id'] # just so we don't get confused
             members = list(students_in_group(gid, member_row_cols))
             g['count'] = len(members)

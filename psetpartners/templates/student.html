@@ -31,12 +31,6 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td class="value"><input class="value" spellcheck="false" name="preferred_pronouns" id="preferred_pronouns" value="{{user.preferred_pronouns}}" tabindex="2" placeholder="e.g. he/him, she/her, they/them" maxlength="{{maxlength['preferred_pronouns']}}" /></td>
     <td class="forminfo"></td>
     </tr>
-    <!--<tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
-      <td class="caption">Homepage</td>
-      <td class="value"><input class="value" spellcheck="false" name="homepage" id="homepage" value="{{user.homepage}}" tabindex="3" placeholder="e.g. https://www.mit.edu/~johndoe/" maxlength="{{maxlength['homepage']}}"
-        oninput="$('#homepage_info').html(validURL(this.value)?'optional':'<b style=&quot;color:var(--alert-color);&quot;>invalid URL</b>');" /></td>
-      <td class="forminfo" id="homepage_info">optional</td>
-    </tr>-->
     <tr class="profile-optional" {% if user.new %} style="display:none;" {% endif %}>
       <td class="caption">Department(s)</td>
       <td class="value">
@@ -61,12 +55,6 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       </td>
     <td class="forminfo"></td>
     </tr>
-    {#
-    <tr>
-      <td class="caption" style="vertical-align:top; padding-top:7px;">About me</td>
-      <td><textarea class="value" name="description" tabindex="7"  placeholder="A fun fact or something you would like your pset partners to know about you." rows="4" maxlength="{{maxlength['description']}}">{{user.description}}</textarea></td>
-    </tr>
-    #}
   </table>
 </div>
 
@@ -227,6 +215,19 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
           <td class="short-caption membership">Membership:</td>
           <td class="short-value membership"><span class="short-select" id="select-membership"></span><input type="hidden" name="membership" id="membership" /></td>
         </tr></tbody></table>
+        <table class="input" style="margin: 20px 0 20px 20px;"><tbody>
+          <tr>
+            <td class="caption" style="vertical-align:top; width:180px;">How we connnect</td>
+            <td><textarea class="value" style="width:630px;" name="description" id="description" placeholder="Connection information for group members, e.g. 'We meet Thursdays at 8pm on Zoom', 'Join our slack channel', 'We use this shared calendar', 'See this google doc', etc...  Keep it short." rows="3" maxlength="{{maxlength['description']}}"></textarea></td>
+          </tr>
+          <tr>
+            <td class="caption" style="width:180px;">Where we connect</td>
+            <td class="value"><input class="value" style="width:630px;" spellcheck="false" name="link" id="link" value="" placeholder="URL for a Zoom link, Slack/Discord channel or Zulip stream, group chat, ..." maxlength="{{maxlength['link']}}"
+              oninput="if ( !this.value || validURL(this.value) ) { $('#link_alert').hide(); $('#partner-confirm-button').prop('disabled',false); }
+                       else { $('#link_alert').show(); $('#partner-confirm-button').prop('disabled',true); }" /></td>
+            <td class="alertinfo" id="link_alert" style="display:none;">invalid URL</td>
+          </tr>
+        </tbody></table>
     </div>
       <table class="ctab"><tbody><tr>
         <td><button type="button" class="confirm" id="partner-confirm-button" value='' onclick="submitStudentForm(this.value,this);"></button></td>
@@ -581,7 +582,10 @@ function setPartnerPanes() {
     const c = studentClasses[i];
     if ( c in groupData ) {
       const g = groupData[c];
-      $('#partner-summary-'+(i+1)).html(`You are currently a member of the <b>${c}</b> pset group <b>${g.group_name}</b>.`);
+      const link = g.link ? '[<a style="padding:0 1px;" href="' + g.link + '" target="_blank">link</a>]' : '';
+      const gdesc = $('<i>').html(g.description).text();
+      const description = (g.description||g.link) ? '<br><br><b>Where to find us</b>: ' + gdesc + ' ' + link : '';
+      $('#partner-summary-'+(i+1)).html(`You are currently a member of the <b>${c}</b> pset group <b>${g.group_name}</b>.` + description);
       const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
       const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
       $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
@@ -769,7 +773,7 @@ function confirmLeave(e, gid) {
   const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
   let msg = `You are about to leave the group <b>${g.group_name}</b>. `;
-  if ( g.members.length > 1 ) msg += `All members of the group <b>will be notified</b>. `;
+  if ( g.members.length > 1 ) msg += `Group members will be informed of your departure (they may be sad to see you go, but they will <a href="{{url_for(".conduct")}}" target="_blank" class="link">understand</a>). `;
   if ( g.visibility < 3 && g.members.length > 1 ) msg += ' You will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += ' As you are the only member of this group, it will be disbanded after you leave.';
   let val = "leave " + gid;
@@ -872,6 +876,8 @@ function confirmEditGroup(e, c) {
   if ( ! i || i > studentClasses.length ) return;
   const g = groupData[c];
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
+  console.log(g.link);
+  $('#description').val(g.description);  $('#link').val(g.link);
   if ( g.editors.length === 0 ) $('.editors').hide();
   else { $('.editors').show(); $('#editors').val('1'); updateSingleSelect('editors'); }
   if ( g.visibility > 2 ) $('.membership').hide();
