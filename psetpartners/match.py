@@ -89,13 +89,14 @@ def initial_assign(to_match, sizes):
         while len(remainder):
             if len(remainder)%7 in [2,3,5,6]:
                 add(remainder,3)
-            if len(remainder)%7 in [1,4]:
+            elif len(remainder)%7 in [1,4]:
+                add(remainder,4)
                 if len(remainder) == 4 and make_group(remainder).schedule_overlap() < 4:
                     add(remainder,2)
                     add(remainder,2)
                 else:
                     add(remainder,4)
-            if len(remainder)%7 == 0:
+            elif len(remainder)%7 == 0:
                 add(remainder,4)
                 add(remainder,3)
     return groups
@@ -202,7 +203,8 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
     query = {'active':True, 'year': year, 'term': term }
     if not rematch:
         today = datetime.datetime.now().date()
-        assert datetime.datetime.now().hour >= 22
+        if not preview:
+            assert datetime.datetime.now().hour >= 22
         query['match_dates'] = {'$contains': today}
     results = {}
     # TODO make classes search only return classes with students of status 2 or 5 (requires exists join, add to dbwrapper)
