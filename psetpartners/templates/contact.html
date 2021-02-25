@@ -5,7 +5,7 @@
 
   <h2>Contact information</h2>
 
- First, please check the <a href="{{ url_for("faq") }}">FAQ</a> to see if your question or issue is addressed there.
+ First, please check the <a href="{{ url_for('faq') }}">FAQ</a> to see if your question or issue is addressed there.
  <ul>
     <li>
     If you have a question or need help using the site please <a href="mailto:psetpartners@mit.edu?subject=psetpartners support" target="_blank">email us</a>; we will try to respond within 24 hours.
@@ -23,7 +23,7 @@ The current list of known bugs and outstanding feature requests can be found on 
 <a href="https://github.com/andrewvsutherland/psetpartners/issues"
 target="_blank">GitHub issue tracker</a>.
 </p>
-<a href="{{url_for('.index')}}">Return to main page</a>
+<a href="{{url_for('index')}}">Return to main page</a>
 </div>
 
 {% endblock %}

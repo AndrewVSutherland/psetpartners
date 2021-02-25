@@ -184,7 +184,13 @@ def flash_info(msg):
     flash(msg, "info")
 
 def flash_notify(msg):
-    flash(msg, "notify")
+    # don't display blank notifications
+    if not msg:
+        return
+    if msg[:6].lower() == "error:":
+        flash_error(msg[6:])
+    else:
+        flash(msg, "notify")
 
 def flash_instruct(msg):
     flash(msg, "instruct")

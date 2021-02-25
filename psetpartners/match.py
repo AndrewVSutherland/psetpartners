@@ -197,7 +197,7 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
     Returns a dictionary with three attributes: 'groups', 'unmatched_only', 'unmatched_other'
     """
     db = getdb(forcelive)
-    vlog.info("matching %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
+    vlog.info("Using %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
     year = current_year()
     term = current_term()
     query = {'active':True, 'year': year, 'term': term }
@@ -213,7 +213,7 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
             db.classlist.update({'class_id': c['id'], 'status': 2}, {'status': 5},resort=False)
         n = len(list(db.classlist.search({'class_id': c['id'], 'status': 2 if preview else 5},projection='id')))
         if n:
-            vlog.info("Matching %d students in pool for %s %s" % (n, c['class_number'], c['class_name']))
+            vlog.info("Matching %d students in %s %s" % (n, c['class_number'], c['class_name']))
             groups, only, other = matches(c, preview, vlog)
             results[c['id']] = {'groups': groups, 'unmatched_only': only, 'unmatched_other': other}
     return results

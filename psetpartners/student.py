@@ -15,7 +15,6 @@ from .utils import (
     current_term_end_date,
     hours_from_default,
     flash_announce,
-    flash_notify,
     flash_error,
     validate_class_name,
     kerb_re,
@@ -699,23 +698,29 @@ class Student(UserMixin):
             log_event (self.kerb, 'leave', {'group_id': group_id})
             return self._leave(group_id)
 
-    def poolme(self):
-        if not self.class_data:
-            return "You do not have any classes listed in your pset partners profile for this term"
-        n = 0
+    def poolme(self, class_number):
+        if class_number not in self.class_data:
+            return "The class %s is not currently in your pset partner profile" % class_number
+        c = self.class_data[class_number]
+        cs = ' / '.join(c['class_numbers'])
+        if class_number in self.group_data:
+            return "You are already a member of the group <b>%s</b> in <b>%s</b>" % (self.group_data[class_number]['group_name'], cs)
         with DelayCommit(self):
-            for k in self.class_data:
-                c = self.class_data[k]
-                if c['status'] == 0 or c['status'] == 3:
-                    log_event(self.kerb, 'pool', {'class_id': c['class_id']})
-                    flash_notify(self._pool(c['class_id']))
-                    n += 1
-        if not n:
-            "You are either in a group or have already requested a match in all of your classes"
-        else:
-            log_event (self.kerb, 'poolme', {'count': n})
+            log_event (self.kerb, 'poolme', {'class_id': c['class_id']})
+            return self._pool(c['class_id'])
 
-        return "Done!"
+    def removeme(self, class_number):
+        if class_number not in self.classes:
+            return "The class <b>%s</b> is not currently in your pset partner profile" % class_number
+        c = self.class_data[class_number]
+        cs = ' / '.join(c['class_numbers'])
+        if class_number in self.group_data:
+            return "Error:You are currently a member of the group <b>%s</b> in <b>%s</b>.  You need to leave your group before you can remove this class." % (self.group_data[class_number]['group_name'], cs)
+        with DelayCommit(self):
+            log_event (self.kerb, 'removeme', {'class_id': c['class_id']})
+            self.classes.remove(class_number)
+            self._save()
+            return "The class <b>%s</b> has been removed from your pset partner profile." % cs
 
     def pool(self, class_id):
         with DelayCommit(self):
@@ -944,8 +949,8 @@ class Student(UserMixin):
         r = {'timestamp': now, 'group_id': g['id'], 'student_id': self.id, 'kerb': self.kerb}
         self._db.requests.insert_many([r])
         self._db.groups.update({'id': group_id}, {'request_id': r['id']}, resort=False)
-        approve_link = url_for(".approve_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
-        deny_link = url_for(".deny_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
+        approve_link = url_for("approve_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
+        deny_link = url_for("deny_request", request_id=r['id'], _external=True, _scheme="http" if debug_mode() else "https")
         request_msg = permission_request .format(class_numbers=' / '.join(g['class_numbers']), group_name=g['group_name'], approve_link=approve_link, deny_link=deny_link)
         self._notify_group(g['id'], "A student in %s is looking for a pset group" % cs, request_msg, '')
         self._reload()
@@ -1236,7 +1241,7 @@ class Student(UserMixin):
             token = generate_timed_token({'kerb':self.kerb, 'group_id': str(g['id'])}, 'invite')
             # Don't freak out on url_for failures, we want to be able to call this interactively for testing purposes
             try:
-                g['invite'] = url_for(".accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
+                g['invite'] = url_for("accept_invite", token=token, _external=True, _scheme="http" if debug_mode() else "https")
             except RuntimeError:
                 print("Unable to create invitation link")
             group_data[g['class_number']] = g
