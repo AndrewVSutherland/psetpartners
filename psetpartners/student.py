@@ -1354,7 +1354,7 @@ class Instructor(UserMixin):
         if self.kerb != c['owner_kerb'] and self.kerb not in c['instructor_kerbs']:
             app.logger.warning("User %s attempted to update class %s for which they are not an instructor" % (self.kerb, class_id))
             raise ValueError("You are not currently listed as an instructor for this class -- this is probably a bug, please contact psetpartners@mit.edu.")
-        if c['owner_kerb'] != self.kerb and self.dual_role:
+        if c['owner_kerb'] != self.kerb and not self.class_data[c['class_number']]['editor']:
             app.logger.warning("User %s attempted to update class %s for which they are not an authorized editor" % (self.kerb, class_id))
             raise ValueError("We were unable to update class due to an authorization failure -- this is probably a bug, please contact psetpartners@mit.edu.")
         cs = ' / '.join(c['class_numbers'])
