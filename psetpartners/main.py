@@ -110,7 +110,7 @@ def login():
                 return render_template("500.html", message="Unauthorized redirect."), 500
             else:
                 return redirect(next)
-        return redirect(url_for('.index'))
+        return redirect(url_for("index"))
     if livesite():
         if request.method != "GET":
             return render_template("500.html", message="Invalid login method"), 500
@@ -169,16 +169,16 @@ def login():
     if next:
         return redirect(next)
     if current_user.is_admin:
-        return redirect(url_for(".admin"))
-    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
+        return redirect(url_for("admin"))
+    return redirect(url_for("student")) if current_user.is_student else redirect(url_for("instructor"))
 
 @app.route("/switchrole")
 @login_required
 def switch_role():
     if not current_user.is_authenticated:
-        return redirect(url_for('.index'))
+        return redirect(url_for("index"))
     if not current_user.dual_role:
-        return redirect(url_for('.index'))
+        return redirect(url_for("index"))
     if current_user.is_student:
         user = Instructor(current_user.kerb, current_user.full_name, affiliation='student')
         session['affiliation'] = "staff"
@@ -188,15 +188,15 @@ def switch_role():
         session['affiliation'] = "student"
         login_user(user, remember=False)
     else:
-        return redirect(url_for('.index'))        
-    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
+        return redirect(url_for("index"))
+    return redirect(url_for("student")) if current_user.is_student else redirect(url_for("instructor"))
 
 @app.route("/loginas/<kerb>")
 @login_required
 def loginas(kerb):
     if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_admin(current_user.kerb):
         logout_user()
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     logout_user()
     session['affiliation'] = ''
     session['displayname'] = ''
@@ -218,8 +218,8 @@ def loginas(kerb):
     session['kerb'] = kerb
     login_user(user, remember=False)
     if current_user.is_admin:
-        return redirect(url_for(".admin"))
-    return redirect(url_for(".student")) if current_user.is_student else redirect(url_for(".instructor"))
+        return redirect(url_for("admin"))
+    return redirect(url_for("student")) if current_user.is_student else redirect(url_for("instructor"))
 
 @login_required
 @app.route("/admin")
@@ -293,16 +293,16 @@ def index():
     session.pop('_flashes', None)
     if current_user.is_authenticated:
         if current_user.is_student:
-            return redirect(url_for(".student"))
+            return redirect(url_for("student"))
         elif current_user.is_instructor:
             if current_user.is_admin:
-                return redirect(url_for(".admin"))
-            return redirect(url_for(".instructor"))
+                return redirect(url_for("admin"))
+            return redirect(url_for("instructor"))
         else:
             return render_template("500.html", message="Only students and instructors are authorized to use this site."), 500        
     else:
         if livesite():
-            return redirect(url_for(".login"))
+            return redirect(url_for("login"))
         else:
             return render_template("login.html", sandbox=sandbox_data(), maxlength=maxlength)
     assert False
@@ -377,7 +377,7 @@ def confirm_conduct():
     except ValueError as err:
         app.logger.error("Error processing code of conduct confirmation from %s" % (current_user.kerb))
         flash_error("Error processing response: %s" % err)
-    return redirect(url_for(".student"))
+    return redirect(url_for("student"))
 
 @app.route("/_toggle")
 @login_required
@@ -417,20 +417,20 @@ def accept_invite(token):
         invite = read_timed_token(token, 'invite')
     except ValueError:
         flash_error("This invitation link has expired.  Please ask the sender to create a new invitation for you.")
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     except BadSignature:
         flash_error("Invalid or corrupted invitation link.")
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     if not current_user.is_student:
         app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], "User is not a student"))
         flash_error("Unable to process invitation: %s" % "you are not logged in as a student")
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     try:
         current_user.accept_invite(invite)
     except ValueError as err:
         app.logger.error("Error processing invitation to %s from %s to join group %s: %s" % (current_user.kerb, invite['kerb'], invite['group_id'], err))
         flash_error("Unable to process invitation: %s" % err)
-    return redirect(url_for(".student"))
+    return redirect(url_for("student"))
 
 @app.route("/approve/<int:request_id>")
 @login_required
@@ -438,14 +438,14 @@ def approve_request(request_id):
     if not current_user.is_student:
         app.logger.error("Error processing approve response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
         flash_error("Error processing response: %s" % "you are not logged in as a student")
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     try:
         msg = current_user.approve_request(request_id)
         flash_notify(msg)
     except ValueError as err:
         app.logger.error("Error processing approve response from %s to request id %s" % (current_user.kerb, request_id))
         flash_error("Error processing response: %s" % err)
-    return redirect(url_for(".student"))
+    return redirect(url_for("student"))
 
 @app.route("/deny/<int:request_id>")
 @login_required
@@ -453,29 +453,45 @@ def deny_request(request_id):
     if not current_user.is_student:
         app.logger.error("Error processing deny response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
         flash_error("Error processing response: %s" % "you are not logged in as a student")
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
     try:
         flash_notify(current_user.deny_request(request_id))
     except ValueError as err:
         app.logger.error("Error processing deny response from %s to request id %s" % (current_user.kerb, request_id))
         flash_error("Error processing response: %s" % err)
-    return redirect(url_for(".student"))
+    return redirect(url_for("student"))
 
-@app.route("/poolme")
+@app.route("/poolme/<class_number>")
 @login_required
-def poolme():
+def poolme(class_number):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
     try:
-        flash_notify(current_user.poolme())
+        flash_notify(current_user.poolme(class_number))
     except ValueError as err:
-        msg = "Error adding you to match pool: {0}{1!r}".format(type(err).__name__, err.args)
-        app.logger.error("Error processing poolme request for student %s: %s" % (current_user.kerb, msg))
-        log_event (current_user.kerb, 'poolme', status=-1, detail={'msg': msg})
-        flash_error("We encountered an error while attempting to put in the match pool: %s" % msg)
-    return redirect(url_for(".student"))
+        msg = "Error adding you to match pool for <b>{2}</b>: {0}{1!r}".format(type(err).__name__, err.args, class_number)
+        app.logger.error("Error processing poolme request for %s for student %s: %s" % (class_number, current_user.kerb, msg))
+        log_event (current_user.kerb, 'poolme', status=-1, detail={'class_number': class_number, 'msg': msg})
+        flash_error("We encountered an error while attempting to put in the match pool for <b>%s</b>: %s" % (class_number, msg))
+    return redirect(url_for("student", class_number=class_number))
+
+@app.route("/removeme/<class_number>")
+@login_required
+def removeme(class_number):
+    if not current_user.is_authenticated or not current_user.is_student:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    try:
+        flash_notify(current_user.removeme(class_number))
+    except ValueError as err:
+        msg = "Error removing you from <b>{2}</b>: {0}{1!r}".format(type(err).__name__, err.args, class_number)
+        app.logger.error("Error processing removeme request for %s for student %s: %s" % (class_number, current_user.kerb, msg))
+        log_event (current_user.kerb, 'removeme', status=-1, detail={'class_number': class_number, 'msg': msg})
+        flash_error("We encountered an error while attempting to remove you from <b>%s</b>: %s" % (class_number, msg))
+    return redirect(url_for("student"))
 
 @app.route("/student")
 @app.route("/student/<class_number>")
@@ -535,7 +551,7 @@ def activate(class_id):
         if debug_mode():
             raise
         flash_error(msg)
-    return redirect(url_for(".instructor"))
+    return redirect(url_for("instructor"))
 
 @app.route("/save/class", methods=["POST"])
 @login_required
@@ -554,7 +570,7 @@ def save_class():
         if debug_mode():
             raise
         flash_error(msg)
-        return redirect(url_for(".instructor"))
+        return redirect(url_for("instructor"))
 
     current_user.acknowledge()
     try:
@@ -565,7 +581,7 @@ def save_class():
         if debug_mode():
             raise
         flash_error(msg)
-    return redirect(url_for(".instructor"))
+    return redirect(url_for("instructor"))
 
 
 PREF_RE = re.compile(r"^s?pref-([a-z_]+)-(\d+)$")
@@ -583,10 +599,10 @@ def save_student():
     submit = [x for x in session["ctx"]["submit"].split(' ') if x];
     if not submit:
         flash_error("Unrecognized submit value, no changes made (please report this as a bug).")
-        return redirect(url_for(".student"))
+        return redirect(url_for("student"))
     if submit[0] == "cancel":
         flash_info ("Changes discarded.") 
-        return redirect(url_for(".student"))
+        return redirect(url_for("student"))
     details = httpagentparser.detect(request.headers.get("User-Agent"))
     details['operation'] = submit[0]
     details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))
@@ -600,10 +616,10 @@ def save_student():
         if not save_changes(raw_data):
             if submit != "save":
                 flash_error("The action you requested was not performed.")
-            return redirect(url_for(".student"))
+            return redirect(url_for("student"))
         submit = submit[1:]
     if not submit:
-        return redirect(url_for(".student"))
+        return redirect(url_for("student"))
     if submit[0] == "join":
         try:
             gid = int(submit[1])
@@ -696,7 +712,7 @@ def save_student():
             flash_error(msg)
     else:
         flash_error("Unrecognized submit command: " + submit[0]);
-    return redirect(url_for(".student"))
+    return redirect(url_for("student"))
 
 def save_changes(raw_data):
     errmsgs = []
@@ -822,7 +838,7 @@ def save_survey():
     db = getdb()
     db.survey_responses.upsert({'survey_id': r['survey_id'],'kerb': r['kerb']}, r)
     log_event(current_user.kerb,"surveyed")
-    return render_template("thankyou.html", message='Your responses have been recorded.  You can update them by revisiting the <a href="%s">survey link</a>.' % url_for(".survey"))
+    return render_template("thankyou.html", message='Your responses have been recorded.  You can update them by revisiting the <a href="%s">survey link</a>.' % url_for("survey"))
 
 @app.route("/logout")
 @login_required
@@ -830,7 +846,7 @@ def logout():
     session.clear()
     logout_user()
     if not livesite():
-        resp = make_response(redirect(url_for(".index")))
+        resp = make_response(redirect(url_for("index")))
     else:
         resp = make_response(render_template("thankyou.html",message="You have been logged out."))
     resp.set_cookie('sessionID','',expires=0)

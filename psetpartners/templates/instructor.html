@@ -13,7 +13,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 {% if user.is_admin %}
 
-<p style="font-size:120%;"><b>{{classes[0].class_number}}&nbsp;{{classes[0].owner_name}}&nbsp;({{', '.join(classes[0].instructor_kerbs)}})</b> <a style="float:right; font-size:16px;" href="{{url_for('.admin')}}">index</a></p>
+<p style="font-size:120%;"><b>{{classes[0].class_number}}&nbsp;{{classes[0].owner_name}}&nbsp;({{', '.join(classes[0].instructor_kerbs)}})</b> <a style="float:right; font-size:16px;" href="{{url_for('admin')}}">index</a></p>
 
 {% else %}
 
@@ -32,7 +32,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 
 <li>Students<p>If you reached this page it is because Touchstone identified you in a differerent role &mdash; this occaasionally happes to special students and/or cross-registered students.  Please <a href="mailto:psetpartners@mit.edu">contact us</a> so that we can update your pset partners profile.  In your eamil please include your name, kerberos identifier, and at least one subject number of a course you are registered for this term.</p></li>
 
-<li>Staff and affiliates<p>The pset partners website is only available to students and instructors, but please feel free to explore our <a href="https://psetpartners-test.mit.edu">test site</a> or browse our <a href="{{url_for('.faq')}}">FAQ</a>.
+<li>Staff and affiliates<p>The pset partners website is only available to students and instructors, but please feel free to explore our <a href="https://psetpartners-test.mit.edu">test site</a> or browse our <a href="{{url_for('faq')}}">FAQ</a>.
 </ul>
 {% else %}
 
@@ -40,7 +40,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 <p align="justify">According to our records, you are the responsible faculty member for the following classes which are <b>not currently active</b> on pset partners:</p>
 <ul class="classlist">
 {% for c in inactive %}
-<li>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}<button type="button" class="confirm" tabindex="-1" onclick="location.href='{{url_for('.activate',class_id=c['id'])}}';">activate</button></li>
+<li>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name']  }}<button type="button" class="confirm" tabindex="-1" onclick="location.href='{{url_for('activate',class_id=c['id'])}}';">activate</button></li>
 {% endfor %}
 </ul>
 {% endif %}
@@ -59,7 +59,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
     <label class="paction edit-{{i}}" onclick="$('.edit-{{i}}').toggle();">edit</label>
     <button type="button" class="cancel edit-{{i}}" tabindex="-1" style="display:none;" onclick="resetClass('{{i}}'); $('.edit-{{i}}').toggle();">nevermind</button>
     <button type="button" class="confirm edit-{{i}}" id="submit-{{i}}" tabindex="-1" style="display:none;" disabled="disabled"; onclick="updateClass(this,{{i}});">update</button>
-    <form class="edit-{{i}}" id="form-{{i}}" action="{{ url_for('.save_class') }}" method="post" style="display:none;">
+    <form class="edit-{{i}}" id="form-{{i}}" action="{{ url_for('save_class') }}" method="post" style="display:none;">
     <input type="hidden" name="class_id" value="{{c['id']}}">
       <p style="margin: 5px 0 5px 18px;">
         <b>Instructors</b>:
@@ -202,7 +202,7 @@ function toggleClass(i) {
   classIndex = i;
   ajaxToggle('ct', classes[i].class_number);
   if ( classRows[i].length === 0 ) {
-    $('#student-table-preamble').html(`No students currrently have <b>${classes[i].class_numbers.join(' / ')}</b> listed in their pset partners profile.  Be sure to <b>let students know</b> your class is available on pset partners.  We suggest posting a link to <a href="{{url_for('.index')}}">psetpartners.mit.edu</a> on your course homepage or syllabus and also making in-class announcements.`);
+    $('#student-table-preamble').html(`No students currrently have <b>${classes[i].class_numbers.join(' / ')}</b> listed in their pset partners profile.  Be sure to <b>let students know</b> your class is available on pset partners.  We suggest posting a link to <a href="{{url_for('index')}}">psetpartners.mit.edu</a> on your course homepage or syllabus and also making in-class announcements.`);
     $('#student-table-preamble').show();
     $('#student-table-header').hide();
     $('#student-table').hide();

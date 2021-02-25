@@ -89,13 +89,14 @@ def initial_assign(to_match, sizes):
         while len(remainder):
             if len(remainder)%7 in [2,3,5,6]:
                 add(remainder,3)
-            if len(remainder)%7 in [1,4]:
+            elif len(remainder)%7 in [1,4]:
+                add(remainder,4)
                 if len(remainder) == 4 and make_group(remainder).schedule_overlap() < 4:
                     add(remainder,2)
                     add(remainder,2)
                 else:
                     add(remainder,4)
-            if len(remainder)%7 == 0:
+            elif len(remainder)%7 == 0:
                 add(remainder,4)
                 add(remainder,3)
     return groups
@@ -196,13 +197,14 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
     Returns a dictionary with three attributes: 'groups', 'unmatched_only', 'unmatched_other'
     """
     db = getdb(forcelive)
-    vlog.info("matching %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
+    vlog.info("Using %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
     year = current_year()
     term = current_term()
     query = {'active':True, 'year': year, 'term': term }
     if not rematch:
         today = datetime.datetime.now().date()
-        assert datetime.datetime.now().hour >= 22
+        if not preview:
+            assert datetime.datetime.now().hour >= 22
         query['match_dates'] = {'$contains': today}
     results = {}
     # TODO make classes search only return classes with students of status 2 or 5 (requires exists join, add to dbwrapper)
@@ -211,7 +213,7 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
             db.classlist.update({'class_id': c['id'], 'status': 2}, {'status': 5},resort=False)
         n = len(list(db.classlist.search({'class_id': c['id'], 'status': 2 if preview else 5},projection='id')))
         if n:
-            vlog.info("Matching %d students in pool for %s %s" % (n, c['class_number'], c['class_name']))
+            vlog.info("Matching %d students in %s %s" % (n, c['class_number'], c['class_name']))
             groups, only, other = matches(c, preview, vlog)
             results[c['id']] = {'groups': groups, 'unmatched_only': only, 'unmatched_other': other}
     return results

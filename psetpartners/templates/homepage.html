@@ -129,15 +129,15 @@
     {% if user.is_authenticated %}
       <div id="userinfo">
         {% if user.dual_role %}
-          <a href="{{url_for('.switch_role')}}">{{'Instructor' if user.is_instructor else ('Student' if user.is_student else 'User')}}: {{ user.kerb }}</a><br>
+          <a href="{{url_for('switch_role')}}">{{'Instructor' if user.is_instructor else ('Student' if user.is_student else 'User')}}: {{ user.kerb }}</a><br>
         {% else %}
           {{'Instructor' if user.is_instructor else ('Student' if user.is_student else 'User')}}: {{ user.kerb }}<br>
         {% endif %}
-        <a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('.logout')}}">[logout]</a></div>
+        <a style="font-weight:normal;" id="logout" tabindex="-1" href="{{url_for('logout')}}">[logout]</a></div>
     {% else %}
       <div id="userinfo" style="font-weight:normal; padding-top:10px;">not logged in</a></div>
     {% endif %}
-    <div id="title"><a tabindex="-1" href="{{url_for('.index')}}">pset partners{{" sandbox" if not livesite}}</a></div>
+    <div id="title"><a tabindex="-1" href="{{url_for('index')}}">pset partners{{" sandbox" if not livesite}}</a></div>
 </div>
 </header>
 
@@ -208,17 +208,17 @@
 
 <footer>
 <div class="footer" id="footer">
-    <a href="{{url_for('.about')}}" style="margin-left:60px;">about</a>
+    <a href="{{url_for('about')}}" style="margin-left:60px;">about</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.acknowledgment')}}">acknowledgments</a>
+    <a href="{{url_for('acknowledgment')}}">acknowledgments</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AndrewVSutherland/psetpartners" target="_blank">source</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.contact')}}">contact</a>
+    <a href="{{url_for('contact')}}">contact</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.conduct')}}">conduct</a>
+    <a href="{{url_for('conduct')}}">conduct</a>
     &nbsp;&nbsp;&nbsp;&nbsp;<small>&#9679;</small>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="{{url_for('.faq')}}">FAQ</a>
+    <a href="{{url_for('faq')}}">FAQ</a>
 </div>
 </footer>
 

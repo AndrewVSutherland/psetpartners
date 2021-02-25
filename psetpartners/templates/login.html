@@ -12,7 +12,7 @@
   <p>The sandbox database is randomly refreshed at unpredictable intervals, so don't get too attached to any of the information you enter!</p>
   <p>The sandbox was last refreshed on {{ sandbox['date'] }} at {{ sandbox['time'] }}  with a new population of {{ sandbox['students'] }} students and {{ sandbox['instructors'] }} instructors.</p>
 
-  <form name="login" action="{{ url_for('.login', next=next) }}" method="POST">
+  <form name="login" action="{{ url_for('login', next=next) }}" method="POST">
     <table>
       <tr>
         <td class="caption" style="width:110px" tabindex="1">User identifier:</td>

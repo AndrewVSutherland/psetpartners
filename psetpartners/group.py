@@ -14,7 +14,7 @@ new_group_email = """
 Greetings!  You have been matched with a pset group in <b>{class_numbers}</b>.<br>
 To learn more about your group and its members please visit<br><br>
 
-&nbsp;&nbsp;{url}<br><br>
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
 We encourage you to reach out to your new partners today.<br>
 You can use the "email group" button on pset partners to do this.<br><br>
@@ -31,7 +31,7 @@ new_group_problem_email = """
 Greetings!  You have been matched with a pset group in <b>{class_numbers}</b>.<br>
 To learn more about your group and its members please visit<br><br>
 
-&nbsp;&nbsp;{url}<br><br>
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
 We encourage you to reach out to your new partners today.<br>
 You can use the "email group" button on pset partners to do this.<br><br>
@@ -49,7 +49,7 @@ If you were placed in this group in a recent matching this means you are being r
 
 As always, you can view your current status and pset partner options for this class at<br><br>
 
-&nbsp;&nbsp;{url}<br><br>
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
 Please feel free to contact us if you have any questions or concerns.
 """
@@ -63,7 +63,7 @@ We are very sorry this happened!  It most likely occured because there were no s
 
 We encourage you to visit<br><br>
 
-&nbsp;&nbsp;{url}<br><br>
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
 and either join a public group if one is available, or join the match pool for next week.
 """
@@ -75,7 +75,7 @@ We are very sorry this happened!  It most likely occured because there were no s
 
 We encourage you to visit<br><br>
 
-&nbsp;&nbsp;{url}<br><br>
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
 and either join a public group if one is available, or join the match pool for next week.
 """

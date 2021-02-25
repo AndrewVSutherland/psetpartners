@@ -34,7 +34,7 @@ const isLive = {{ livesite|tojson|safe }};
 const counts = {{ counts|tojson|safe }};
 const toggles = {{ user.toggles|tojson|safe }};
 const current_term_pretty = "{{ current_term_pretty }}";
-const route = '{{ url_for(".admin")|safe }}';
+const route = '{{ url_for("admin")|safe }}';
 // jshint ignore:end
 /* global isLive, counts, toggles, current_term_pretty, route */
 
