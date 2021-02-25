@@ -669,7 +669,7 @@ def save_student():
             log_event (current_user.kerb, 'matchasap', status=-1, detail={'group_id': gid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error()
+            flash_error(msg)
     elif submit[0] == "matchnow":
         try:
             gid = int(submit[1])
@@ -679,7 +679,7 @@ def save_student():
             log_event (current_user.kerb, 'matchnow', status=-1, detail={'group_id': gid, 'msg': msg})
             if debug_mode():
                 raise
-            flash_error()
+            flash_error(msg)
     elif submit[0] == "createprivate":
         try:
             cid = int(submit[1])
