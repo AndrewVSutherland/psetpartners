@@ -284,9 +284,10 @@ const groupData = {{ user.group_data|tojson|safe }};
 const maxlength = {{ maxlength|tojson|safe }};
 const ctx = {{ ctx|tojson|safe }};
 const toggles = {{ user.toggles|tojson|safe }};
+const action = "{{ action }}";
 // jshint ignore:end
 
-/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles */
+/* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles, action */
 /* global startShort, styleShort, forumShort, sizeShort, yearShort, shortOptions, profileOptions, editorOptions, groupMembershipOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */
 /* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, copyToClipboard, focusTrap */ // in psetpartners.js
@@ -528,9 +529,9 @@ function partnerActionButtons(c, status, matchmenow, matchmeasap) {
   const d = classData[c].next_match_date;
   if ( d ) {
     if ( status == 2 ) {
-      btab += `<td><label class="paction" onclick="confirmUnPool(this, '${c}')">do not match me ${d}<label></td>`;
+      btab += `<td><label class="paction" id="unpool-${c}" onclick="confirmUnPool(this, '${c}')">do not match me ${d}<label></td>`;
     } else if ( status === 0 || status === 3 ) {
-      btab += `<td><label class="paction" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
+      btab += `<td><label class="paction" id="pool-${c}" onclick="confirmPool(this, '${c}')">match me ${d}<label></td>`;
     }
   }
   if ( matchmenow ) {
@@ -538,27 +539,45 @@ function partnerActionButtons(c, status, matchmenow, matchmeasap) {
   } else if ( matchmeasap ) {
     btab += `<td><label class="paction" onclick="confirmMatchAsap(this, '${matchmeasap}')">match me asap<label></td>`;
   }
-  btab += `<td><label class="paction" onclick="confirmPrivateGroup(this, '${c}')">create private group<label></td>`;
-  btab += `<td><label class="paction" onclick="confirmPublicGroup(this, '${c}')">create public group<label></td>`;
+  btab += `<td><label class="paction" id="private-${c}" onclick="confirmPrivateGroup(this, '${c}')">create private group<label></td>`;
+  btab += `<td><label class="paction" id="public-${c}" onclick="confirmPublicGroup(this, '${c}')">create public group<label></td>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
 
-function partneredActionButtons1(c, gid, edit) {
+function partneredActionButtons1(c, edit) {
   let btab = '<table style="min-width: 100%;" class="btab">\n<tbody><tr>';
-  if ( edit ) btab += `<td><label class="paction" style="margin-left: 412px;" onclick="confirmEditGroup(this, '${c}');">edit this group</label></label></td>`;
-  btab += `<td><label class="naction" style="float:right;" onclick="confirmLeave(this,'${gid}')">leave this group</label></td>`;
+  if ( edit ) btab += `<td><label class="paction" style="margin-left: 412px;" id="edit-${c}" onclick="confirmEditGroup(this, '${c}');">edit this group</label></label></td>`;
+  btab += `<td><label class="naction" style="float:right;" id="leave-${c}" onclick="confirmLeave(this,'${c}')">leave this group</label></td>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
 
-function partneredActionButtons2(c, gid, emails, show_invite_link) {
+function partneredActionButtons2(c, emails, show_invite_link) {
   let btab = '<table class="btab">\n<tbody><tr>';
   if ( show_invite_link ) btab += `<td><label class="paction" onclick="copyInvitation(this,'${c}')">invite link</label>`;
   btab += `<td><label class="paction"><a href="mailto:${emails}?subject=${c} pset group">email group</a></label>`;
   btab += '</tr>\n</tbody></table>';
   return btab;
 }
+
+function selectAction(action) {
+  const i = togglerIndex();
+  if ( !i || i > studentClasses.length ) return;
+  const c = studentClasses[i-1];
+  if ( c in groupData ) {
+    if ( action == "edit" ) { confirmEditGroup (document.getElementById("edit-"+c), c); }
+    else if ( action == "leave" ) { confirmLeave (document.getElementById("leave-"+c), c); }
+    else { console.log("Unexpected action: " + action); }
+  } else {
+    if ( classData[c].status == 2 && action == "unpool" ) { confirmUnPool (document.getElementById("unpool-"+c), c); }
+    else if ( (classData[c].status == 0 || classData[c].status == 3) && action == "pool" ) { confirmPool (document.getElementById("pool-"+c), c); }
+    else if ( action == "private" ) { confirmPrivateGroup (document.getElementById("private-"+c), c); }
+    else if ( action == "public" ) { confirmPublicGroup (document.getElementById("public-"+c), c); }
+    else { console.log("Unexpected action: " + action); }
+  }
+}
+
 
 function setPartnerPanes() {
   let cnts = allCounts[''];
@@ -586,10 +605,10 @@ function setPartnerPanes() {
       const gdesc = $('<i>').html(g.description).text();
       const description = (g.description||g.link) ? '<br><br><b>Where to find us</b>: ' + gdesc + ' ' + link : '';
       $('#partner-summary-'+(i+1)).html(`You are currently a member of the <b>${c}</b> pset group <b>${g.group_name}</b>.` + description);
-      const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.group_id, g.can_edit);
+      const gtab = gtabMemberView(g) + partneredActionButtons1(c, g.can_edit);
       const mtab = '<table class="mtab">\n' + mtabHead() + '<tbody>' + g.members.map(mtabRow).join('\n') + '\n</body></table>';
       $('#partner-div-'+(i+1)).html(gtab + '<br>' + mtab);
-      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.id, g.members.map(memberEmail).join(','), !g.max || g.members.length < g.max));
+      $('#partner-buttons-'+(i+1)).html(partneredActionButtons2(c, g.members.map(memberEmail).join(','), !g.max || g.members.length < g.max));
       continue;
     }
     const cdata = classData[c];
@@ -765,18 +784,18 @@ function confirmJoin(e, gid) {
   showConfirm (msg, val, 'join ' + g[1]);
 }
 
-function confirmLeave(e, gid) {
+function confirmLeave(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
-  const c = studentClasses[i-1];
+  if ( c !== studentClasses[i-1] ) return;
   const g = groupData[c];
   if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
   let msg = `You are about to leave the group <b>${g.group_name}</b>. `;
   if ( g.members.length > 1 ) msg += `Group members will be informed of your departure (they may be sad to see you go, but they will <a href="{{url_for("conduct")}}" target="_blank" class="link">understand</a>). `;
   if ( g.visibility < 3 && g.members.length > 1 ) msg += ' You will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += ' As you are the only member of this group, it will be disbanded after you leave.';
-  let val = "leave " + gid;
+  let val = "leave " + g.id;
   if ( pending ) { msg += 'your unsaved changes <b>will be saved</b>.'; val = "save " + val; }
   showConfirm (msg, val, 'leave ' + g.group_name);
 }
@@ -785,6 +804,7 @@ function confirmPool(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
+  if ( ! c == studentClasses[i-1] ) return;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   const d = classData[c].next_match_date;
   const cid = classData[c].class_id;
@@ -801,6 +821,9 @@ function confirmPool(e, c) {
 
 function confirmUnPool(e, c) {
   if ( ! savable() ) return;
+  const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
+  if ( ! i || i > studentClasses.length ) return;
+  if ( c != studentClasses[i-1] ) return;
   const d = classData[c].next_match_date;
   const cid = classData[c].class_id;
   let msg = `You are about to leave the <b>${d}</b> match pool for <b>${c}</b>. `;
@@ -840,6 +863,7 @@ function confirmPublicGroup(e, c) {
   const cid = classData[c].class_id;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
+  if ( c != studentClasses[i-1] ) return;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('0'); updateSingleSelect('editors');
@@ -856,6 +880,7 @@ function confirmPrivateGroup(e, c) {
   const cid = classData[c].class_id;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
+  if ( c != studentClasses[i-1] ) return;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(res[p].value||''); updateSingleSelect(p); }
   $('#editors').val('1'); updateSingleSelect('editors');
@@ -874,6 +899,7 @@ function confirmEditGroup(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
+  if ( c != studentClasses[i-1] ) return;
   const g = groupData[c];
   for (const p of ['start', 'style', 'forum', 'size']) { $('#'+p).val(g.preferences[p]||''); updateSingleSelect(p); }
   console.log(g.link);
@@ -1180,6 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
   profileToggle ('tp', toggles.tp || 1);
   htogglerActivate (toggles.ht || 'partner-header');
   togglerIndex (studentClasses.indexOf(toggles.ct)+1 || studentClasses.length);
+  if ( action ) selectAction(action);
 
   showAffinityPreferences();
   showApplyPreferences();

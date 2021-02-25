@@ -495,8 +495,9 @@ def removeme(class_number):
 
 @app.route("/student")
 @app.route("/student/<class_number>")
+@app.route("/student/<class_number>/<action>")
 @login_required
-def student(class_number=''):
+def student(class_number='', action=''):
     if not current_user.is_authenticated or not current_user.is_student:
         return redirect(url_for("index"))
     if not livesite() and current_user.stale_login:
@@ -515,6 +516,7 @@ def student(class_number=''):
         maxlength=maxlength,
         counts=get_counts([''] + current_user.classes, allowed_copts),
         groups={c:class_groups(c, allowed_gopts, visibility=2) for c in current_user.classes},
+        action=action,
         ctx=session.pop("ctx",""),
     )
 
