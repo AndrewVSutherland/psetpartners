@@ -8,7 +8,7 @@
  <ul class="faq">
     <li>
       What is this site and how does it work?
-      <p> Please read the short summary on our <a href="{{url_for('.about')}}">about page</a>.</p>
+      <p> Please read the short summary on our <a href="{{url_for('about')}}">about page</a>.</p>
     </li>
     <li>
       Who can use this site?
@@ -16,7 +16,7 @@
         This site is open to all current MIT students and instructors via <a href="https://ist.mit.edu/touchstone">Touchstone authentication</a>.  Every MIT class listed with the registrar this term has been pre-registered with pset partners so that it can be activated by the responsible faculty member with a single click.
       </p>
       <p>
-        You should be aware of our <a href="{{url_for('.conduct')}}">code of conduct</a>. In addition to <a href="https://handbook.mit.edu/">standard MIT policies</a>, at pset partners we expect all students to be <b>welcoming</b>, <b>understanding</b>, and to <b>reach out</b> to new pset partners.  If you cannot commit to taking these positive actions you should not use this site.
+        You should be aware of our <a href="{{url_for('conduct')}}">code of conduct</a>. In addition to <a href="https://handbook.mit.edu/">standard MIT policies</a>, at pset partners we expect all students to be <b>welcoming</b>, <b>understanding</b>, and to <b>reach out</b> to new pset partners.  If you cannot commit to taking these positive actions you should not use this site.
       </p>
     </li>
     <li>
@@ -94,7 +94,7 @@
       </p>
 
       <p>
-        The <a href="{{url_for('.acknowledgment')}}">administrators</a> of pset partners can access all the information you enter.  We promise never to use this information for any purpose other than debugging and optimizing the matching algorithm, and in particular, to <b>not share it with anyone else, either within or outside of MIT</b>.  If and when someone develops a practical <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption">homomorphic encryption</a> algorithm that we can easily use, we would be happy to offer an encryption option.  Our database and web server are housed at MIT and accessible to the small number of IT staff in the mathematics department who support us and without whom this website would not be possible (thank you!).  They have root privileges and can in principle access anything, but we trust them implicitly (they can already read all our email, for example).
+        The <a href="{{url_for('acknowledgment')}}">administrators</a> of pset partners can access all the information you enter.  We promise never to use this information for any purpose other than debugging and optimizing the matching algorithm, and in particular, to <b>not share it with anyone else, either within or outside of MIT</b>.  If and when someone develops a practical <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption">homomorphic encryption</a> algorithm that we can easily use, we would be happy to offer an encryption option.  Our database and web server are housed at MIT and accessible to the small number of IT staff in the mathematics department who support us and without whom this website would not be possible (thank you!).  They have root privileges and can in principle access anything, but we trust them implicitly (they can already read all our email, for example).
       </p>
     </li>
     <li>
@@ -137,7 +137,7 @@
       <p>
     </li>
  </ul>
-<a href="{{url_for('.index')}}">Return to main page</a>
+<a href="{{url_for('index')}}">Return to main page</a>
 </div>
 <br><br>
 
