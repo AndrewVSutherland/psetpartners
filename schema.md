@@ -100,7 +100,7 @@ Column                | Type        |  Notes
 id                    |	bigint      | unique identifier automatically assigned by postgres
 class_id	      | bigint	    | id in classes table
 student_id            | bigint	    | id in students table
-kerb                  | text        | kerberos id of student (copied from students table for conveniencE)
+kerb                  | text        | kerberos id of student (copied from students table for convenience)
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied from classes table for convenience)
@@ -108,7 +108,8 @@ properties            | jsonb       | class-specific student properties such as 
 preferences           |	jsonb       | copied from student preferences initially but may be modified
 strengths             | jsonb       | copied from student strengths initially but may then be modified
 status                | smallint    | 0 = unmatched, no pending gaction, 1 = in a group, 2 = in pool, 3 = match requested, 4 = unused, 5 = pool match in progress
-status_timestamp      | timestamp   | set whenever status changes (currently used mainly to timeout match requests after 24 hours)
+status_timestamp      | timestamp   | set whenever status changes (currently used to timeout match requests after 24 hours and to delay checkins by 72 hours)
+checkin_pending       | boolean     | set when student is automatically assigned to a group, cleared when checkin is done
 		
 ## grouplist
 
@@ -122,7 +123,6 @@ kerb                  | text        | kerberos ud of student (copied from studen
 class_number          | text        | class number (copied from classes table for convenience)
 year		      | smallint    | year of class (copied from classes table for convenience)
 term                  | smallint    | term of class (copied for convenience)
-timestamp             | timestamp   | when the student left the group
 
 ## grouplistleft
 (rows are moved here from grouplist whenver a student leaves a group)
