@@ -919,7 +919,7 @@ class Student(UserMixin):
         if g['max'] and g['size'] >= g['max']:
             app.logger.warning("User %s attempted to join group %s in class %s but the group no longer has space available." % (self.kerb, group_id, g['class_id']))
             raise ValueError("Unable to join group in <b>%s</b> as there is no longer a slot available.  You may be able to try again with a different group." % cs)
-        return self.__join(g)
+        return self.__join(g, checkin_pending=True)
 
     def _matchasap(self, group_id):
         g = self._db.groups.lucky({'id': group_id}, projection=3)
@@ -1019,9 +1019,9 @@ class Student(UserMixin):
         self._reload()
         return "Thanks for responding!"
 
-    def __join(self, g):
+    def __join(self, g, checkin_pending=False):
         now = datetime.datetime.now()
-        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1, 'status_timestamp': now}, resort=False)
+        self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 1, 'status_timestamp': now, 'checkin_pending': checkin_pending}, resort=False)
         r = { k: g[k] for k in  ['class_id', 'class_number', 'year', 'term']}
         r['group_id'], r['student_id'], r['kerb'] = g['id'], self.id, self.kerb
         self._db.grouplist.insert_many([r], resort=False)

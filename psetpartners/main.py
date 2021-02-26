@@ -493,6 +493,27 @@ def removeme(class_number):
         flash_error("We encountered an error while attempting to remove you from <b>%s</b>: %s" % (class_number, msg))
     return redirect(url_for("student"))
 
+@app.route("/imgood/<class_number>")
+@login_required
+def imgood(class_number):
+    if not current_user.is_authenticated or not current_user.is_student:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    log_event (current_user.kerb, 'imgood', detail={'class_number': class_number})
+    flash_notify("Thanks!")
+    return redirect(url_for("student", class_number=class_number))
+
+@app.route("/regroupme/<class_number>")
+@login_required
+def regroupme(class_number):
+    if not current_user.is_authenticated or not current_user.is_student:
+        return redirect(url_for("index"))
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    log_event (current_user.kerb, 'regroupme', detail={'class_number': class_number})
+    return redirect(url_for("student", class_number=class_number, action="leave"))
+
 @app.route("/student")
 @app.route("/student/<class_number>")
 @app.route("/student/<class_number>/<action>")
