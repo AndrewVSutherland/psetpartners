@@ -178,12 +178,12 @@ def students_groups_in_class(class_id, projection=[]):
     s, cs, cgs, g = ("students", "classlist", "grouplist", "groups") if livesite() or get_forcelive() else ("test_students", "test_classlist", "test_grouplist", "test_groups")
     # note that the order of cols must match the order they appear in the SELECT below
     cols = ['student_id', 'kerb', 'preferred_name', 'preferred_pronouns', 'full_name', 'email', 'departments', 'year', 'gender', 'location', 'timezone', 'hours',
-            'properties', 'preferences', 'strengths', 'status', 'status_timestamp', 'group_id', 'group_name', 'visibility', 'size', 'max', 'creator', 'created', 'checkin']
+            'properties', 'preferences', 'strengths', 'status', 'status_timestamp', 'group_id', 'group_name', 'visibility', 'size', 'max', 'creator', 'created']
     cmd = SQLWrapper(
         """
 SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
        {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}, {cs}.{status_timestamp},
-       {g}.{id}, {g}.{group_name}, {g}.{visibility}, {g}.{size}, {g}.{max}, {g}.{creator}, {g}.{created}, {cgs}.{checkin}
+       {g}.{id}, {g}.{group_name}, {g}.{visibility}, {g}.{size}, {g}.{max}, {g}.{creator}, {g}.{created}
 FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
          LEFT JOIN {cgs} on {cgs}.{student_id} = {s}.{id} AND {cgs}.{class_id} = {cs}.{class_id}
          LEFT JOIN {g} on {g}.{id} = {cgs}.{group_id}
