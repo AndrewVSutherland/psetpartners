@@ -501,6 +501,7 @@ def imgood(class_number):
     if not livesite() and current_user.stale_login:
         return redirect(url_for("logout"))
     log_event (current_user.kerb, 'imgood', detail={'class_number': class_number})
+    flash_notify("Thanks!")
     return redirect(url_for("student", class_number=class_number))
 
 @app.route("/regroupme/<class_number>")
