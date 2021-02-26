@@ -130,13 +130,14 @@ def disband_group (group_id, rematch=False, forcelive=False, email_test=False, v
     from .student import email_address, signature, log_event
 
     db = getdb(forcelive)
+    now = datetime.datetime.now()
     with DelayCommit(db):
         g = db.groups.lucky({'id': group_id}, projection=3)
         if not g:
             raise ValueError("Group %s not found" % group_id)
         members = list(db.grouplist.search({'group_id':group_id}))
         for r in members:
-            db.classlist.update({'class_id': r['class_id'], 'student_id': r['student_id']}, {'status': 5 if rematch else 0}, resort=False)
+            db.classlist.update({'class_id': r['class_id'], 'student_id': r['student_id']}, {'status': 5 if rematch else 0, 'status_timestamp': now}, resort=False)
         kerbs = [r['kerb'] for r in members]
         db.groups.delete({'id': group_id}, resort=False)
         db.grouplist.delete({'group_id': group_id}, resort=False)
@@ -209,7 +210,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, 
         db.grouplist.insert_many(gs, resort=False)
         now = datetime.datetime.now()
         for s in students:
-            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now}, resort=False)
+            db.classlist.update({'class_id': class_id, 'student_id': s['id']}, {'status':1, 'status_timestamp': now, 'checkin_pending': True}, resort=False)
         log_event ('', 'create', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
         vlog.info("Created group %s (%d) in %s (%d) with %d members %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
 
@@ -246,6 +247,7 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
     db.globals.update({'key':'match_run'},{'timestamp': datetime.datetime.now(), 'value': match_run}, resort=False)
     vlog.info("match_run = %o", match_run)
 
+    now = datetime.datetime.now()
     m = n = o = 0
     for class_id in matches:
         class_number = db.classes.lucky({'id': class_id}, projection="class_number")
@@ -261,7 +263,7 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
             assert c, "Class id %s not found" % class_id
             assert db.students.lookup(kerb), "Student %s not found" % kerb
             S = [t for t in rank_groups(class_id, kerb) if t[1] == 2]
-            db.classlist.update({'class_id': class_id, 'kerb': kerb}, {'status': 0}, resort=False)
+            db.classlist.update({'class_id': class_id, 'kerb': kerb}, {'status': 0, 'status_timestamp': now}, resort=False)
             if S and S[0][2] > -1000:
                 group_id = S[0][0]
                 group_name = db.groups.lucky({'id': group_id}, projection="group_name")

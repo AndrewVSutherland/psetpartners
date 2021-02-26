@@ -198,19 +198,18 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
     """
     db = getdb(forcelive)
     vlog.info("Using %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
-    year = current_year()
-    term = current_term()
-    query = {'active':True, 'year': year, 'term': term }
+    now = datetime.datetime.now()
+    query = {'active':True, 'year': current_year(), 'term': current_term() }
     if not rematch:
-        today = datetime.datetime.now().date()
+        today = now.date()
         if not preview:
-            assert datetime.datetime.now().hour >= 22
+            assert now.hour >= 22
         query['match_dates'] = {'$contains': today}
     results = {}
     # TODO make classes search only return classes with students of status 2 or 5 (requires exists join, add to dbwrapper)
     for c in db.classes.search(query, ["id", "class_name", "class_number"]):
         if not preview and not rematch:
-            db.classlist.update({'class_id': c['id'], 'status': 2}, {'status': 5},resort=False)
+            db.classlist.update({'class_id': c['id'], 'status': 2}, {'status': 5, 'status_timestamp': now},resort=False)
         n = len(list(db.classlist.search({'class_id': c['id'], 'status': 2 if preview else 5},projection='id')))
         if n:
             vlog.info("Matching %d students in %s %s" % (n, c['class_number'], c['class_name']))
