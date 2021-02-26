@@ -182,7 +182,7 @@ def students_groups_in_class(class_id, projection=[]):
     cmd = SQLWrapper(
         """
 SELECT {s}.{id}, {s}.{kerb}, {s}.{preferred_name}, {s}.{preferred_pronouns}, {s}.{full_name}, {s}.{email}, {s}.{departments}, {s}.{year},
-       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}, {cs}.{status_timestamp}
+       {s}.{gender}, {s}.{location}, {s}.{timezone}, {s}.{hours}, {cs}.{properties}, {cs}.{preferences}, {cs}.{strengths}, {cs}.{status}, {cs}.{status_timestamp},
        {g}.{id}, {g}.{group_name}, {g}.{visibility}, {g}.{size}, {g}.{max}, {g}.{creator}, {g}.{created}, {cgs}.{checkin}
 FROM {cs} JOIN {s} ON {s}.{id} = {cs}.{student_id}
          LEFT JOIN {cgs} on {cgs}.{student_id} = {s}.{id} AND {cgs}.{class_id} = {cs}.{class_id}
