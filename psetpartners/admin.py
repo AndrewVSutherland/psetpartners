@@ -59,17 +59,21 @@ def send_poolme_links(forcelive=False, preview=True):
     today = datetime.datetime.now().date()
     root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
     with app.app_context():
-        for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term(), 'match_dates': {'$contains': today}}, projection=3):
+        for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term(), 'size': {'$gt':1}, 'match_dates': {'$contains': today}}, projection=3):
             cs = ' / '.join(c['class_numbers'])
             cstr = cs + " " + c['class_name']
             poolmeurl = root + "poolme/%s" % c['class_number']
             removemeurl = root + "removeme/%s" % c['class_number']
+            subject = poolme_subject.format(cs=cs)
+            body = poolme_body.format(cstr=cstr, poolmeurl=poolmeurl, removemeurl=removemeurl)
             for kerb in db.classlist.search({'class_id': c['id'], 'status':0 }, projection="kerb"):
-                subject = poolme_subject.format(cs=cs)
-                body = poolme_body.format(cstr=cstr, poolmeurl=poolmeurl, removemeurl=removemeurl)
+                if db.events.lucky({'kerb':kerb,'event':'poolnag','detail':{'class_id':c['id'],'match_date': today}}):
+                    print("Not sending already sent email: %s to %s" % (subject, kerb))
+                    continue
                 if preview:
                     print("Not sending email: %s to %s" % (subject, kerb))
                 else:
+                    print("Sending email: %s to %s" % (subject, kerb))
                     send_email(email_address(kerb), subject, body+signature)
                     log_event(kerb, 'poolnag', {'class_id': c['id'], 'match_date': today})
 
@@ -92,6 +96,7 @@ def send_checkins(forcelive=False, preview=True):
                 if preview:
                     print("Not sending email: %s to %s" % (subject, kerb))
                 else:
+                    print("Sending email: %s to %s" % (subject, kerb))
                     send_email(email_address(kerb), subject, body+signature)
                     db.classlist.update({'class_id': c['id'], 'kerb': kerb}, {'checkin_pending': False}, resort=False)
                     log_event(kerb, 'checkin', {'class_id': c['id']})

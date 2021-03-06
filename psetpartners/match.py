@@ -76,7 +76,7 @@ def initial_assign(to_match, sizes):
         if 0 < len(want3) < 3 or G.schedule_overlap() < 4:
             for j in remainder:
                 if j not in want3:
-                    want3.append(i)
+                    want3.append(j)
                     if len(want3) == 3:
                         break
         if len(want3) > 3:
