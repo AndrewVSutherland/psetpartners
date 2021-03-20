@@ -1196,7 +1196,7 @@ class Student(UserMixin):
             return "This request has already been handled by you or another group member, but thanks for responding!"
         g['preferences'].pop('size')
         cs = ' / '.join(g['class_numbers'])
-        self._db.groups.update({'id': group_id}, {'preferences': g['preferences']}, resort=False)
+        self._db.groups.update({'id': group_id}, {'preferences': g['preferences'], 'max': None}, resort=False)
         notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], cs)
         self._notify_group(group_id, "pset partner notification for %s" % cs, notify_msg, notify_msg)
         self.update_toggle('ct', g['class_number'])
