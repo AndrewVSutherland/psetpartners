@@ -48,6 +48,22 @@ to leave your current group and see your options for joining a new one.<br>
 You will be asked for confirmation before any action is taken.
 """
 
+uncap_subject = "A student in {cs} is looking for a pset group"
+
+uncap_body = """
+We were unable to match a student in <b>{cs}</b> with a pset group because every compatible group is full.<br><br>
+
+When the group <b>{gname}</b> was created it was capped at 4 students by default.
+Removing this cap would potentially allow this unmatched student to join your group.
+To approve this action, click the following link:<br><br>
+
+&nbsp;&nbsp;<b>{uncapurl}</b><br><br>
+
+Removing this cap does not necessarily mean a student will be added to your group, it simply makes it possible.
+You can restore this cap at any time by editing the size preference for your group.
+"""
+
+
 def are_we_live(forcelive):
     return forcelive or livesite()
 
@@ -100,6 +116,36 @@ def send_checkins(forcelive=False, preview=True):
                     send_email(email_address(kerb), subject, body+signature)
                     db.classlist.update({'class_id': c['id'], 'kerb': kerb}, {'checkin_pending': False}, resort=False)
                     log_event(kerb, 'checkin', {'class_id': c['id']})
+
+def send_uncap_requests(forcelive=False, preview=True):
+    from . import app
+    from .student import email_address, signature, log_event
+
+    db = getdb(forcelive)
+    root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
+    with app.app_context():
+        for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term()}, projection=['id','class_numbers']):
+            n = db.groups.count({'class_id': c['id']})
+            if n == 0:
+                continue
+            full = [r for r in db.groups.search({'class_id':c['id'],'visibility':2,'preferences.size':'3.5','creator':''}, projection=3) if r['size'] == r['max']]
+            if len(full) > 0 and len(full) == n:
+                cs = ' / '.join(c['class_numbers'])
+                for g in full:
+                    kerbs = list(db.grouplist.search({'group_id': g['id']}, projection="kerb"))
+                    prefs = [db.students.lookup(kerb,projection='preferences') for kerb in kerbs]
+                    prefs = [p for p in prefs if 'size' in p]
+                    if len([p for p in prefs if p['size'] <= '4']) == 0 or len([p for p in prefs if p['size'] <= '4']) < len([p for p in prefs if p['size'] > '4']):
+                        uncapurl = root + "uncap/%s" % g['id']
+                        for kerb in kerbs:
+                            subject = uncap_subject.format(cs=cs)
+                            body = uncap_body.format(cs=cs, gname=g['group_name'], uncapurl=uncapurl)
+                            if preview:
+                                print("Not sending email: %s to %s" % (subject, kerb))
+                            else:
+                                print("Sending email: %s to %s" % (subject, kerb))
+                                send_email(email_address(kerb), subject, body+signature)
+                                log_event(kerb, 'uncaprequest', {'group_id': g['id']})
 
 def create_admin_logger(name, forcelive=False):
     logger = logging.getLogger(name)
