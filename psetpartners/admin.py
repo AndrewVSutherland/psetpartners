@@ -126,7 +126,7 @@ def send_uncap_requests(forcelive=False, preview=True):
     with app.app_context():
         for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term()}, projection=['id','class_numbers']):
             n = db.groups.count({'class_id': c['id']})
-            if n == 0:
+            if n == 0 or not db.events.lucky({'event':'unmatched','detail.class_id':c['id']}):
                 continue
             full = [r for r in db.groups.search({'class_id':c['id'],'visibility':2,'preferences.size':'3.5','creator':''}, projection=3) if r['size'] == r['max']]
             if len(full) > 0 and len(full) == n:
