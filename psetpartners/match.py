@@ -44,35 +44,9 @@ def initial_assign(to_match, sizes):
     for m in [9,5,4,3,2]:
         while sizes[m]:
             add(sizes[m], m, sizes[0])
-    remainder = sizes[3] + sizes[0]
-    if len(remainder) == 5:
-        # Unless there's a preference for 3 or bad time overlap, we make a group of 5
-        G = make_group(remainder)
-        want3 = [i for i in sizes[3] if to_match[i].preferences["size"][1] >= 1]
-        if 0 < len(want3) < 3 or G.schedule_overlap() < 4:
-            for i in remainder:
-                if i not in want3:
-                    want3.append(i)
-                    if len(want3) == 3:
-                        break
-        if len(want3) > 3:
-            want3 = want3[:3]
-        if len(want3) == 3:
-            add(want3)
-            add([ i for i in remainder if i not in want3])
-        else:
-            add(remainder)
-    elif len(remainder) == 4:
-        G = make_group(remainder)
-        if G.schedule_overlap() < 4:
-            add(remainder, 2)
-            add(remainder)
-        else:
-            add(remainder)
-    elif len(remainder) == 3:
-        add(remainder)
-    elif len(remainder) == 2:
-        add(remainder)
+    remainder = sizes[0]
+    if len(remainder) == 0:
+        return groups
     elif len(remainder) == 1:
         # Have to add into one of the existing groups
         i = remainder[0]
@@ -84,6 +58,34 @@ def initial_assign(to_match, sizes):
                         groups[i] = G
                         break
                 break
+    elif len(remainder) == 2:
+        add(remainder)
+    elif len(remainder) == 3:
+        add(remainder)
+    elif len(remainder) == 4:
+        G = make_group(remainder)
+        if G.schedule_overlap() < 4:
+            add(remainder, 2)
+            add(remainder)
+        else:
+            add(remainder)
+    elif len(remainder) == 5:
+        # Unless there's a preference for 3 or bad time overlap, we make a group of 5
+        G = make_group(remainder)
+        want3 = [j for j in sizes[3] if to_match[j].preferences["size"][1] >= 1]
+        if 0 < len(want3) < 3 or G.schedule_overlap() < 4:
+            for j in remainder:
+                if j not in want3:
+                    want3.append(j)
+                    if len(want3) == 3:
+                        break
+        if len(want3) > 3:
+            want3 = want3[:3]
+        if len(want3) == 3:
+            add(want3)
+            add([j for j in remainder if j not in want3])
+        else:
+            add(remainder)
     else:
         assert len(remainder) > 5
         while len(remainder):
