@@ -752,6 +752,11 @@ class Student(UserMixin):
             log_event (self.kerb, 'edit', detail={'group_id': group_id, 'options': options})
             return self._edit_group(group_id, options)
 
+    def uncap_group(self, group_id):
+        with DelayCommit(self):
+            log_event (self.kerb, 'uncap', detail={'group_id': group_id})
+            return self._uncap_group(group_id)
+
     def accept_invite(self, invite):
         with DelayCommit(self):
             log_event (self.kerb, 'accept', detail={'group_id': invite['group_id'], 'inviter': invite['kerb']})
@@ -1147,14 +1152,14 @@ class Student(UserMixin):
     def _edit_group(self, group_id, options):
         g = self._db.groups.lucky({'id': group_id})
         if not g:
-            app.logger.warning("User %s attempted to leave non-existent group %s" % (self.kerb, group_id))
+            app.logger.warning("User %s attempted to edit non-existent group %s" % (self.kerb, group_id))
             raise ValueError("Group not found in database.")
         cs = ' / '.join(g['class_numbers'])
         if not g['class_number'] in self.classes:
-            app.logger.warning("User %s attempted to leave group %s in class %s not in their class list" % (self.kerb, group_id, cs))
+            app.logger.warning("User %s attempted to edit group %s in class %s not in their class list" % (self.kerb, group_id, cs))
             raise ValueError("Group not found in any of your classes for this term.")
         if not g['class_number'] in self.groups:
-            app.logger.warning("User %s attempted to leave group %s in class %s not in their group list" % (self.kerb, group_id, cs))
+            app.logger.warning("User %s attempted to edit group %s in class %s not in their group list" % (self.kerb, group_id, cs))
             raise ValueError("Group not found in your list of groups for this term.")
         prefs = {}
         for k in ['start', 'style', 'forum', 'size']:
@@ -1178,6 +1183,26 @@ class Student(UserMixin):
             return "Updated the group <b>%s</b>!" % g['group_name']
         else:
             return "No changes made to group <b>%s</b>." % g['group_name']
+
+    def _uncap_group(self, group_id):
+        g = self._db.groups.lucky({'id': group_id}, projection=3)
+        if not g:
+            app.logger.warning("User %s attempted to approve uncap request for non-existent group %s" %(self.kerb, group_id))
+            raise ValueError("Group not found")
+        if not self._db.grouplist.lucky({'group_id': g['id'], 'student_id': self.id}):
+            app.logger.warning("User %s attempted to approve uncap request for group %s that they no longer belong to" %(self.kerb, group_id))
+            raise ValueError("You are not a member of this group")
+        if not g['preferences'].get('size'):
+            return "This request has already been handled by you or another group member, but thanks for responding!"
+        g['preferences'].pop('size')
+        cs = ' / '.join(g['class_numbers'])
+        self._db.groups.update({'id': group_id}, {'preferences': g['preferences'], 'max': None}, resort=False)
+        notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], cs)
+        self._notify_group(group_id, "pset partner notification for %s" % cs, notify_msg, notify_msg)
+        self.update_toggle('ct', g['class_number'])
+        self.update_toggle('ht', 'partner-header')
+        self._reload()
+        return "Updated the group <b>%s</b>, thanks for responding!" % g['group_name']
 
     def _notify_group(self, group_id, subject, email_message, announce_message):
         """ Notifies members of group and updates group size (so must be called for leave/join!) """

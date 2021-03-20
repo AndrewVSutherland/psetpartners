@@ -436,7 +436,7 @@ def accept_invite(token):
 @login_required
 def approve_request(request_id):
     if not current_user.is_student:
-        app.logger.error("Error processing approve response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        app.logger.error("Error processing approve response from %s to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
         flash_error("Error processing response: %s" % "you are not logged in as a student")
         return redirect(url_for("index"))
     try:
@@ -451,13 +451,28 @@ def approve_request(request_id):
 @login_required
 def deny_request(request_id):
     if not current_user.is_student:
-        app.logger.error("Error processing deny response form %s from to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
+        app.logger.error("Error processing deny response from %s to request id %s: %s" % (current_user.kerb, request_id, "User is not a student"))
         flash_error("Error processing response: %s" % "you are not logged in as a student")
         return redirect(url_for("index"))
     try:
         flash_notify(current_user.deny_request(request_id))
     except ValueError as err:
         app.logger.error("Error processing deny response from %s to request id %s" % (current_user.kerb, request_id))
+        flash_error("Error processing response: %s" % err)
+    return redirect(url_for("student"))
+
+@app.route("/uncap/<int:group_id>")
+@login_required
+def uncap(group_id):
+    if not current_user.is_student:
+        app.logger.error("Error processing uncap response from %s for group id %s: %s" % (current_user.kerb, group_id, "User is not a student"))
+        flash_error("Error processing response: %s" % "you are not logged in as a student")
+        return redirect(url_for("index"))
+    try:
+        msg = current_user.uncap_group(group_id)
+        flash_notify(msg)
+    except ValueError as err:
+        app.logger.error("Error processing uncap response from %s for group id %s" % (current_user.kerb, group_id))
         flash_error("Error processing response: %s" % err)
     return redirect(url_for("student"))
 

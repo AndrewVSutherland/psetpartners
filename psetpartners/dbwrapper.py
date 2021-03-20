@@ -25,10 +25,10 @@ def get_forcelive():
     global _forcelive
     return _forcelive
 
-def getdb(forcelive=False):
+def getdb(forcelive=None):
     global _db, _forcelive, _warn_forcelive
 
-    if forcelive:
+    if forcelive is not None:
         set_forcelive(forcelive)
     if _db is None:
         if livesite():
