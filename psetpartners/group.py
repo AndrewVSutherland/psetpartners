@@ -236,7 +236,7 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
     groups = list of lists of kerbs, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
     only means there was only one member of the pool, requirement means a required preference could not be satisifed
     """
-    from .student import Student, email_address, signature
+    from .student import Student, email_address, signature, log_event
     from .match import rank_groups
 
     db = getdb(forcelive)
@@ -285,5 +285,6 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
                     send_email(email_address(kerb), subject, body + signature)
                 else:
                     vlog.info("not emailing [%s] to %s" %(subject, kerb))
+                log_event(kerb, 'unmatched', detail={'class_id': class_id, 'class_number': c['class_number']})
                 o += 1
     vlog.info("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))
