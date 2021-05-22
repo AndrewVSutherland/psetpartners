@@ -873,6 +873,7 @@ def save_survey():
     r['survey_id'] = r['response'].pop('survey_id')
     r['kerb'] = current_user.kerb
     r['timestamp'] = datetime.datetime.now()
+    print(r)
     db = getdb()
     db.survey_responses.upsert({'survey_id': r['survey_id'],'kerb': r['kerb']}, r)
     log_event(current_user.kerb,"surveyed")
