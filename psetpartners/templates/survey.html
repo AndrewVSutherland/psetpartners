@@ -5,43 +5,35 @@
 
 <h2>{{survey.name}}</h2>
 
-<p>Thank you for participating in the pset partners experiment!  As the term comes to a close we are starting to think about our plans for next year.  We are grateful for any feedback you can provide about your experience using pset partners this term.</p>
+<p>Thank you for participating in the pset partners experiment!  As the term comes to an end we are starting to think about our plans for next year and would be very grateful for your feedback.</p>
 <br/>
 
 <form name="login" action="{{ url_for('save_survey') }}" method="POST" name="survey" id="survey">
   <table class="input">
     <tr>
-      <td class="caption" style="width:450px;">How useful was pset partners to you this term?</td>
+      <td class="caption" style="width:500px;">How useful was pset partners to you this term?</td>
       <td class="value">
         <span class="select" id="select-useful" tabindex="1"></span>
         <input type="hidden" name="useful" id="useful" value="{{survey.response.useful|blanknone}}"/>
       </td>
     </tr>
     <tr>
-    {% if user.is_instructor %}
-      <td class="caption">Did you use pset partners to view pset groups in your class?</td>
-    {% else %}
-      <td class="caption">Did you work with a group formed on pset partners?</td>
-    {% endif %}
+      <td class="caption">Do you think pset partners should continue in the fall?</td>
       <td class="value">
-        <span class="select" id="select-used" tabindex="2"></span>
-        <input type="hidden" name="used" id="used" value="{{survey.response.used|blanknone}}"/>
+        <span class="select" id="select-continue" tabindex="2"></span>
+        <input type="hidden" name="continue" id="continue" value="{{survey.response.continue|blanknone}}"/>
       </td>
     </tr>
     <tr>
-      <td class="caption">Would you like to use pset partners again in the spring?</td>
+      <td class="caption">If pset partners is available in the fall are you likely to use it?</td>
       <td class="value">
         <span class="select" id="select-again" tabindex="3"></span>
         <input type="hidden" name="again" id="again" value="{{survey.response.again|blanknone}}"/>
       </td>
     </tr>
     <tr>
-      <td class="caption" style="vertical-align:top; padding-top:7px;">How could pset partners be improved?</td>
-      <td><textarea class="value" name="suggestion" tabindex="4"  placeholder="optional" maxlength="1024">{{survey.response.suggestion}}</textarea></td>
-    </tr>
-    <tr>
-      <td class="caption" style="vertical-align:top; padding-top:7px;">Anything else you would like to tell us?</td>
-      <td><textarea class="value" name="comment" tabindex="5"  placeholder="optional" maxlength="1024">{{survey.response.comment}}</textarea></td>
+      <td class="caption" style="vertical-align:top; padding-top:7px;">Any comments or suggestions?</td>
+      <td><textarea class="value" name="comment" tabindex="4"  style="height:60px;" placeholder="optional" maxlength="1024">{{survey.response.comment}}</textarea></td>
     </tr>
   </table>
 
@@ -65,30 +57,27 @@ const usefulOptions = [
   { label: '', value: '' },
   { label: 'useless', value: '1', },
   { label: 'better than nothing', value: '2', },
-  { label: 'moderately useful', value: '3', },
-  { label: 'quite useful', value: '4', },
-  { label: 'very useful', value: '5', },
-  { label: 'not applicable', value: '0', },
+  { label: 'somewhat useful', value: '3', },
+  { label: 'very useful', value: '4', },
+  { label: 'extremely useful', value: '5', },
 ];
 
-const usedOptions = [
+const continueOptions = [
   { label: '', value: '' },
-  { label: 'no', value: 'no', },
   { label: 'yes', value: 'yes', },
-  { label: 'not applicable', value: 'na', },
+  { label: 'no', value: 'no', },
 ];
 
 const againOptions = [
   { label: '', value: '' },
-  { label: 'no', value: 'no', },
-  { label: 'maybe', value: 'maybe', },
   { label: 'yes', value: 'yes', },
+  { label: 'no', value: 'no', },
   { label: 'not applicable', value: 'na', },
 ];
 
 function checkChanges(e) {
   if ( ! e.target.name ) return;
-  const done = $('#useful').val().trim().length > 0 && $('#used').val().trim().length > 0 && $('#again').val().trim().length > 0;
+  const done = $('#useful').val().trim().length > 0 && $('#continue').val().trim().length > 0 && $('#again').val().trim().length > 0;
   console.log(done)
   $('#survey button.submit').prop('disabled',!done);
 }
@@ -106,7 +95,7 @@ function submitSurveyForm(value, e) {
 
 document.addEventListener('DOMContentLoaded', function() {
   makeSingleSelect('useful', usefulOptions, {});
-  makeSingleSelect('used', usedOptions, {});
+  makeSingleSelect('continue', continueOptions, {});
   makeSingleSelect('again', againOptions, {});
   $('#survey :input').change(checkChanges);
 });
