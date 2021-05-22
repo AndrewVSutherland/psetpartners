@@ -67,7 +67,7 @@ You can restore this cap at any time by editing the size preference for your gro
 def are_we_live(forcelive):
     return forcelive or livesite()
 
-def send_poolme_links(forcelive=False, preview=True):
+def send_poolme_links(forcelive=False, preview=True, class_number=""):
     from . import app
     from .student import email_address, signature, log_event
 
@@ -75,8 +75,14 @@ def send_poolme_links(forcelive=False, preview=True):
     today = datetime.datetime.now().date()
     root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
     with app.app_context():
-        for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term(), 'size': {'$gt':1}, 'match_dates': {'$contains': today}}, projection=3):
+        query = {'active':True, 'year': current_year(), 'term': current_term(), 'size': {'$gt':1}, 'match_dates': {'$contains': today}}
+        if class_number:
+            query['class_number']=class_number
+        for c in db.classes.search(query, projection=3):
+            if len(list(db.classlist.search({'class_id': c['id'], 'status': 2}, projection='id'))) == 0:
+                continue
             cs = ' / '.join(c['class_numbers'])
+            print("Currently in pool for %s: %s" % (cs,list(db.classlist.search({'class_id': c['id'], 'status': 2}, projection='kerb'))))
             cstr = cs + " " + c['class_name']
             poolmeurl = root + "poolme/%s" % c['class_number']
             removemeurl = root + "removeme/%s" % c['class_number']
