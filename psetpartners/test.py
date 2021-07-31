@@ -1,6 +1,6 @@
 import datetime
 from psycodict import DelayCommit
-from .utils import current_term, current_year, DEFAULT_TIMEZONE_NAME
+from .utils import current_term, current_year, default_match_dates, DEFAULT_TIMEZONE_NAME
 from .student import (
     student_preferences,
     student_affinities,
@@ -40,7 +40,7 @@ big_classes = [ '1.00', '2.001', '3.091', '4.021', '5.111', '5.112', '6.0001', '
     '12.400', '14.01', '14.02', '15.025', '15.034', '16.001',     '16.002', '16.003', '16.004',
     '18.01', '18.02', '18.03', '18.06', '18.404', '18.600', '22.00', '22.01', '24.09' ]
 
-def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, max_classes_per_student=8, prefprob=3, groupsize=4):
+def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, max_classes_per_student=8, prefprob=3, groupsize=4, year=current_year(), term=current_term()):
     """ generates a random student population for testing (destorys existing test data) """
     from . import db
     mydb = db
@@ -53,11 +53,17 @@ def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, m
     with DelayCommit(mydb):
         # copy classes from live database for current term
         mydb.test_classes.delete({}, resort=False)
-        mydb.test_classes.insert_many(list(mydb.classes.search({'year': current_year(), 'term': current_term()}, projection=3)), resort=False)
-        n = len(list(mydb.test_classes.search({})))
-        if n == 0:
+        S = list(mydb.classes.search({'year': year, 'term': term}, projection=3))
+        if year != current_year() or term != current_term():
+            for r in S:
+                r['year'] = current_year()
+                r['term'] = current_term()
+                r['match_dates'] = default_match_dates()
+        if len(S) == 0:
             print("Unable to populate sandbox, there are no classes defined for the current term")
             return
+        mydb.test_classes.insert_many(S, resort=False)
+        n = len(list(mydb.test_classes.search({})))
         print ("Copied %d records from classes to test_classes"%n)
         mydb.test_classes.update({},{'active':False,'owner_kerb':'','instructor_kerbs':[]},resort=False)
         mydb.test_classes.update({},{'size':0},resort=False)

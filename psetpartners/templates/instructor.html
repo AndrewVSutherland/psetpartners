@@ -272,7 +272,6 @@ function checkChanges(i) {
   $('#match-date-alert-'+i).hide();
   $('#match-date-warn-'+i).hide();
   if ( $('#match-date-'+i).val() === 'none' ) $('#match-date-alert-'+i).show();
-  console.log($('#match-date-'+i).val() + ' vs ' + classes[i].full_match_date);
   if ( $('#match-date-'+i).val() !== classes[i].full_match_date && classes[i].pool_size ) {
     $('#match-date-warn-'+i).html(classes[i].pool_size + ' students in match pool will be notified by email');
     $('#match-date-warn-'+i).show();
