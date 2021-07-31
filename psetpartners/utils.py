@@ -80,14 +80,31 @@ def current_term():
             return i
     return 0
 
+def current_term_start_date():
+    now = datetime.datetime.now()
+    today = (now.month, now.day)
+    if today <= term_ends[0]:
+        return datetime.date(now.year-1, term_ends[-1][0], term_ends[-1][1]+1)
+    else:
+        t = current_term()
+        return datetime.date(now.year, term_ends[t-1][0], term_ends[t-1][1]+1)
+
 def current_term_end_date():
     now = datetime.datetime.now()
     today = (now.month, now.day)
     if today > term_ends[-1]:
-        return datetime.date(now.year+1, term_ends[0][0], term_ends[0][1])
+        return datetime.date(now.year+1, term_ends[-1][0], term_ends[0][1])
     else:
         t = current_term()
         return datetime.date(now.year, term_ends[t][0], term_ends[t][1])
+
+def default_match_dates():
+    s = current_term_start_date()
+    e = current_term_end_date()
+    s += datetime.timedelta(days=(4-s.weekday())%7)
+    w = datetime.timedelta(days=7)
+    s += w
+    return [s+i*w for i in range(15) if s+i*w < e]
 
 def current_term_pretty():
     return term_options[current_term()] + " " + str(current_year())
