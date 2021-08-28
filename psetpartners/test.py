@@ -41,7 +41,7 @@ big_classes = [ '1.00', '2.001', '3.091', '4.021', '5.111', '5.112', '6.0001', '
     '18.01', '18.02', '18.03', '18.06', '18.404', '18.600', '22.00', '22.01', '24.09' ]
 
 def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, max_classes_per_student=8, prefprob=3, groupsize=4, year=current_year(), term=current_term()):
-    """ generates a random student population for testing (destorys existing test data) """
+    """ generates a random student population for testing (destroys existing test data) """
     from . import db
     mydb = db
 
