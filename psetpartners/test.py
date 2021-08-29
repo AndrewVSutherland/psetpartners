@@ -1,5 +1,6 @@
 import datetime
 from psycodict import DelayCommit
+from random import randint
 from .utils import current_term, current_year, default_match_dates, DEFAULT_TIMEZONE_NAME
 from .student import (
     student_preferences,
@@ -40,6 +41,11 @@ big_classes = [ '1.00', '2.001', '3.091', '4.021', '5.111', '5.112', '6.0001', '
     '12.400', '14.01', '14.02', '15.025', '15.034', '16.001',     '16.002', '16.003', '16.004',
     '18.01', '18.02', '18.03', '18.06', '18.404', '18.600', '22.00', '22.01', '24.09' ]
 
+# slow but safe way to get a random element of a table, do not use the .random() method, which will fail if id's are not continugous
+def dbrand(table,query={},projection=1):
+    L = list(table.search(query,projection="id"))
+    return table.lucky({'id':L[randint(0,len(L)-1)]},projection=projection)
+
 def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, max_classes_per_student=8, prefprob=3, groupsize=4, year=current_year(), term=current_term()):
     """ generates a random student population for testing (destroys existing test data) """
     from . import db
@@ -75,7 +81,7 @@ def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, m
             n = active_classes
             m = len(list(mydb.test_classes.search({'active':True})))
             while m != n:
-                class_id = mydb.test_classes.random({'active': m > n},projection="id")
+                class_id = dbrand(mydb.test_classes,{'active': m > n},projection="id")
                 mydb.test_classes.update({'id':class_id}, {'active': m < n},resort=False)
                 m += 1 if m < n else -1
         print ("Made %d classes active" % active_classes)
@@ -87,7 +93,6 @@ def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, m
     print("Done!")
 
 def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_student=8, prefprob=3, groupsize=4):
-    from random import randint
     from .dbwrapper import getdb
 
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
@@ -136,8 +141,8 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
         print("Reduced number of_students to %d to ensure an average of no more than 100 students per class" % num_students)
 
     year, term = current_year(), current_term()
-
-    S = [{ 'kerb' : "p%03d" % n, 'full_name': 'Professor ' + db.profnames.random() } for n in range(1,num_instructors+1)]
+    profnames = list(db.profnames.search(projection="name"))
+    S = [{ 'kerb' : "p%03d" % n, 'full_name': 'Professor ' + rand(profnames) } for n in range(1,num_instructors+1)]
     for r in S:
         r['preferred_name'] = r['full_name']
     db.test_instructors.insert_many(S, resort=False)
@@ -152,7 +157,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
     for n in range(1,8):
         if not db.test_classes.lucky({'active':True, 'owner_kerb': "p%03d" % n}):
             p = S[n]
-            c = db.test_classes.random({'active':True}, projection=3)
+            c = dbrand(db.test_classes, {'active':True}, projection=3)
             kerbs = c['instructor_kerbs']
             if not p['kerb'] in kerbs:
                 kerbs = [p['kerb']] + kerbs
@@ -162,12 +167,13 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
     now = datetime.datetime.now()
     S = []
     names = set()
+    firstnames = list(db.names.search(projection="word"))
     for num in range(1,num_students+1):
         s = blank_student.copy()
         s['kerb'] = "s%04d" % num
         while True:
-            firstname = db.names.random()
-            name = db.student_adjectives.random({'firstletter': firstname[0]}).capitalize() + " " + firstname.capitalize()
+            firstname = rand(firstnames)
+            name = dbrand(db.student_adjectives,{'firstletter': firstname[0]},projection="word").capitalize() + " " + firstname.capitalize()
             if name in names:
                 continue
             break
@@ -238,7 +244,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
             classes = [rand(aclasses)]
         while True:
             c = rand(aclasses)
-            if not c in classes:  # sometimes random returns None!
+            if not c in classes:
                 classes.append(c)
                 break
         for m in range(2,max_classes_per_student):
