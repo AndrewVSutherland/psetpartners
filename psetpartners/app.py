@@ -81,7 +81,8 @@ def debug_mode():
     return current_app.debug
 
 def under_construction():
-    return livesite()
+    return False
+    # return livesite()
 
 ############################
 # Global app configuration #
