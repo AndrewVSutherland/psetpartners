@@ -49,12 +49,20 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% if editor|length == 0 and active|length == 1 %}
 <p align="justify">According to our records, you are teaching <b>{{ ' / '.join(classes[0]['class_numbers']) + " " + classes[0]['class_name']}}</b>.</p>
 {% else %}
+{% if active|length == 1 %}
+<p>According to our records, you are currently teaching the following class using pset partners:</p>
+{% else %}
 <p>According to our records, you are currently teaching the following classes using pset partners (click a class to select it):</p>
+{% endif %}
 <ul class="classlist">
 {% for i in range(active|length) %}
 {% set c = active[i] %}
 <li id="li-{{i}}">
+  {% if active|length == 1 %}
+  <label><b>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</b></label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}) {% endif %}</label>
+  {% else %}
   <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}) {% endif %}</label>
+  {% endif %}
   {% if c['editor'] %}
     <label class="paction edit-{{i}}" onclick="$('.edit-{{i}}').toggle();">edit</label>
     <button type="button" class="cancel edit-{{i}}" tabindex="-1" style="display:none;" onclick="resetClass('{{i}}'); $('.edit-{{i}}').toggle();">nevermind</button>
@@ -116,6 +124,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 </ul>
 {% endif %}
 {% endif %}
+<p>Click <b>edit</b> to add instructors (or TAs you want to grant access), or to change the next match date.</p>
 {% endif %}
 
 {% if active|length %}
