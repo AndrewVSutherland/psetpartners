@@ -61,29 +61,30 @@ const genderOptions = [
 const locationOptions = [
   { label: 'on campus or near MIT', value: 'near', },
   { label: 'not near MIT', value: 'far', },
-  { value: "baker", label: "Baker House", disabled: true },
-  { value: "buron-conner",  label: "Burton Conner House", disabled: true },
-  { value: "east",  label: "East Campus", disabled: true },
-  { value: "macgregor",  label: "MacGregor House", disabled: true },
-  { value: "maseeh",  label: "Maseeh Hall", disabled: true },
-  { value: "mccormick",  label: "McCormick Hall", disabled: true },
-  { value: "new",  label: "New House", disabled: true },
-  { value: "next",  label: "Next House", disabled: true },
-  { value: "random",  label: "Random Hall", disabled: true },
-  { value: "simmons",  label: "Simmons Hall", disabled: true },
-  { value: "epsilontheta",  label: "Epsilon Theta", disabled: true },
-  { value: "fenway",  label: "Fenway House", disabled: true },
-  { value: "pika",  label: "pika", disabled: true },
-  { value: "student",  label: "Student House", disabled: true },
-  { value: "wilg",  label: "WILG", disabled: true },
-  { value: "amherst", label: "70 Amherst Street", disabled: true },
-  { value: "ashdown", label: "Ashdown House", disabled: true },
-  { value: "edgerton", label: "Edgerton House", disabled: true },
-  { value: "tower4", label: "Graduate Tower at Site 4", disabled: true },
-  { value: "sidneypacific", label: "Sidney-Pacific", disabled: true },
-  { value: "tang", label: "Tang Hall", disabled: true },
-  { value: "warehouse", label: "The Warehous", disabled: true },
-  { value: "westgate", label: "Westgate", disabled: true },
+  { value: "baker", label: "Baker House", },
+  { value: "buron-conner",  label: "Burton Conner House", },
+  { value: "east",  label: "East Campus", },
+  { value: "macgregor",  label: "MacGregor House", },
+  { value: "maseeh",  label: "Maseeh Hall", },
+  { value: "mccormick",  label: "McCormick Hall", },
+  { value: "new",  label: "New House", },
+  { value: "new-vassar",  label: "New Vassar", },
+  { value: "next",  label: "Next House", },
+  { value: "random",  label: "Random Hall", },
+  { value: "simmons",  label: "Simmons Hall", },
+  { value: "epsilontheta",  label: "Epsilon Theta", },
+  { value: "fenway",  label: "Fenway House", },
+  { value: "pika",  label: "pika", },
+  { value: "student",  label: "Student House", },
+  { value: "wilg",  label: "WILG", },
+  { value: "amherst", label: "70 Amherst Street", },
+  { value: "ashdown", label: "Ashdown House", },
+  { value: "edgerton", label: "Edgerton House", },
+  { value: "tower4", label: "Graduate Tower at Site 4", },
+  { value: "sidneypacific", label: "Sidney-Pacific", },
+  { value: "tang", label: "Tang Hall", },
+  { value: "warehouse", label: "The Warehouse", },
+  { value: "westgate", label: "Westgate", },
 ];
 
 const startOptions = [
@@ -106,7 +107,7 @@ const forumOptions = [
   { label: '', value: '' },
   { label: 'text (e.g. Slack or Zulip)', value: 'text', },
   { label: 'video (e.g. Zoom)', value: 'video', },
-  { label: 'in person', value: 'in-person', disabled: true },
+  { label: 'in person', value: 'in-person', },
 ];
 const forumShort = ["", "text", "video", "in-person"];
 
@@ -237,7 +238,7 @@ const studentPlaceholders = {
 
 const profileOptions = [ 'expand', 'collapse' ];
 
-const kerbMinLength = 2 // New kerbs have length at least 3 but a few length 2 kerbs are still active
+const kerbMinLength = 2; // New kerbs have length at least 3 but a few length 2 kerbs are still active
 const kerbRE = new RegExp('^[a-z][a-z0-9_]+$');
 const classnameRE = new RegExp("^[a-zA-Z0-9 ,.;:&?!/@#'()\-]+$");
 
