@@ -1213,7 +1213,8 @@ class Student(UserMixin):
             return
         if announce_message:
             # only message group members other than self
-            messages = [{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb} for s in S if s['kerb'] != self.kerb ]
+            now = datetime.datetime.now()
+            messages = [{'type': 'notify', 'content': announce_message, 'recipient_kerb': s['kerb'], 'sender_kerb': self.kerb, 'timestamp': now} for s in S if s['kerb'] != self.kerb ]
             if messages:
                 self._db.messages.insert_many(messages, resort=False)
         if email_message:
@@ -1557,7 +1558,6 @@ class Instructor(UserMixin):
 
     def send_message(self, sender, typ, content):
         send_message(sender, self.kerb, typ, content)
-        self._db.messages.insert_many([{'sender_kerb': sender, 'recipient_kerb': self.kerb, 'type': typ, 'content': content}], resort=False)
 
     def flash_pending(self):
         for msg in self._db.messages.search({'recipient_kerb': self.kerb, 'read': None}, projection=3):
