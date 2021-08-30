@@ -221,8 +221,6 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
                 if randint(0,npref) == 0:
                     prefs[p] = rand(student_preferences[p])[0]
                     strengths[p] = randint(1,5)
-                    if p == "forum" and p in prefs and prefs[p] == "in-person":
-                        prefs[p] = "video";
             else:
                 q = p.split('_')[0]
                 if q in student_affinities and s[q] and randint(0,npref) == 0:

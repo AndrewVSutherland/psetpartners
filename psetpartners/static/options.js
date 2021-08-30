@@ -62,7 +62,7 @@ const locationOptions = [
   { label: 'on campus or near MIT', value: 'near', },
   { label: 'not near MIT', value: 'far', },
   { value: "baker", label: "Baker House", },
-  { value: "buron-conner",  label: "Burton Conner House", },
+  { value: "burton-conner",  label: "Burton Conner House", },
   { value: "east",  label: "East Campus", },
   { value: "macgregor",  label: "MacGregor House", },
   { value: "maseeh",  label: "Maseeh Hall", },
