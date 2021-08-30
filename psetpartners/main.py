@@ -573,6 +573,25 @@ def instructor():
         ctx=session.pop("ctx",""),
     )
 
+@app.route("/user/<kerb>")
+def test_user(kerb):
+    if livesite():
+        return render_template("404.html", message="Page not found."), 404
+    logout_user()
+    session['affiliation'] = ''
+    session['displayname'] = ''
+    if is_instructor(kerb):
+        session['affiliation'] = 'staff'
+    else:
+        session['affiliation'] = 'student'
+    user = Student(kerb, session['displayname']) if session['affiliation'] == 'student' else Instructor(kerb, session['displayname'])
+    session['kerb'] = kerb
+    login_user(user, remember=False)
+    if current_user.is_admin:
+        return redirect(url_for("admin"))
+    return redirect(url_for("student")) if current_user.is_student else redirect(url_for("instructor"))
+
+
 @app.route("/activate/<class_id>")
 @login_required
 def activate(class_id):
