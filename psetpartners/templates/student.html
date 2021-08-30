@@ -248,6 +248,7 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
       <td><button type="button" class="submit default" id="cancel" onclick="submitStudentForm('cancel',this);" disabled tabindex="41">reset</button></td>
       <td><label class="alertinfo" id="submit_alert"></label></td>
       <td><label class="alertinfo" id="fixme" style="margin-left:-5px; display:none;"><i style="color:black;">&#11013;&nbsp;</i> Fix this first!</label></td>
+      <td><label class="alertinfo" id="submit_note"><i style="color:#606060;"></i></label></td>
     </tr>
   </table>
 </div>
@@ -367,6 +368,10 @@ function getPrefs(prefs,i) {
   return res;
 }
 
+function numPrefsSet(prefs,i) {
+  return Object.values(getPrefs(prefs,i)).filter(x => x.value).length;
+}
+
 function getProps(props,i) {
   let res = {};
   for ( const prop of props ) {
@@ -450,7 +455,7 @@ function changeClasses(val) {
   const oldlength = studentClasses.length;
   studentClasses = [...v];
   if ( v.length > oldlength ) {
-    togglerIndex(v.length);
+    //togglerIndex(v.length);
   } else {
     if ( c ) {
       const j = studentClasses.indexOf(c);
@@ -571,7 +576,7 @@ function selectAction(action) {
     else { console.log("Unexpected action: " + action); }
   } else {
     if ( classData[c].status == 2 && action == "unpool" ) { confirmUnPool (document.getElementById("unpool-"+c), c); }
-    else if ( (classData[c].status == 0 || classData[c].status == 3) && action == "pool" ) { confirmPool (document.getElementById("pool-"+c), c); }
+    else if ( (classData[c].status === 0 || classData[c].status == 3) && action == "pool" ) { confirmPool (document.getElementById("pool-"+c), c); }
     else if ( action == "private" ) { confirmPrivateGroup (document.getElementById("private-"+c), c); }
     else if ( action == "public" ) { confirmPublicGroup (document.getElementById("public-"+c), c); }
     else { console.log("Unexpected action: " + action); }
@@ -632,9 +637,9 @@ function setPartnerPanes() {
       if ( sg === 0 ) {
         msg += ', all of whom are still looking for partners. ';
       } else if ( sng === 0 ) {
-        msg += ', all of whom are currently in a group. ';
+        msg += ', all of whom are currently in groups. ';
       } else {
-        msg += `: <b>${sg}</b> ${sg==1?'is':'are'} in a group and <b>${sng}</b> ${sng==1?'is':'are'} looking for partners. `;
+        msg += `: <b>${sg}</b> ${sg==1?'is':'are'} in currently in groups and <b>${sng}</b> ${sng==1?'is':'are'} looking for partners. `;
       }
       if ( g === 1 ) {
         msg += `One pset group has been created in this class`;
@@ -658,7 +663,8 @@ function setPartnerPanes() {
       }
     }
     if ( !cdata ) {
-      msg += `<br><br>It looks like you just added this class to your profile. Check your <b>preferences</b> and click <b>save</b> see your pset partner options. `;
+      msg += `<br><br>It looks like you just added this class to your profile. Click <b>preferences</b> to set preferences${numPrefsSet(studentPreferences,0)===0 ? ' (you might want to set <b>general</b> preferences first)':''}, then click <b>save</b> see your pset partner options. `;
+      
       $('#partner-summary-'+(i+1)).html(msg);
       $('#partner-div-'+(i+1)).html('');
       $('#partner-buttons-'+(i+1)).html('');
@@ -790,12 +796,12 @@ function confirmLeave(e, c) {
   if ( ! i || i > studentClasses.length ) return;
   if ( c !== studentClasses[i-1] ) return;
   const g = groupData[c];
-  if ( ! g ) { console.log("Couldn't find group id " + gid + " in class " + c); return; }
+  if ( ! g ) { console.log("No group to leave in class " + c); return; }
   let msg = `You are about to leave the group <b>${g.group_name}</b>. `;
   if ( g.members.length > 1 ) msg += `Group members will be informed of your departure (they may be sad to see you go, but they will <a href="{{url_for("conduct")}}" target="_blank" class="link">understand</a>). `;
   if ( g.isibility < 3 && g.members.length > 1 ) msg += 'You will need an invitation to rejoin. ';
   if ( g.members.length == 1 ) msg += 'As you are the only member of this group, it will be disbanded after you leave. ';
-  msg += 'Once you leave this group you will be given options for finding a new one if you wish to. '
+  msg += 'Once you leave this group you will be given options for finding a new one if you wish to. ';
   let val = "leave " + g.id;
   if ( pending ) { msg += 'your unsaved changes <b>will be saved</b>.'; val = "save " + val; }
   showConfirm (msg, val, 'leave ' + g.group_name);
@@ -805,7 +811,7 @@ function confirmPool(e, c) {
   if ( ! savable() ) return;
   const i = parseInt(jQuery(e).parents('div.partner-pane').attr('id').split('-')[2]);
   if ( ! i || i > studentClasses.length ) return;
-  if ( ! c == studentClasses[i-1] ) return;
+  if ( c != studentClasses[i-1] ) return;
   const res = getPrefs([...studentPreferences, ...studentClassPreferences], i);
   const d = classData[c].next_match_date;
   const cid = classData[c].class_id;
