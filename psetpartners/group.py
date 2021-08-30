@@ -216,7 +216,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, 
 
     cs = ' / '.join(g['class_numbers'])
     message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name'])
-    db.messages.insert_many([{''recipient_kerb': s['kerb'], 'sender_kerb':'', type': 'newgroup', 'content': message, 'timestamp': now} for s in students], resort=False)
+    db.messages.insert_many([{'sender_kerb':'', 'recipient_kerb': s['kerb'], 'type': 'newgroup', 'content': message, 'timestamp': now} for s in students], resort=False)
     subject = new_group_subject.format(class_numbers=cs)
     url = student_url(g['class_number'])
     if hours:
