@@ -147,7 +147,7 @@ def disband_group (group_id, rematch=False, forcelive=False, email_test=False, v
     cs = ' / '.join(g['class_numbers'])
     url = student_url(g['class_number'])
     message = "The <b>%s</b> pset group <b>%s</b> has been disbanded." % (cs, g['group_name'])
-    db.messages.insert_many([{'type': 'disband', 'content': message, 'recipient_kerb': k, 'sender_kerb':''} for k in kerbs], resort=False)
+    db.messages.insert_many([{'sender_kerb':'', 'recipient_kerb': k, 'type': 'disband', 'content': message, 'timestamp': now} for k in kerbs], resort=False)
     subject = disbanded_group_subject.format(class_numbers=cs, group_name=g['group_name'])
     body = disbanded_group_email.format(class_numbers=cs, group_name=g['group_name'], url=url)
     if db_islive(db) or email_test:
@@ -216,7 +216,7 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, 
 
     cs = ' / '.join(g['class_numbers'])
     message = "Welcome to the <b>%s</b> pset group <b>%s</b>!" % (cs, g['group_name'])
-    db.messages.insert_many([{'type': 'newgroup', 'content': message, 'recipient_kerb': s['kerb'], 'sender_kerb':''} for s in students], resort=False)
+    db.messages.insert_many([{''recipient_kerb': s['kerb'], 'sender_kerb':'', type': 'newgroup', 'content': message, 'timestamp': now} for s in students], resort=False)
     subject = new_group_subject.format(class_numbers=cs)
     url = student_url(g['class_number'])
     if hours:
