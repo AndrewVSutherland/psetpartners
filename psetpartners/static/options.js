@@ -62,7 +62,7 @@ const locationOptions = [
   { label: 'on campus or near MIT', value: 'near', },
   { label: 'not near MIT', value: 'far', },
   { value: "baker", label: "Baker House", },
-  { value: "burton-conner",  label: "Burton Conner House", },
+  { value: "buron-conner",  label: "Burton Conner House", },
   { value: "east",  label: "East Campus", },
   { value: "macgregor",  label: "MacGregor House", },
   { value: "maseeh",  label: "Maseeh Hall", },
@@ -238,7 +238,7 @@ const studentPlaceholders = {
 
 const profileOptions = [ 'expand', 'collapse' ];
 
-const kerbMinLength = 2 // New kerbs have length at least 3 but a few length 2 kerbs are still active
+const kerbMinLength = 2; // New kerbs have length at least 3 but a few length 2 kerbs are still active
 const kerbRE = new RegExp('^[a-z][a-z0-9_]+$');
 const classnameRE = new RegExp("^[a-zA-Z0-9 ,.;:&?!/@#'()\-]+$");
 
