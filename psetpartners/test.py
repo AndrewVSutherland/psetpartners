@@ -200,8 +200,9 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
         else:
             if randint(0,9) == 0:
                 s['preferred_pronouns'] = "they/them"
-        s['location'] = 'near' if randint(0,2) == 0 else rand(location_options[1:])[0]
-        s['timezone'] = DEFAULT_TIMEZONE_NAME if s['location'] == 'near' else rand(test_timezones)
+        x = randint(0,2)
+        s['location'] = 'near' if x == 0 else ('far' if x == 1 else rand(location_options[2:])[0])
+        s['timezone'] = DEFAULT_TIMEZONE_NAME if s['location'] != 'far' else rand(test_timezones)
         hours = [False for i in range(168)]
         n = 0
         while n < 168:
