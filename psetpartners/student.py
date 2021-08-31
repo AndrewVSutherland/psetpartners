@@ -1306,9 +1306,10 @@ class Instructor(UserMixin):
         # copy student pofile data if relevant (they might change their name/pronouns)
         if self.dual_role:
             sdata = self._db.students.lookup(kerb)
-            for col in ['full_name', 'preferred_name', 'preferred_pronouns', 'email']:
-                if col in sdata:
-                    data[col] = sdata[col]
+            if sdata:
+                for col in ['full_name', 'preferred_name', 'preferred_pronouns', 'email']:
+                    if col in sdata:
+                        data[col] = sdata[col]
         cleanse_instructor_data(data)
         self.__dict__.update(data)
         assert self.kerb
