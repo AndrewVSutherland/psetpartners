@@ -14,8 +14,9 @@ function addDays(d, days) { const result = new Date(d); result.setDate(result.ge
 // Functions to safely convert dates to/from YYYY-MM-DD format -- python and javascript don't play well with dates, be careful!
 function fullDateToString(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fullDateFromString(s) {
-  const t = s.split('-'), m = new Date();
-  m.setHours(0,0,0,0); m.setFullYear(parseInt(t[0])); m.setMonth(parseInt(t[1])-1); m.setDate(parseInt(t[2]));
+  const t = s.split('-');
+  const year = parseInt(t[0]); month=parseInt(t[1])-1; day=parseInt(t[2]);
+  return new Date(year,month,day,0);
   return m;
 }
 function makeSingleSelect(id, available, config) {
