@@ -59,9 +59,9 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% set c = active[i] %}
 <li id="li-{{i}}">
   {% if active|length == 1 %}
-  <label><b>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</b></label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}{% if c['next_match_date'] %}, next match {{c['next_match_date']}}{% endif %}) {% endif %}</label>
+  <label><b>{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</b></label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}{% if c['next_match_date'] %}, next match {{c['next_match_date']}}{% endif %}){% else %}{% if c['next_match_date'] %}(next match {{c['next_match_date']}}){% endif %}{% endif %}</label>
   {% else %}
-  <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}{% if c['next_match_date'] %}, next match {{c['next_match_date']}}{% endif %}) {% endif %}</label>
+  <label class="clickable" onclick="toggleClass({{i}});">{{ ' / '.join(c['class_numbers']) + ' ' + c['class_name'] }}</label> <label>{% if c['students']|length %}({{c['students']|length}} student{% if c['students']|length>1 %}s{%endif%}{% if c['next_match_date'] %}, next match {{c['next_match_date']}}{% endif %}){% else %}{% if c['next_match_date'] %}(next match {{c['next_match_date']}}){% endif %}{% endif %}</label>
   {% endif %}
   {% if c['editor'] %}
     <label class="paction edit-{{i}}" onclick="$('.edit-{{i}}').toggle();">edit</label>
@@ -337,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         classDateOptions[i] = [];
       }
-      console.log(classes[i].full_match_date);
       if ( classes[i].full_match_date ) {
         const m = fullDateFromString(classes[i].full_match_date);
         classes[i].full_match_date = fullDateToString(m); // just to be sure strings match
