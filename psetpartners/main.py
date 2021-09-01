@@ -614,6 +614,7 @@ def activate(class_id):
 @login_required
 def save_class():
     raw_data = request.form
+    print(raw_data)
     details = httpagentparser.detect(request.headers.get("User-Agent"))
     details['operation'] = 'save_class'
     details['resolution'] = "%sx%s"% (raw_data.get("screen-width","?"), raw_data.get("screen-height","?"))

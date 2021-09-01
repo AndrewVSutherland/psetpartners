@@ -341,6 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if ( classes[i].full_match_date ) {
         const m = fullDateFromString(classes[i].full_match_date);
         classes[i].full_match_date = fullDateToString(m); // just to be sure strings match
+        console.log(classes[i].full_match_date)
         if ( m < tomorrow ) classDateOptions[i].push({ 'label': m.toDateString(), 'value':fullDateToString(m) });
         for ( let j = 0 ; j <= 14 ; j++ ) {
           const d = addDays(tomorrow,j);

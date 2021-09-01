@@ -3,7 +3,7 @@
 
 <div class="text_content auto">
 
-  <h2>Frequently asked questions (updated 31 July 2021)</h2>
+  <h2>Frequently asked questions (updated 31 August 2021)</h2>
 
  <ul class="faq">
     <li>
@@ -38,12 +38,6 @@
       </p>
     </li>
     <li>
-      Why are the dorms and living groups currently grayed-out in the location drop-down?
-      <p>
-        Given the current situation with the pandemic, we don't think it makes sense to organize pset groups based on physical location.  The "in-person" communication option is disabled for the same reason.
-      </p>
-    </li>
-    <li>
       Which browsers/devices do you support?
       <p>Our site should work resasonably well on most modern desktops, laptops and tablets. It is <b>not designed for mobile use</b>.</p>
       <p>
@@ -66,6 +60,12 @@
 
       <p>
         In all cases new members can join only when the current size of the group is less than any size limit that has been set.  Private groups may change their membership settings at any time, but whether a group is public or private is fixed when the group is created.  All groups created by the pset partners matching algorithm are private group with membership set to <b>automatic</b> by default.
+      </p>
+    </li>
+    <li>
+      What time does the matching take place?
+      <p>
+        The process begins at 10pm MIT time on the match date when the pool is closed, and usually finishes within an hour or two, but email notifications may be delayed by up to 12 hours.
       </p>
     </li>
     <li>
@@ -124,13 +124,13 @@
     <li>
       Your matching algorithm seems pretty <i>ad hoc</i>, surely there are standard solutions to this problem?
       <p>
-        The <a href="https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm">Gale-Shapley</a> algorithm effcieintly solves the <a href="https://en.wikipedia.org/wiki/Stable_matching_problem">stable matching problem</a>, which asks for a bijection between two sets with ranked preferences that is stable in the sense that no unmatched pair would both prefer to be matched with eachother.  This algorithm has many pratical applications, including content delivery networks, admissions, and healthcare, but it doesn't really solve the problem of matching pset partners.
+        The <a href="https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm">Gale-Shapley</a> algorithm effciently solves the <a href="https://en.wikipedia.org/wiki/Stable_matching_problem">stable matching problem</a>, which asks for a bijection between two sets with ranked preferences that is stable in the sense that no unmatched pair would both prefer to be matched with eachother.  This algorithm has many pratical applications, including content delivery networks, admissions, and healthcare, but it doesn't really solve the problem of matching pset partners.
       </p>
       <p>
         A generalization of the stable mataching problem that is closer to the problem we need to solve is the <a href="https://en.wikipedia.org/wiki/Stable_roommates_problem">stable roommates problem</a>.  Unlike the stable matching problem, the stable roommates problem does not always admit a solution.  There are efficient algorithms for determining when a stable matching exists and producing one when it does, but when no solution exists the problem of finding the best matching is <a href="https://link.springer.com/chapter/10.1007%2F11671411_1">known to be NP-hard</a> (even finding a solution that comes within epsilon of the best matching is NP-hard).
       </p>
       <p>
-        Having said that, the algorithm we came up with was developed under significant time constraints and are actively working to improve it.  If you are a student or researcher who is interested in helping us do this, please <a href="mailto:psetpartners@mit.edu?subject=I want to help pset partners" target="_blank">contact us</a>.  There is surely a UROP (or two) to be had...
+        Having said that, the algorithm we came up with was developed under significant time constraints and we are actively working to improve it.  If you are a student or researcher who is interested in helping us do this, please <a href="mailto:psetpartners@mit.edu?subject=I want to help pset partners" target="_blank">contact us</a>.  There is surely a UROP (or two) to be had...
       </p>
       <p>
     </li>
