@@ -47,7 +47,7 @@ student_row_cols = [
 ]
 
 student_welcome = """<b>Welcome to pset partners!</b>
-To begin, enter your preferred name and any other personal details you care to share, then select your location, timezone, classes, and hours of availability.  Use the Preferences and Partners buttons to find pset partners."""
+To begin, enter your preferred name and any other personal details you care to share, then select your location, timezone, classes, and hours of availability, and any preferences.  Save your profile to see your options for pset partners."""
 
 code_of_conduct = """Please read and confirm your commitment to our <a href=\"{url}\">code of conduct</a> before proceeding."""
 
@@ -1148,7 +1148,7 @@ class Student(UserMixin):
         now = datetime.datetime.now()
         self._db.classlist.update({'class_id': class_id, 'student_id': self.id}, {'status':1, 'status_timestamp': now}, resort=False)
         self._reload()
-        return "Created the group <b>%s</b>!" % g['group_name']
+        return "Created the group <b>%s</b> in <b>%s</b>!" % (g['group_name'], cs)
 
     def _edit_group(self, group_id, options):
         g = self._db.groups.lucky({'id': group_id})
@@ -1181,7 +1181,7 @@ class Student(UserMixin):
             notify_msg = "%s updated the settings for the pset group <b>%s</b> in <b>%s</b>." % (self.preferred_name, g['group_name'], cs)
             self._notify_group(group_id, "pset partner notification for %s" % cs, notify_msg, notify_msg)
             self._reload()
-            return "Updated the group <b>%s</b>!" % g['group_name']
+            return "Updated the group <b>%s</b> in <b>%s</b>!" % (g['group_name'], cs)
         else:
             return "No changes made to group <b>%s</b>." % g['group_name']
 
@@ -1203,7 +1203,7 @@ class Student(UserMixin):
         self.update_toggle('ct', g['class_number'])
         self.update_toggle('ht', 'partner-header')
         self._reload()
-        return "Updated the group <b>%s</b>, thanks for responding!" % g['group_name']
+        return "Updated the group <b>%s</b> in <b>%s</b>, thanks for responding!" % (g['group_name'], cs)
 
     def _notify_group(self, group_id, subject, email_message, announce_message):
         """ Notifies members of group and updates group size (so must be called for leave/join!) """
