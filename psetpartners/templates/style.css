@@ -509,7 +509,7 @@ p.flash-instruct:before {
   content: "💡";
 }
 p.flash-warning::before {
-  content:"☡";
+  content:"⚠️";
   font-size: 90%;
   vertical-align: -5%;
   color: #d11;

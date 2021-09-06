@@ -15,9 +15,8 @@ function addDays(d, days) { const result = new Date(d); result.setDate(result.ge
 function fullDateToString(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fullDateFromString(s) {
   const t = s.split('-');
-  const year = parseInt(t[0]); month=parseInt(t[1])-1; day=parseInt(t[2]);
+  const year = parseInt(t[0]), month=parseInt(t[1])-1, day=parseInt(t[2]);
   return new Date(year,month,day,0);
-  return m;
 }
 function makeSingleSelect(id, available, config) {
   const e = document.getElementById(id);
@@ -217,9 +216,10 @@ function flashInfo(msg) {
     const p = document.createElement('p'), t = document.createTextNode(msg);
     p.classList.add('flash-info'); p.appendChild(t);
     document.getElementById('flash-bottom').appendChild(p);
+    p.innerHTML=msg;
     flashInfo.p = p;
   } else {
-    flashInfo.p.firstChild.textContent=msg;
+    flashInfo.p.innerHTML=msg;
     jQuery(flashInfo.p).show();
   }
   jQuery(flashInfo.p).fadeOut(6000);
@@ -230,9 +230,10 @@ function flashWarning(msg) {
     const p = document.createElement('p'), t = document.createTextNode(msg);
     p.classList.add('flash-warning'); p.appendChild(t);
     document.getElementById('flash-bottom').appendChild(p);
+    p.innerHTML=msg;
     flashWarning.p = p;
   } else {
-    flashWarning.p.firstChild.textContent=msg;
+    flashWarning.p.innerHTML=msg;
     jQuery(flashWarning.p).show();
   }
   jQuery(flashWarning.p).fadeOut(6000);
@@ -243,9 +244,10 @@ function flashCancel(msg) {
     const p = document.createElement('p'), t = document.createTextNode(msg);
     p.classList.add('flash-cancel'); p.appendChild(t);
     document.getElementById('flash-bottom').appendChild(p);
+    p.innerHTML=msg;
     flashCancel.p = p;
   } else {
-    flashCancel.p.firstChild.textContent=msg;
+    flashCancel.p.innerHTML=msg;
     jQuery(flashCancel.p).show();
   }
   jQuery(flashCancel.p).fadeOut(6000);

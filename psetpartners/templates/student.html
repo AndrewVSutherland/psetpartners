@@ -291,7 +291,7 @@ const action = "{{ action }}";
 /* global classesOptions, timezoneOptions, isLive, allCounts, allGroups, classData, groupData, maxlength, ctx, toggles, action */
 /* global startShort, styleShort, forumShort, sizeShort, yearShort, shortOptions, profileOptions, editorOptions, groupMembershipOptions */ // options.js
 /* global studentOptions, studentPlaceholders, studentPreferences, studentClassPreferences, studentAffinities, studentClassAffinities */
-/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, copyToClipboard, focusTrap */ // in psetpartners.js
+/* global makeSingleSelect, updateSingleSelect, makeMultiSelect, validURL, makeCheckboxGrid, flashInfo, flashCancel, flashError, flashAnnounce, flashWarning, copyToClipboard, focusTrap */ // in psetpartners.js
 
 var membersTable = {}; // filled in at load time
 
@@ -583,7 +583,6 @@ function selectAction(action) {
   }
 }
 
-
 function setPartnerPanes() {
   let cnts = allCounts[''];
   let msg = `There are currently <b>${cnts.students}</b> students, <b>${cnts.classes}</b> classes, and <b>${cnts.groups}</b> groups listed on pset partners, of which:
@@ -598,7 +597,7 @@ function setPartnerPanes() {
   if ( studentClasses.length ) {
     msg += 'Click on a class number to see your pset partnering options for that class.';
   } else {
-    msg += 'Add one or more classes to see information on how to find pset partners.  You may want to set default preferences first (click Preferences).';
+    msg += 'Add one or more classes to see information on how to find pset partners.  You may want to preferences first (click the Preferences button).';
   }
   $('#partner-summary-0').html(msg);
 
@@ -617,7 +616,7 @@ function setPartnerPanes() {
       continue;
     }
     const cdata = classData[c];
-    const status = cdata ? classData[c].status : 0;
+    const status = cdata ? cdata.status : 0;
     if ( status == 5 ) {
       $('#partner-summary-'+(i+1)).html(`You are a member of the pool for <b>${c}</b> currently being matched.  Please check back in a few hours. `);
       continue;
@@ -1213,7 +1212,13 @@ document.addEventListener('DOMContentLoaded', function() {
   profileToggle ('tp', toggles.tp || 1);
   htogglerActivate (toggles.ht || 'partner-header');
   togglerIndex (studentClasses.indexOf(toggles.ct)+1 || studentClasses.length);
-  if ( action ) selectAction(action);
+  if ( action ) {
+    selectAction(action);
+  } else if ( !studentClasses.length ) {
+    htogglerActivate('pref-header');
+  }
+  let inactiveList = studentClasses.filter(x => classData[x].status === 0).map(x=>"<b>"+x+"</b>");
+  if ( inactiveList.length ) flashWarning("You currently have no partnering options set for the " + (inactiveList.length==1 ? "class " : "classes ") + inactiveList.join(", ")+".");
 
   showAffinityPreferences();
   showApplyPreferences();
