@@ -1218,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
     htogglerActivate('pref-header');
   }
   let inactiveList = studentClasses.filter(x => classData[x].status === 0).map(x=>"<b>"+x+"</b>");
-  if ( inactiveList.length ) flashWarning("You currently have no partnering options set for the " + (inactiveList.length==1 ? "class " : "classes ") + inactiveList.join(", ") + " in your profile.");
+  if ( inactiveList.length ) flashWarning("You currently have no partnering options set for the " + (inactiveList.length==1 ? "class " : "classes ") + inactiveList.join(", ")+".");
 
   showAffinityPreferences();
   showApplyPreferences();
