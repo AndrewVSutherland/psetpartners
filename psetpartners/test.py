@@ -46,7 +46,7 @@ def dbrand(table,query={},projection=1):
     L = list(table.search(query,projection="id"))
     return table.lucky({'id':L[randint(0,len(L)-1)]},projection=projection)
 
-def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, max_classes_per_student=8, prefprob=3, groupsize=4, year=current_year(), term=current_term()):
+def populate_sandbox(num_students=3000, num_instructors=0, active_classes=500, max_classes_per_student=5, prefprob=3, groupsize=4, year=current_year(), term=current_term()):
     """ generates a random student population for testing (destroys existing test data) """
     from . import db
     mydb = db
@@ -92,7 +92,7 @@ def populate_sandbox(num_students=5000, num_instructors=0, active_classes=500, m
         print("Committing changes...")
     print("Done!")
 
-def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_student=8, prefprob=3, groupsize=4):
+def _populate_sandbox(num_students=3000, num_instructors=300, max_classes_per_student=5, prefprob=3, groupsize=4):
     from .dbwrapper import getdb
 
     pronouns = { 'female': 'she/her', 'male': 'he/him', 'non-binary': 'they/them' }
@@ -247,7 +247,7 @@ def _populate_sandbox(num_students=5000, num_instructors=500, max_classes_per_st
                 classes.append(c)
                 break
         for m in range(2,max_classes_per_student):
-            if m > 3 and randint(0,m-3):
+            if m > 2 and randint(0,m-2):
                 break
             while True:
                 c = rand(aclasses)
