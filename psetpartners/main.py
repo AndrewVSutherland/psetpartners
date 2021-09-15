@@ -33,6 +33,7 @@ from .student import (
     is_instructor,
     is_student,
     is_admin,
+    is_console_admin,
     get_counts,
     class_groups,
     send_message,
@@ -221,12 +222,31 @@ def loginas(kerb):
         return redirect(url_for("admin"))
     return redirect(url_for("student")) if current_user.is_student else redirect(url_for("instructor"))
 
-@login_required
+def admin_counts():
+    from .dbwrapper import class_counts, count_students_in_classes
+    from .utils import current_term, current_year
+
+    c = class_counts('',current_year(),current_term())
+    groups = 0
+    depts = {}
+    for k in c:
+        d = k.split('.')[0]
+        if d not in depts:
+            depts[d] = { 'classes': 0, 'students': 0, 'groups': 0 }
+        depts[d]['classes'] += 1
+        groups += c[k]['groups']
+        depts[d]['groups'] += c[k]['groups']
+    c[''] = { 'classes': len(c), 'students': count_students_in_classes(), 'groups': groups }
+    for d in depts:
+        depts[d]['students'] = count_students_in_classes(department=d)
+        c[d] = depts[d]
+    return c
+
 @app.route("/admin")
 @app.route("/admin/<class_number>")
 @login_required
 def admin(class_number=''):
-    from .dbwrapper import getdb, students_groups_in_class, count_rows, class_counts, count_students_in_classes
+    from .dbwrapper import getdb, students_groups_in_class, count_rows
     from .student import student_row, student_row_cols, next_match_date
     from .utils import current_term, current_year
 
@@ -238,26 +258,12 @@ def admin(class_number=''):
     db = getdb()
     user = Instructor(session['kerb'], session['displayname'])
     if not class_number:
-        counts = class_counts('',current_year(),current_term())
-        groups = 0
-        depts = {}
-        for k in counts:
-            d = k.split('.')[0]
-            if d not in depts:
-                depts[d] = { 'classes': 0, 'students': 0, 'groups': 0 }
-            depts[d]['classes'] += 1
-            groups += counts[k]['groups']
-            depts[d]['groups'] += counts[k]['groups']
-        counts[''] = { 'classes': len(counts), 'students': count_students_in_classes(), 'groups': groups }
-        for d in depts:
-            depts[d]['students'] = count_students_in_classes(department=d)
-            counts[d] = depts[d]
         return render_template(
             "admin.html",
             options=template_options(),
             maxlength=maxlength,
             ctx=session.pop("ctx",""),
-            counts=counts,
+            counts=admin_counts(),
             user=user,
         )
     else:
@@ -283,6 +289,142 @@ def admin(class_number=''):
             classes=classes,
             user=user,
         )
+
+@app.route("/control/")
+@app.route("/control/<show_deleted>")
+@login_required
+def control(show_deleted=False):
+    from os import listdir
+
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_console_admin(current_user.kerb):
+        app.logger.critical("Unauthorized access to console attempted by %s." % (current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+
+    user = Instructor(session['kerb'], session['displayname'])
+    logfiles = sorted([s for s in listdir() if s.endswith(".log")], reverse=True)
+    dlogfiles = sorted([s for s in listdir("trash") if s.endswith(".log")], reverse=True)
+    return render_template(
+        "control.html",
+        options=template_options(),
+        maxlength=maxlength,
+        ctx=session.pop("ctx",""),
+        counts=admin_counts(),
+        logfiles=logfiles,
+        dlogfiles=dlogfiles,
+        show_deleted=show_deleted,
+        user=user,
+    )
+
+@app.route("/action/")
+@app.route("/action/<action>/")
+@app.route("/action/<action>/<mode>")
+@login_required
+def command(action=None,mode="preview"):
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_console_admin(current_user.kerb):
+        app.logger.critical("Unauthorized access to console attempted by %s." % (current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+
+    if action == "poolme":
+        from psetpartners.admin import send_poolme_links
+
+        if mode == "execute":
+            send_poolme_links(preview=False)
+            flash_info("Sent poolme links!")
+        else:
+            send_poolme_links()
+            flash_info("Previewed poolme messages but did not send emails.  See logfile for details.")
+        return redirect(url_for("control"))
+    elif action == "checkin":
+        from psetpartners.admin import send_checkins
+
+        if mode == "execute":
+            send_checkins(preview=False)
+            flash_info("Sent checkin messages!")
+        else:
+            send_checkins()
+            flash_info("Previewed checkin messages but did not send emails.  See logfile for details.")
+        return redirect(url_for("control"))
+    elif action == "uncap":
+        from psetpartners.admin import send_uncap_requests
+
+        if mode == "execute":
+            send_uncap_requests(preview=False)
+            flash_info("Sent uncap requests!")
+        else:
+            send_uncap_requests()
+            flash_info("Previewed uncap requests but did not send emails.  See logfile for details.")
+        return redirect(url_for("control"))
+    elif action == "match":
+        from psetpartners.admin import preview_matches, make_matches
+        import datetime
+
+        if mode == "execute":
+            if datetime.datetime.now().hour < 22:
+                flash_error("Matching failed to execute because current time is outside the match window 22:00-23:59 MIT time.")
+                return redirect(url_for("control"))
+            make_matches()
+            flash_info("Matched students!")
+        else:
+            preview_matches()
+            flash_info("Previewed matches but took no action.  See logfile for details.")
+        return redirect(url_for("control"))
+    else:   
+        return render_template("404.html", message="Unknown command %s with mode %s." % (action, mode))
+
+@app.route("/logfile/")
+@app.route("/logfile/<filename>")
+@login_required
+def logfile(filename=None):
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_console_admin(current_user.kerb):
+        app.logger.critical("Unauthorized access to console attempted by %s." % (current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    try:
+        with open(filename) as fp:
+            lines = fp.readlines()
+            lines = [line.rstrip() for line in lines]
+    except Exception as err:
+        return render_template("404.html", message="Error opening file %s: %s." % (filename, err))
+    return render_template("logfile.html", filename=filename, lines=lines)
+
+@app.route("/dlogfile/")
+@app.route("/dlogfile/<filename>")
+@login_required
+def dlogfile(filename=None):
+    from shutil import move
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_console_admin(current_user.kerb):
+        app.logger.critical("Unauthorized access to console attempted by %s." % (current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    if filename:
+        try:
+            move(filename,"trash/"+filename)
+        except Exception as err:
+            return render_template("500.html", message="Error moving file %s: %s." % (filename, err))
+    return redirect(url_for("control"))
+
+@app.route("/udlogfile/")
+@app.route("/udlogfile/<filename>")
+@login_required
+def udlogfile(filename=None):
+    from shutil import move
+    if not current_user.is_authenticated or session.get("kerb") != current_user.kerb or not is_console_admin(current_user.kerb):
+        app.logger.critical("Unauthorized access to console attempted by %s." % (current_user.kerb))
+        return render_template("500.html", message="You are not authorized to perform this operation."), 500
+    if not livesite() and current_user.stale_login:
+        return redirect(url_for("logout"))
+    if filename:
+        try:
+            move("trash/"+filename,filename)
+        except Exception as err:
+            return render_template("500.html", message="Error moving file %s: %s." % (filename, err))
+    return redirect(url_for("control"))
 
 @app.route("/environ")
 def environ():
