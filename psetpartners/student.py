@@ -317,10 +317,6 @@ def is_admin(kerb):
     db = getdb()
     return db.admins.lucky({'kerb': kerb})
 
-def is_console_admin(kerb):
-    db = getdb()
-    return db.admins.lucky({'kerb': kerb, 'console': True})
-
 def send_message(sender, recipient, typ, content):
     db = getdb()
     now = datetime.datetime.now()
@@ -363,7 +359,7 @@ def next_match_date(class_id, request_match=False):
         today = now.date()
         match_dates = [d for d in match_dates if d >= today]
         if match_dates:
-            # don't offer match within 2 hours of midnight (MIT time) on match date
+            # don't offer match withing 2 hours of midnight (MIT time) on match date
             if request_match and match_dates[0] == today and now.hour >= 22:
                 return "",""
             else:
