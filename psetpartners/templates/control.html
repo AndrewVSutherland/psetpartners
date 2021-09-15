@@ -62,7 +62,7 @@ let command = "";
 function formatRow(logfile,deleted) {
   const i = isLive ? 0 : 1;
   const parts = logfile.split('-');
-  return { deleted: deleted, name: logfile, type: parts[i], mode: parts[2], time: parts[3].split('.')[0] };
+  return { deleted: deleted, name: logfile, type: parts[i], mode: parts[i+1], time: parts[i+2].split('.')[0] };
 }
 
 function renderRows() {
