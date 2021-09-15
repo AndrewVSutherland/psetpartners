@@ -181,7 +181,7 @@ def create_admin_logger(name, forcelive=False, preview=True):
     today = datetime.datetime.now()
     logger.setLevel(logging.INFO)
     fmt = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s', "%Y-%m-%d %H:%M:%S")
-    filename = '%s%s-%s-%s.log' % ("" if are_we_live(forcelive) else "test-", name, "preview" if preview else "execute", today.strftime("%Y:%m:%d:%H:%M:%S"))
+    filename = '%s-%s-%s-%s.log' % ("live" if are_we_live(forcelive) else "test", name, "preview" if preview else "execute", today.strftime("%Y:%m:%d:%H:%M:%S"))
     fh = logging.FileHandler(filename, mode='w')
     fh.setFormatter(fmt)
     logger.addHandler(fh)

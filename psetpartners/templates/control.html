@@ -60,9 +60,8 @@ let logfileRows = [];
 let command = "";
 
 function formatRow(logfile,deleted) {
-  const i = isLive ? 0 : 1;
   const parts = logfile.split('-');
-  return { deleted: deleted, name: logfile, type: parts[i], mode: parts[i+1], time: parts[i+2].split('.')[0] };
+  return { deleted: deleted, name: logfile, type: parts[1], mode: parts[2], time: parts[3].split('.')[0] };
 }
 
 function renderRows() {
@@ -150,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const t = toggles.cst || '-time';
   logfileSort = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
   $('#logfile-table th').click(headerClick);
-  logfileRows = logfiles.filter(x => (isLive ? !x.startsWith("test-") : x.startsWith("test-"))).map(x => formatRow(x,false));
+  logfileRows = logfiles.filter(x => (isLive ? x.startsWith("live-") : x.startsWith("test-"))).map(x => formatRow(x,false));
   logfileRows = logfileRows.concat(dlogfiles.filter(x => (isLive ? !x.startsWith("test-") : x.startsWith("test-"))).map(x => formatRow(x,true)));
   $('#logfile-rows').html(renderRows());
   showLogfileTable();
