@@ -1,0 +1,164 @@
+<!-- jshint ignore:start -->
+{% extends 'homepage.html' %}
+
+{% block content %}
+
+{% if not user.is_authenticated or not user.is_admin %}
+
+<h3>User "{{user.kerb}}" is not authorized to access this page.</h3>
+
+This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpartners@mit.edu</a>.
+
+{% else %}
+
+<h3 id="logfile-table-header" style="text-align:center;">{{counts[''].classes}} classes with {{counts[''].students}} students in {{counts[''].groups}} groups for {{current_term_pretty}}</h3>
+
+<table class="mtab" id="logfile-table">
+  <thead><tr>
+    <th class="sortable" id="type">type</th>
+    <th class="sortable" id="mode">mode</th>
+    <th class="sortable" id="time">time</th>
+    <th>actions</th>
+  </tr></thead>
+  <tbody id="logfile-rows"></tbody>
+</table>
+<br>
+<h3 style="text-align:center;">Actions</h3>
+<table style="margin: 0 auto;">
+  <tbody>
+    <tr>
+      <td><label class="paction" onclick="confirmPoolMe();">poolme</label></td>
+      <td><label class="paction" onclick="confirmCheckIn();">checkin</label></td>
+      <td><label class="paction" onclick="confirmUnCap();">uncap</label></td>
+      <td><label class="paction" onclick="confirmMatch();">match</label></td>
+    </tr>
+  </tbody>
+</table>
+<p id="confirm-message" style="align: justify; display: none;">test</p>
+<table id="confirm-table" class="ctab" style="display: none;"><tbody><tr>
+  <td><button type="button" class="confirm" onclick="location.href='{{url_for("command")}}' + command + '/preview'">preview</button></td>
+  <td><button type="button" class="confirm" onclick="location.href='{{url_for("command")}}' + command + '/execute'">execute</button></td>
+  <td><button type="button" class="submit" onclick="hideConfirm();">nevermind</button></td>
+</tr></tbody></table>
+
+<script>
+// jshint ignore:start
+const isLive = {{ livesite|tojson|safe }};
+const counts = {{ counts|tojson|safe }};
+let logfiles = {{ logfiles|tojson|safe }};
+let dlogfiles = {{ dlogfiles|tojson|safe }};
+const toggles = {{ user.toggles|tojson|safe }};
+const current_term_pretty = "{{ current_term_pretty }}";
+const route = '{{ url_for("control")|safe }}';
+let show_deleted = {{ show_deleted|tojson|safe }};
+// jshint ignore:end
+/* global isLive, counts, logfiles, dlogfiles, toggles, current_term_pretty, route, show_deleted */
+
+let loaded = false;
+let logfileSort = {};
+let logfileRows = [];
+let command = "";
+
+function formatRow(logfile,deleted) {
+  const i = isLive ? 0 : 1;
+  const parts = logfile.split('-');
+  return { deleted: deleted, name: logfile, type: parts[i], mode: parts[2], time: parts[3].split('.')[0] };
+}
+
+function renderRows() {
+  return logfileRows.filter(row => show_deleted || ! row.deleted).map(row => `<tr>
+    <td style="text-align:left; ${row.deleted ? 'text-decoration:line-through;' : ''}">${row.type}</td>
+    <td style="text-align:left;">${row.mode}</td>    
+    <td style="text-align:left;">${row.time}</td>
+    <td style="text-align:center;">
+      ${row.deleted ? '' : '<a href="{{ url_for("logfile") }}/' + row.name + '">view</a>'}
+      ${row.deleted ? '<a href="{{ url_for("udlogfile") }}' + row.name + '">undelete</a>' : '<a href="{{ url_for("dlogfile") }}' + row.name + '">delete</a>'}
+    </td>
+   </tr>`).join('\n');
+}
+
+function headerClick (e) {
+  logfileSort.curCol = e.target.id;
+  logfileSort.dir = logfileSort.curCol == logfileSort.prevCol ? -logfileSort.dir : 1;
+  ajaxToggle('cst', (logfileSort.dir < 0 ? '-' : '+') +e.target.id);
+  showLogfileTable();
+}
+
+function colCompare(a,b,col,dir)
+{
+  return a[col] < b[col] ? -dir : (a[col] > b[col] ? dir : 0);
+}
+
+function showLogfileTable () {
+  const dir = logfileSort.dir;
+  const col = logfileSort.curCol;
+  logfileRows.sort(function(a,b) { return colCompare(a,b,col,dir); });
+  logfileSort.prevCol = col;
+  $('logfile-table').show();
+  $('#logfile-table-header').html(`${counts[''].classes} classes with ${counts[''].students} students in ${counts[''].groups} groups for ${current_term_pretty} <label class="link"  style="font-weight:normal; float:right;" onclick="show_deleted=!show_deleted; showLogfileTable();">${show_deleted?'hide deleted':'show deleted'}</label>`);
+  $('#logfile-rows').html(renderRows());
+  const q = $('#logfile-table th.active');  q.removeClass('asc'); q.removeClass('desc'); q.removeClass('active');
+  $('#'+col).addClass('active');  $('#'+col).addClass(dir>0 ? 'asc' : 'desc');
+}
+
+function ajaxToggle(name, value) {
+  if ( ! loaded ) return false;
+  ajaxToggle[name] = value;
+  if ( ajaxToggle[name+'Pending'] ) return false;
+  ajaxToggle[name+'Pending'] = true;
+  window.setTimeout(function(){
+    $.ajax({url: '/_toggle', data: { 'name': name, 'value': ajaxToggle[name] }});
+    ajaxToggle[name+'Pending'] = false;
+    }, 500);
+  return true;
+}
+
+function showConfirm(message, action) {
+  command = action;
+  $('#confirm-message').html(message);
+  $('#confirm-message').show();
+  $('#confirm-table').show();
+}
+
+function hideConfirm() {
+  $('#confirm-message').hide();
+  $('#confirm-table').hide();
+}
+
+function confirmPoolMe() {
+  let msg = `You are about to send <b>poolme</b> messages to all inactive students in classes that are matching tonight or tomorrow.<br><br>How do you want to proceed?`;
+  showConfirm (msg, "poolme");
+}
+
+function confirmCheckIn() {
+  let msg = `You are about to send <b>checkin</b> messages to all students in classes that were recently placed in groups.<br><br> How do you want to proceed?`;
+  showConfirm (msg, "checkin");
+}
+
+function confirmUnCap() {
+  let msg = `You are about to send <b>uncap</b> messages to all students in classes with full automatic groups.<br><br> How do you want to proceed?`;
+  showConfirm (msg, "uncap");
+}
+
+function confirmMatch() {
+  let msg = `You are about to <b>match</b> all students in the pool.<br><br> How do you want to proceed?`;
+  showConfirm (msg, "match");
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  const t = toggles.cst || '-time';
+  logfileSort = { curCol: t.slice(1), prevCol: '', dir: t[0] == '-' ? -1 : 1 };
+  $('#logfile-table th').click(headerClick);
+  logfileRows = logfiles.filter(x => (isLive ? !x.startsWith("test-") : x.startsWith("test-"))).map(x => formatRow(x,false));
+  logfileRows = logfileRows.concat(dlogfiles.filter(x => (isLive ? !x.startsWith("test-") : x.startsWith("test-"))).map(x => formatRow(x,true)));
+  $('#logfile-rows').html(renderRows());
+  showLogfileTable();
+  loaded = true;
+  console.log(isLive ? "We are live!" : "We are in the sandbox.");
+});
+</script>
+
+{% endif %}
+
+{% endblock %}
