@@ -196,7 +196,7 @@ def refine_groups(to_match, groups):
 
 def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger()):
     """
-    Returns a dictionary keyed by class_id with three attributes: 'groups', 'unmatched_only', 'unmatched_other'
+    Returns a dictionary with three attributes: 'groups', 'unmatched_only', 'unmatched_other'
     """
     db = getdb(forcelive)
     vlog.info("Using %s database%s"%("live" if db_islive(db) else "test", " in preview mode" if preview else ""))
@@ -205,9 +205,7 @@ def match_all(rematch=False, forcelive=False, preview=False, vlog=null_logger())
     if not rematch:
         today = now.date()
         if not preview:
-            if now.hour < 22:
-                vlog.error("Not matching because it is not between 22:00 and 23:59 MIT time.")
-                return {}
+            assert now.hour >= 22
         query['match_dates'] = {'$contains': today}
     results = {}
     # TODO make classes search only return classes with students of status 2 or 5 (requires exists join, add to dbwrapper)
