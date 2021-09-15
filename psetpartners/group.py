@@ -16,15 +16,15 @@ To learn more about your group and its members please visit<br><br>
 
 &nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
 
-We encourage you to reach out to your new partners today.<br>
+We encourage you to reach out to your new partners today to discuss how/where/when you would like to collaborate.
 You can use the "email group" button on pset partners to do this.<br><br>
 
 It looks like there are {hours} hours each week when your schedules overlap.<br>
-We suggest a brief initial meeting at<br><br>
+Based on your schedules, one possible time for a first meeting is<br><br>
 
 &nbsp;&nbsp;{meet_time} (MIT Time)<br><br>
 
-to introduce yourselves and decide how you want to proceed.
+but of course you can choose any time that is mutually agreeable, and you may want to meet earlier if your next pset is due soon.
 """
 
 new_group_problem_email = """
