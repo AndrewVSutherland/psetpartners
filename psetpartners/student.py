@@ -1442,7 +1442,7 @@ class Instructor(UserMixin):
                 except ValueError:
                     app.logger.warning("User %s attempted to set invalid match date %s for class %s" % (self.kerb, data['match_date'], class_id))
                     raise ValueError("Unable to set match date %s for %s, please try again." % (data['match_date'], cs))
-                if match_date <= today:
+                if match_date < today:
                     app.logger.warning("User %s attempted to set match date %s < today for class %s" % (self.kerb, data['match_date'], class_id))
                     raise ValueError("Unable to set next match date %s for %s, date cannot be in the past." % (data['match_date'],cs))
                 match_dates.append(match_date)
