@@ -118,7 +118,7 @@ def send_checkins(forcelive=False, preview=True):
 
     logger = create_admin_logger('checkin', forcelive=forcelive, preview=preview)
     db = getdb(forcelive)
-    latest = datetime.datetime.now() - datetime.timedelta(days=4)
+    latest = datetime.datetime.now() - datetime.timedelta(days=3)
     root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
     with app.app_context():
         for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term()}, projection=3):
