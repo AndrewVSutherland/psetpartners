@@ -92,6 +92,7 @@ size                  | smallint    | number of rows in grouplist with group_id=
 max                   | smallint    | maximum number of students (None if no limit, may be less than size due to edits)
 match_run             | smallint    | only set for system created groups (creator=''), incremented with each matching
 request_id            | bigint      | id in request_table (if this is not None there is a pending request and we should not make another)
+uncap_requested       | boolean     | True if an uncap request has ever been sent to this group
 
 ## classlist
 
