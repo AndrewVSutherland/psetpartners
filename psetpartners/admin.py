@@ -149,17 +149,19 @@ def send_uncap_requests(forcelive=False, preview=True):
     root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
     with app.app_context():
         for c in db.classes.search({'active':True, 'year': current_year(), 'term': current_term()}, projection=['id','class_numbers']):
-            n = db.groups.count({'class_id': c['id']})
-            if n == 0 or not db.events.lucky({'event':'unmatched','detail.class_id':c['id']}):
+            if db.classlist.count({'class_id':c['id'],'status':2}) != 1:
                 continue
-            full = [r for r in db.groups.search({'class_id':c['id'],'visibility':2,'preferences.size':'3.5','creator':''}, projection=3) if r['size'] == r['max']]
-            if len(full) > 0 and len(full) == n:
+            S = list(db.groups.search({'class_id':c['id'],'visibility':2}, projection=3))
+            if [r for r in S if r['size'] < r['max']]:
+                continue
+            uncappable = [r for r in S if r['creator'] == '' and not r.get('uncap_requested')]
+            if uncappable:
                 cs = ' / '.join(c['class_numbers'])
-                for g in full:
+                for g in uncappable:
                     kerbs = list(db.grouplist.search({'group_id': g['id']}, projection="kerb"))
                     prefs = [db.students.lookup(kerb,projection='preferences') for kerb in kerbs]
                     prefs = [p for p in prefs if 'size' in p]
-                    if len([p for p in prefs if p['size'] <= '4']) == 0 or len([p for p in prefs if p['size'] <= '4']) < len([p for p in prefs if p['size'] > '4']):
+                    if len([p for p in prefs if p['size'] <= '4']) <= len([p for p in prefs if p['size'] > '4']):
                         uncapurl = root + "uncap/%s" % g['id']
                         for kerb in kerbs:
                             subject = uncap_subject.format(cs=cs)
@@ -170,6 +172,9 @@ def send_uncap_requests(forcelive=False, preview=True):
                                 logger.info("Sending uncap email: %s to %s" % (subject, kerb))
                                 send_email(email_address(kerb), subject, body+signature)
                                 log_event(kerb, 'uncaprequest', {'group_id': g['id']})
+                        if not preview:
+                            db.groups.update({'id': g['id']}, {'uncap_requested': True}, resort=False)
+
     logfile = admin_logger_filename(logger)
     clear_admin_logger(logger)
     return logfile
