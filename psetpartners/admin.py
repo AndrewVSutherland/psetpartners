@@ -152,7 +152,7 @@ def send_uncap_requests(forcelive=False, preview=True):
             if db.classlist.count({'class_id':c['id'],'status':2}) != 1:
                 continue
             S = list(db.groups.search({'class_id':c['id'],'visibility':2}, projection=3))
-            if [r for r in S if r.get('size',0) < r.get('max',1000)]:
+            if [r for r in S if not r.get('max') or r['size'] < r['max']]:
                 continue
             uncappable = [r for r in S if r['creator'] == '' and not r.get('uncap_requested')]
             if uncappable:
