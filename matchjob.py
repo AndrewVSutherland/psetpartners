@@ -1,4 +1,4 @@
-from psetpartners.admin import make_matches, send_poolme_links, send_checkins
+from psetpartners.admin import make_matches, send_poolme_links, send_checkins, send_uncap_requests
 make_matches(forcelive=True)
 send_poolme_links(forcelive=True,preview=False)
 send_checkins(forcelive=True,preview=False)
