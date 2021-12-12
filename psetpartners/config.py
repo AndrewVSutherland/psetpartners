@@ -34,13 +34,19 @@ class Configuration(_Configuration):
 
         parser = argparse.ArgumentParser(description="psetpartners")
         parser.add_argument(
-            "-c",
             "--config-file",
             dest="config_file",
             metavar="FILE",
             help="configuration file [default: %(default)s]",
             default=default_config_file,
         )
+        # gunicorn uses '-c' to specify its config file
+        # we don't want the config parser to get confused
+        # when psetpartners is ran with gunicorn
+        parser.add_argument(
+                "-c",
+                 help=argparse.SUPPRESS,
+                dest="trash_becauseofgunicorn")
         parser.add_argument(
             "-s",
             "--secrets-file",
