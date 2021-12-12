@@ -44,9 +44,9 @@ class Configuration(_Configuration):
         # we don't want the config parser to get confused
         # when psetpartners is ran with gunicorn
         parser.add_argument(
-                "-c",
-                 help=argparse.SUPPRESS,
-                dest="trash_becauseofgunicorn")
+            "-c",
+            help=argparse.SUPPRESS,
+            dest="trash_becauseofgunicorn")
         parser.add_argument(
             "-s",
             "--secrets-file",
