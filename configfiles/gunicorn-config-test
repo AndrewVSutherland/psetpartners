@@ -1,6 +1,7 @@
 # WARNING: after editing this file don't forget to copy it to
 # /home/psetpartners/psetpartners-git-test/gunicorn-config-test.py
 # as gunicorn doesn't handle well the config file being part of the repo
+[Default]
 wsgi_app = 'psetpartners.website:app'
 bind = "0.0.0.0:9594"
 workers = 15
