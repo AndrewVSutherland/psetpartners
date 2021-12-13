@@ -71,7 +71,6 @@ const againOptions = [
 function checkChanges(e) {
   if ( ! e.target.name ) return;
   const done = $('#useful').val().trim().length > 0 && $('#again').val().trim().length > 0;
-  console.log(done)
   $('#survey button.submit').prop('disabled',!done);
 }
 
@@ -90,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
   makeSingleSelect('useful', usefulOptions, {});
   makeSingleSelect('again', againOptions, {});
   $('#survey :input').change(checkChanges);
+  $('#survey :input').keyup(checkChanges);
 });
 
 </script>
