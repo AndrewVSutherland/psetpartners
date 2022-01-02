@@ -26,7 +26,8 @@ This is a bug, please report is to <a href="mailto:psetpartners@mit.edu">psetpar
 {% set editor = classes|selectattr("editor","true")|list %}
 
 {% if classes|length == 0 %}
-<p>You have reached this page because Touchstone has identified you as a non-student (affiliate, staff, or faculty) but you are not currently registered as an instructor on pset partners for a class that is offerred during the <b>{{current_term_pretty}}</b> term</p>
+<p>You have reached this page because Touchstone has identified you as a non-student (affiliate, staff, or faculty) but you are not currently registered as an instructor on pset partners for a class that is offerred during the <b>{{current_term_pretty}}</b> term.</p>  {% if current_term == 0 %}<p><b>We do not have access to the registrar database over IAP but are happy to add classes (credit or non-credit) upon <a href="mailto:psetpartners@mit.edu">request</a></b>.</p>{% endif %}
+
 <ul class="faq">
 <li>Instructors<p>If you are an instructor for a class this term, please accept our apologies for the inconvenience; the registration data provided to pset partners identifies only one responsible faculty member per class (even when the catolog lists multiple names).   Please contact the responsible faculty member for your course and ask them to add you as an instructor.  If you do not know who that is, or if it should be you, please <a href="mailto:psetpartners@mit.edu">contact us</a>.</p></li>
 
