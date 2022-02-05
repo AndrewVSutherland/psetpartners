@@ -80,6 +80,23 @@ We encourage you to visit<br><br>
 and either join a public group if one is available, or join the match pool for next week.
 """
 
+only_subject = """Pset partners failed to match any students in {class_numbers}"""
+
+only_email = """
+You are receiving this email because pset partners failed to match any students in the class {class_numbers} for which you are an instructor.  This occurred because there was only one student in the match pool.<br><br>
+
+We suggest advertizing pset partners to your class and actively encouraging students to place themselves in the match pool in the coming week.<br><br>
+
+Unmatched students must explicitly request a match by placing themselves in the pool for the next match date in order to be eligible for a match, it is not enough to simply have the class listed in their pset partners profile (unmatched students are emailed reminders but do not always respond to them).<br><br>
+
+The next match date for {class_numbers} is {next_match_date}.  You can change this date by clicking the "edit" link next to your class on<br><br>
+
+&nbsp;&nbsp;<a href="{url}">{url}</a><br><br>
+
+Please contact us if you have any questions or concerns.
+"""
+
+
 def normalized_hours(s):
     offset = hours_from_default(s["timezone"])
     hours = s["hours"]
@@ -229,8 +246,34 @@ def create_group (class_id, kerbs, match_run=0, group_name='', forcelive=False, 
     else:    
         vlog.info("not emailing [%s] to %s" % (subject, [email_address(s) for s in students]))
     return g
+
+def notify_instructors (class_id, forcelive=False, email_test=False, vlog=null_logger()):
+    from .student import email_address, signature
+
+    db = getdb(forcelive)
+    if db.grouplist.count({'class_id':class_id}) > 1:
+        return False
+    c = db.classes.lucky({'id': class_id}, projection=["class_numbers", "instructor_kerbs", "match_dates"])
+    root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
+    now = datetime.datetime.now()
+    today = now.date()
+    match_dates = [d for d in c["match_dates"] if d >= today]
+    if not match_dates:
+        return False
+    nd = match_dates[0].strftime("%b %-d")
+    cs = ' / '.join(c['class_numbers'])
+    subject = only_subject.format(class_numbers=cs)
+    body = only_email.format(class_numbers=cs, next_match_date=nd, url=root)
+    kerbs = c["instructor_kerbs"]
+    if db_islive(db) or email_test:
+        vlog.info("emailing [%s] to %s" %(subject, kerbs))
+        send_email([email_address(k) for k in kerbs], subject, body + signature)
+        return True
+    else:
+        vlog.info("not emailing [%s] to %s" % (subject, kerbs))
+    return False
  
-def process_matches (matches, match_run=-1, forcelive=False, email_test=False, vlog=null_logger):
+def process_matches (matches, match_run=-1, forcelive=False, email_test=False, vlog=null_logger()):
     """
     Takes a dictionary returned by all_matches, keys are class_id's, values are objects with attributes
     groups = list of lists of kerbs, unmatched = list of tuples (kerb, reason) where reason is 'only' or 'requirement'
@@ -273,7 +316,6 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
                 vlog.info("Added %s to the group %s (%d) in %s (%d)" % (kerb, group_name, group_id, c['class_number'], class_id))
                 n += 1
             else:
-                print("Unable to match %s in %s (id=%d)" % (kerb, class_number, class_id))
                 cs = ' / '.join(c['class_numbers'])
                 subject = unmatched_subject.format(class_numbers=cs)
                 if kerb in onlykerbs:
@@ -287,4 +329,6 @@ def process_matches (matches, match_run=-1, forcelive=False, email_test=False, v
                     vlog.info("not emailing [%s] to %s" %(subject, kerb))
                 log_event(kerb, 'unmatched', detail={'class_id': class_id, 'class_number': c['class_number']})
                 o += 1
+        if onlykerbs:
+            notify_instructors(class_id, forcelive=forcelive, email_test=email_test, vlog=vlog)
     vlog.info("Created %d new groups and added %d new members in match_run %d with %d unmatched" % (m, n, match_run, o))

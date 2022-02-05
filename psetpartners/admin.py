@@ -64,7 +64,6 @@ Removing this cap does not necessarily mean a student will be added to your grou
 You can restore this cap at any time by editing the size preference for your group.
 """
 
-
 def are_we_live(forcelive):
     return forcelive or livesite()
 
