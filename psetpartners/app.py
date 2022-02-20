@@ -257,13 +257,13 @@ def send_email(to, subject, message, cc=[]):
         to = [to]
     bcc = email_bcc
     if isinstance(bcc,str):
-        bcc = [bcc]
+        bcc = [bcc.strip()]
 
     if (not get_forcelive() and not livesite()) or under_construction():
         if email_bcc is None or not email_bcc.strip():
             return
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
-        to = email_bcc
+        to = email_bcc.strip()
         bcc = []
         cc = []
     else:
