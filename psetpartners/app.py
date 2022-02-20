@@ -53,7 +53,7 @@ mail_settings = {
 }
 
 email_sender = Configuration().options['email']['username'] + '@' + Configuration().options['email']['domain']
-email_bcc = Configuration().options['mail']['bcc']
+email_bcc = Configuration().options['mail'].get('bcc')
 
 app.config.update(mail_settings)
 mail = Mail(app)
