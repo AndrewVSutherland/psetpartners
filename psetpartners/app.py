@@ -44,13 +44,16 @@ if getpass.getuser() == 'psetpartners':
     )
 
 mail_settings = {
-    "MAIL_SERVER": "heaviside.mit.edu",
-    "MAIL_PORT": 465,
+    "MAIL_SERVER": Configuration().options['email']['host'],
+    "MAIL_PORT":  Configuration().options['email']['port'],
     "MAIL_USE_TLS": False,
     "MAIL_USE_SSL": True,
-    "MAIL_USERNAME": "psetpartnersnoreply",
+    "MAIL_USERNAME": Configuration().options['email']['username'],
     "MAIL_PASSWORD": Configuration().options['email']['password'],
 }
+
+email_sender = Configuration().options['email']['username'] + '@' + Configuration().options['email']['domain']
+email_bcc = Configuration().options['mail'].get('bcc')
 
 app.config.update(mail_settings)
 mail = Mail(app)
@@ -252,26 +255,28 @@ def send_email(to, subject, message, cc=[]):
 
     if isinstance(to,str):
         to = [to]
+    bcc = email_bcc
+    if isinstance(bcc,str):
+        bcc = [bcc]
 
-    bcc = ['drew@math.mit.edu'] # TODO remove or setup a separate account for these
     if (not get_forcelive() and not livesite()) or under_construction():
-        # TODO just return here rather than spamming drew
+        if email_bcc is None or not email_bcc.strip():
+            return
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
-        to = bcc
-        cc = []
+        to = email_bcc
         bcc = []
+        cc = []
     else:
         if get_forcelive():
             print("forcing live email!")
 
-    sender = "psetpartnersnoreply@math.mit.edu"
-    app.logger.info("%s sending email from %s to %s..." % (timestamp(), sender, to))
+    app.logger.info("%s sending email from %s to %s..." % (timestamp(), email_sender, to))
     mail.send(
         Message(
             subject=subject,
             html=message,
             body=html2text(message),
-            sender=sender,
+            sender=email_sender,
             recipients=to,
             cc=cc,
             bcc=bcc,

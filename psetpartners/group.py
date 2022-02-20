@@ -257,7 +257,7 @@ def notify_instructors (class_id, forcelive=False, email_test=False, vlog=null_l
     root = "https://psetpartners.mit.edu/" if db_islive(db) else "https://psetpartners-test.mit.edu/"
     now = datetime.datetime.now()
     today = now.date()
-    match_dates = [d for d in c["match_dates"] if d >= today]
+    match_dates = [d for d in c["match_dates"] if d > today]
     if not match_dates:
         return False
     nd = match_dates[0].strftime("%b %-d")

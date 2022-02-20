@@ -130,7 +130,6 @@ class Configuration(_Configuration):
             help="PostgreSQL server port [default: %(default)d]",
             default=5432,
         )
-
         postgresqlgroup.add_argument(
             "--postgresql-user",
             dest="postgresql_user",
@@ -138,15 +137,13 @@ class Configuration(_Configuration):
             help="PostgreSQL username [default: %(default)s]",
             default="psetpartners",
         )
-
         postgresqlgroup.add_argument(
             "--postgresql-pass",
             dest="postgresql_password",
             metavar="PASS",
             help="PostgreSQL password [default: %(default)s]",
-            default="", # Need to provide in secrets file instead
+            default="", # Need to provide in secrets file
         )
-
         postgresqlgroup.add_argument(
             "--postgresql-dbname",
             dest="postgresql_dbname",
@@ -157,26 +154,62 @@ class Configuration(_Configuration):
 
         emailgroup = parser.add_argument_group("emailing options:")
         emailgroup.add_argument(
+            "--email-host",
+            dest="email_host",
+            metavar="HOST",
+            help="email server for pset partner emails [default: %(default)s]",
+            default="",
+        )
+        emailgroup.add_argument(
+            "--email-port",
+            dest="email_port",
+            metavar="PORT",
+            help="email server port number for pset partner emails [default: %(default)s]",
+            default="",
+        )
+        emailgroup.add_argument(
+            "--email-username",
+            dest="email_username",
+            metavar="username",
+            help="email address to use as sender of pset partner emails [default: %(default)s]",
+            default="psetpartnersnoreply",
+        )
+        emailgroup.add_argument(
+            "--email-domain",
+            dest="email_domain",
+            metavar="DOMAIN",
+            help="domain of email address to use as sender of pset partner emails [default: %(default)s]",
+            default="",
+        )
+        emailgroup.add_argument(
             "--email-pass",
             dest="email_password",
             metavar="PASS",
             help="email account password [default: %(default)s]",
-            default="", # Need to provide in secrets file instead
+            default="", # Need to provide in secrets file
+        )
+        emailgroup.add_argument(
+            "--email-bcc",
+            dest="email_bcc",
+            metavar="EMAIL",
+            help="optional email address to bcc on all pset partner emails [default: %(default)s]",
+            default="", # Need to provide in secrets file
         )
 
         peoplegroup = parser.add_argument_group("people API options:")
         peoplegroup.add_argument(
             "--people-secret",
             dest="people_secret",
-            metavar="PASS",
+            metavar="SECRET",
             help="people API client secret [default: %(default)s]",
-            default="", # Need to provide in secrets file instead
+            default="", # Need to provide in secrets file
         )
         peoplegroup.add_argument(
             "--people-id",
             dest="people_id",
+            metavar="ID",
             help="people API client id [default: %(default)s]",
-            default="", # Need to provide in secrets file instead
+            default="", # Need to provide in secrets file
         )
 
         # undocumented options
