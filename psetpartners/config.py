@@ -161,6 +161,13 @@ class Configuration(_Configuration):
             default="",
         )
         emailgroup.add_argument(
+            "--email-port",
+            dest="email_port",
+            metavar="PORT",
+            help="email server port number for pset partner emails [default: %(default)s]",
+            default="",
+        )
+        emailgroup.add_argument(
             "--email-username",
             dest="email_username",
             metavar="username",
