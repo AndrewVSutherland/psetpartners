@@ -263,7 +263,7 @@ def send_email(to, subject, message, cc=[]):
         if email_bcc is None or not email_bcc.strip():
             return
         subject += " [%s, should have been sent to %s]" % ('live' if livesite() else 'test', to)
-        to = email_bcc.strip()
+        to = bcc
         bcc = []
         cc = []
     else:
