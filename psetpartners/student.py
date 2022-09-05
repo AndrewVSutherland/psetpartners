@@ -1466,8 +1466,6 @@ class Instructor(UserMixin):
                 new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
-        print("hi")
-        print(match_date_change)
         if match_date_change:
             for r in self._db.classlist.search({'class_id': class_id, 'status': 2}):
                 email_message = match_date_change_notification.format(
