@@ -1428,7 +1428,7 @@ class Instructor(UserMixin):
                 app.logger.warning("User %s attempted change the name of class %s to an invalid name %s" % (self.kerb, class_id, class_name))
                 raise ValueError('The class name "%s" is invalid.' % class_name)
             c['class_name'] = class_name
-        match_date = None
+        match_date_change = False
         if data.get('match_date'):
             today = datetime.datetime.now().date()
             match_dates = [d for d in c['match_dates'] if d < today] # always keep earlier dates
@@ -1452,7 +1452,9 @@ class Instructor(UserMixin):
                 while d < e:
                     match_dates.append(d)
                     d += one_week
-            c['match_dates'] = match_dates
+            if match_dates != c['match_dates']:
+                match_date_change = True
+                c['match_dates'] = match_dates
         self._db.classes.update({'id': class_id}, c, resort=False)
         self._reload()
         msg = "<b>%s</b> has been updated." % cs
@@ -1464,12 +1466,13 @@ class Instructor(UserMixin):
                 new_kerbs = ', '.join(c['instructor_kerbs'])
             )
             send_email(email_address(c['owner_kerb']), "pset partner notification for %s" % cs, email_message + signature)
-        for r in self._db.classlist.search({'class_id': class_id, 'status': 2}):
-            email_message = match_date_change_notification.format(
-                class_number = ' / '.join(c['class_numbers']),
-                match_date = match_date.strftime("%b %-d, %Y"),
-            )
-            send_email(email_address(r['kerb']), "pset partner notification for %s" % cs, email_message + signature)
+        if match_date_change:
+            for r in self._db.classlist.search({'class_id': class_id, 'status': 2}):
+                email_message = match_date_change_notification.format(
+                    class_number = ' / '.join(c['class_numbers']),
+                    match_date = match_date.strftime("%b %-d, %Y"),
+                )
+                send_email(email_address(r['kerb']), "pset partner notification for %s" % cs, email_message + signature)
         return msg
 
     def _class_data(self, year=current_year(), term=current_term()):
