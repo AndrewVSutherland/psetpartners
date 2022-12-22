@@ -1,0 +1,6 @@
+httpagentparser
+html2text
+itsdangerous
+flask-login
+Flask-Mail
+pytz>=2021

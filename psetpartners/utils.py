@@ -35,7 +35,7 @@ maxlength = {
 }
 
 term_options = ["IAP", "spring", "summer", "fall"]
-term_ends = [(1,22), (6,1), (8,20), (12,20)] # (month,day) pairs making end of term
+term_ends = [(1,22), (6,1), (8,20), (12,20)] # (month,day) pairs marking end of term
 
 short_weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 posint_re_string = r"[1-9][0-9]*"
@@ -69,10 +69,13 @@ def valid_url(x):
         return False
 
 def current_year():
-    return datetime.datetime.now().year # calendar year, not academic year
+    """Returns the current/upcoming calendar year (switches to next calendar year after the end of the fall term)"""
+    now = datetime.datetime.now()
+    today = (now.month, now.day)
+    return datetime.datetime.now().year + (0 if today <= term_ends[-1] else 1)
 
 def current_term():
-    """ Returns the current/upcoming term"""
+    """Returns the current/upcoming term"""
     now = datetime.datetime.now()
     today = (now.month, now.day)
     for i in range(len(term_ends)):
