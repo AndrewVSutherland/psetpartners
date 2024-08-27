@@ -58,7 +58,7 @@ def populate_sandbox(num_students=3000, num_instructors=0, active_classes=500, m
 
     with DelayCommit(mydb):
         # copy classes from live database for current term
-        mydb.test_classes.delete({}, resort=False)
+        mydb.test_classes.delete({})
         S = list(mydb.classes.search({'year': year, 'term': term}, projection=3))
         if year != current_year() or term != current_term():
             for r in S:
