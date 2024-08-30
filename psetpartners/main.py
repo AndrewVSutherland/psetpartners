@@ -156,7 +156,7 @@ def login():
     elif affiliation == "staff":
         user = Instructor(kerb, displayname, affiliation)
     else:
-        app.logger.info("authenticated user %s with affiliation %s was not granted access" % (kerb, affiliation))
+        app.logger.info("authenticated user %s with affiliation %s was not granted access (is_student=%s, is_current_instructor=%s)" % (kerb, affiliation, is_student(kerb), is_current_instructor(kerb)))
         return render_template("denied.html"), 404
     session["kerb"] = kerb
     session["affiliation"] = affiliation
