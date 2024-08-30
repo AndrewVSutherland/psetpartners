@@ -1058,12 +1058,12 @@ class Student(UserMixin):
         r = self._db.grouplist.lucky({'group_id': group_id, 'student_id': self.id})
         r['timestamp'] = now
         self._db.grouplistleft.insert_many([r], resort=False)
-        self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id}, resort=False)
+        self._db.grouplist.delete({'group_id': group_id, 'student_id': self.id})
         self._db.classlist.update({'class_id': g['class_id'], 'student_id': self.id}, {'status': 0, 'status_timestamp': now}, resort=False)
         cs = ' / '.join(g['class_numbers'])
         msg = "You have been removed from the group <b>%s</b> in <b>%s</b>." % (g['group_name'], cs)
         if not self._db.grouplist.lucky({'group_id': group_id}, projection="id"):
-            self._db.groups.delete({'id': group_id}, resort=False)
+            self._db.groups.delete({'id': group_id})
             msg += " You were the only member, so the group was disbanded."
         else:
             # note that size of group will be updated by _notify_group

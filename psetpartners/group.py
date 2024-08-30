@@ -156,8 +156,8 @@ def disband_group (group_id, rematch=False, forcelive=False, email_test=False, v
         for r in members:
             db.classlist.update({'class_id': r['class_id'], 'student_id': r['student_id']}, {'status': 5 if rematch else 0, 'status_timestamp': now}, resort=False)
         kerbs = [r['kerb'] for r in members]
-        db.groups.delete({'id': group_id}, resort=False)
-        db.grouplist.delete({'group_id': group_id}, resort=False)
+        db.groups.delete({'id': group_id})
+        db.grouplist.delete({'group_id': group_id})
         log_event ('admin', 'disband', detail={'group_id': g['id'], 'group_name': g['group_name'], 'members': kerbs})
         vlog.info("Disbanded group %s (%d) in %s (%d) with %d members %s" % (g['group_name'], g['id'], g['class_number'], g['class_id'], len(kerbs), kerbs))
 
