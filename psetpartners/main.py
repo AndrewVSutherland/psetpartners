@@ -150,6 +150,9 @@ def login():
     elif is_student(kerb):
         affiliation = "student"
         user = Student(kerb, displayname)
+    elif is_current_instructor(kerb):
+        affiliation = "staff"
+        user = Instructor(kerb, displayname, affiliation)
     elif affiliation == "staff":
         user = Instructor(kerb, displayname, affiliation)
     else:
