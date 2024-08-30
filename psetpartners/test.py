@@ -58,7 +58,7 @@ def populate_sandbox(num_students=3000, num_instructors=0, active_classes=500, m
 
     with DelayCommit(mydb):
         # copy classes from live database for current term
-        mydb.test_classes.delete({}, resort=False)
+        mydb.test_classes.delete({})
         S = list(mydb.classes.search({'year': year, 'term': term}, projection=3))
         if year != current_year() or term != current_term():
             for r in S:
@@ -119,15 +119,15 @@ def _populate_sandbox(num_students=3000, num_instructors=300, max_classes_per_st
 
     npref = prefprob-1 if prefprob > 1 else 1
     db = getdb()
-    db.test_events.delete({}, resort=False)
-    db.test_messages.delete({}, resort=False)
-    db.test_requests.delete({}, resort=False)
-    db.test_students.delete({}, resort=False)
-    db.test_instructors.delete({}, resort=False)
-    db.test_groups.delete({}, resort=False)
-    db.test_classlist.delete({}, resort=False)
-    db.test_grouplist.delete({}, resort=False)
-    db.test_survey_responses.delete({}, resort=False)
+    db.test_events.delete({})
+    db.test_messages.delete({})
+    db.test_requests.delete({})
+    db.test_students.delete({})
+    db.test_instructors.delete({})
+    db.test_groups.delete({})
+    db.test_classlist.delete({})
+    db.test_grouplist.delete({})
+    db.test_survey_responses.delete({})
     print("Deleted all records in test database.")
 
     active_classes = len(list(db.test_classes.search({'active':True})))
