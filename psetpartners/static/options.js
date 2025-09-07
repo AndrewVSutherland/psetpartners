@@ -36,6 +36,7 @@ const departmentsOptions = [
   { label: 'IMES Medical Engineering and Science', value: 'IMES', },
   { label: 'MAS Media Arts and Sciences', value: 'MAS', },
   { label: 'SCM Supply Chain Management', value: 'SCM', },
+  { label: 'SDM System Design and Management', value: 'SDM', },
   { label: 'STS Science, Technology, and Society', value: 'STS', },
   { label: "WGS Women's and Gender Studies", value: 'WGS', },
   ];
