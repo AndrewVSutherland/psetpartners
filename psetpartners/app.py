@@ -58,17 +58,25 @@ email_bcc = Configuration().options['email'].get('bcc')
 app.config.update(mail_settings)
 mail = Mail(app)
 
-@app.before_first_request
-def setup():
-    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
-
+def setup_logging():
     logger = logging.getLogger("psetpartners")
+    # Avoid adding duplicate handlers (e.g., if called multiple times)
+    if logger.handlers:
+        return
+    formatter = logging.Formatter("""%(asctime)s %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n  %(message)s""")
     logger.setLevel(logging.INFO)
     logfile = Configuration().get_logging()["logfile"]
     ch = logging.FileHandler(logfile)
     ch.setLevel(logging.INFO)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+# Initialize logging on first request (replaces deprecated @app.before_first_request)
+@app.before_request
+def ensure_logging_setup():
+    if not getattr(app, '_logging_initialized', False):
+        setup_logging()
+        app._logging_initialized = True
 
 ############################
 # App attribute functions  #
