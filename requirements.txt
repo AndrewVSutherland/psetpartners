@@ -1,6 +1,7 @@
 httpagentparser
 html2text
 itsdangerous
+flask>=2.3
 flask-login
 Flask-Mail
 pytz>=2021
