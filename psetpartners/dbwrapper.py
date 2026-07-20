@@ -1,4 +1,7 @@
-from psycopg2.sql import SQL
+# psycodict re-exports SQL from whichever driver it is built on
+# (psycopg2 today, psycopg3 after roed314/psycodict#88), so importing
+# it from psycodict keeps this file driver-agnostic
+from psycodict import SQL
 from psycodict.utils import IdentifierWrapper
 from . import db
 from .app import livesite
