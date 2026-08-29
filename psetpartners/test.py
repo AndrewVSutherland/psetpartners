@@ -59,7 +59,7 @@ def populate_sandbox(num_students=3000, num_instructors=0, active_classes=500, m
     with DelayCommit(mydb):
         # copy classes from live database for current term
         mydb.test_classes.delete({})
-        S = list(mydb.classes.search({'year': year, 'term': term}, projection=3))
+        S = list(mydb.classes.search({'year': year, 'term': term}))
         if year != current_year() or term != current_term():
             for r in S:
                 r['year'] = current_year()
@@ -163,7 +163,7 @@ def _populate_sandbox(num_students=3000, num_instructors=300, max_classes_per_st
                 kerbs = [p['kerb']] + kerbs
             db.test_classes.update({'id': c['id']}, {'owner_kerb': p['kerb'], 'owner_name': p['preferred_name'], 'instructor_kerbs': kerbs}, resort=False)
 
-    blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type }
+    blank_student = { col: default_value(db.test_students.col_type[col]) for col in db.test_students.col_type if col != 'id' }
     now = datetime.datetime.now()
     S = []
     names = set()
